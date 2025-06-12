@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 import React from "react";
+import ServiceCard from "@/components/ServiceCard";
 
 const profile = () => {
   return (
@@ -13,6 +14,7 @@ const profile = () => {
       <Text className="text-6xl font-bold">
         <Text className="text-primary">Profile</Text>
       </Text>
+      <ServiceCard/>
     </View>
   );
 };
