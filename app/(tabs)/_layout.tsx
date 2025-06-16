@@ -37,7 +37,7 @@ export default function TabsLayout() {
                 style={{
                   height:50,
                   width:50,
-                  backgroundColor: "#0d9488", // Tailwind's bg-teal-600
+                  backgroundColor: "#008080", 
                   padding: 4, // reduced padding
                   borderRadius: 50, // reduced border radius
                   shadowColor: "#000",
@@ -54,7 +54,7 @@ export default function TabsLayout() {
     size={focused ? 18 : 24}
     color={focused ? "#fff" : color}
     style={focused ? {
-      backgroundColor: "#0d9488",
+      backgroundColor: "#008080",
       borderRadius: 16,
       padding: 11,
       justifyContent: "center",

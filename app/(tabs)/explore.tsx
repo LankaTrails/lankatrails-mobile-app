@@ -9,15 +9,25 @@ import {
   StatusBar,
   SafeAreaView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+
+interface CardItem {
+  id: number;
+  title: string;
+  subtitle: string;
+  rating: number;
+  image: string;
+}
 
 const TravelApp = () => {
   const [activeTab, setActiveTab] = useState('All');
   const [searchText, setSearchText] = useState('');
+  const insets = useSafeAreaInsets();
 
   const tabs = ['All', 'Accommodation', 'Foods', 'Transportation'];
 
-  const accommodationData = [
+  const accommodationData: CardItem[] = [
     {
       id: 1,
       title: 'Nice Hotel restaurant',
@@ -34,7 +44,7 @@ const TravelApp = () => {
     },
   ];
 
-  const foodsData = [
+  const foodsData: CardItem[] = [
     {
       id: 1,
       title: 'Nice sight restaurant',
@@ -51,7 +61,7 @@ const TravelApp = () => {
     },
   ];
 
-  const transportData = [
+  const transportData: CardItem[] = [
     {
       id: 1,
       title: 'Airport Transfer',
@@ -68,46 +78,33 @@ const TravelApp = () => {
     },
   ];
 
-  interface RenderCardProps {
-    item: CardItem;
-    index: number;
-  }
-
   const renderCard = (item: CardItem, index: number): JSX.Element => (
     <TouchableOpacity
       key={item.id}
       className="bg-white rounded-xl shadow-sm mr-4 mb-4"
-      style={{ width: 160 }}
+      style={{ width: 160, elevation: 2 }}
     >
       <Image
         source={{ uri: item.image }}
         className="w-full h-24 rounded-t-xl"
         resizeMode="cover"
       />
-      <View className="p-3"></View>
+      <View className="p-3">
         <Text className="text-sm font-medium text-gray-800 mb-1" numberOfLines={1}>
           {item.title}
         </Text>
         <Text className="text-xs text-gray-500 mb-2" numberOfLines={1}>
           {item.subtitle}
         </Text>
+        <View className="flex-row items-center">
+          <Ionicons name="star" size={12} color="#FFD700" />
+          <Text className="text-xs text-gray-600 ml-1">{item.rating}</Text>
+        </View>
+      </View>
     </TouchableOpacity>
   );
 
-  interface CardItem {
-    id: number;
-    title: string;
-    subtitle: string;
-    rating: number;
-    image: string;
-  }
-
-  interface RenderSectionProps {
-    title: string;
-    data: CardItem[];
-  }
-
-  const renderSection = (title: RenderSectionProps['title'], data: RenderSectionProps['data']) => (
+  const renderSection = (title: string, data: CardItem[]) => (
     <View className="mb-6">
       <Text className="text-lg font-semibold text-gray-800 mb-3 px-4">
         {title}
@@ -122,7 +119,7 @@ const TravelApp = () => {
     </View>
   );
 
-  const getDataForTab = () => {
+  const getDataForTab = (): CardItem[] => {
     switch (activeTab) {
       case 'Accommodation':
         return accommodationData;
@@ -136,8 +133,21 @@ const TravelApp = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+    <View className="flex-1 bg-white">
+      {/* Status Bar */}
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor="transparent" 
+        translucent={true}
+      />
+      
+      {/* Safe Area for Status Bar */}
+      <View 
+        style={{ 
+          height: insets.top,
+          backgroundColor: '#ffffff'
+        }} 
+      />
       
       {/* Header */}
       <View className="bg-white px-4 py-3 border-b border-gray-100">
@@ -176,7 +186,7 @@ const TravelApp = () => {
               key={tab}
               onPress={() => setActiveTab(tab)}
               className={`px-4 py-2 rounded-full mr-3 ${
-                activeTab === tab ? 'bg-teal-600' : 'bg-gray-100'
+                activeTab === tab ? 'bg-primary' : 'bg-gray-100'
               }`}
             >
               <Text
@@ -192,43 +202,22 @@ const TravelApp = () => {
       </View>
 
       {/* Content */}
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1 bg-gray-50" showsVerticalScrollIndicator={false}>
         {activeTab === 'All' ? (
-          <>
+          <View className="pt-4">
             {renderSection('Accommodation', accommodationData)}
             {renderSection('Foods', foodsData)}
-            {renderSection('Transport', transportData)}
-          </>
+            {renderSection('Transportation', transportData)}
+          </View>
         ) : (
-          <View className="mt-4">
+          <View className="pt-4">
             {renderSection(activeTab, getDataForTab())}
           </View>
         )}
       </ScrollView>
 
-      {/* Bottom Navigation */}
-      {/* <View className="bg-white border-t border-gray-100 px-4 py-3">
-        <View className="flex-row justify-around items-center">
-          <TouchableOpacity className="items-center py-2">
-            <View className="bg-teal-600 p-2 rounded-lg">
-              <Ionicons name="home" size={20} color="white" />
-            </View>
-          </TouchableOpacity>
-          
-          <TouchableOpacity className="items-center py-2">
-            <Ionicons name="search" size={24} color="#9CA3AF" />
-          </TouchableOpacity>
-          
-          <TouchableOpacity className="items-center py-2">
-            <Ionicons name="restaurant" size={24} color="#9CA3AF" />
-          </TouchableOpacity>
-          
-          <TouchableOpacity className="items-center py-2">
-            <Ionicons name="person" size={24} color="#9CA3AF" />
-          </TouchableOpacity>
-        </View>
-      </View> */}
-    </SafeAreaView>
+      
+    </View>
   );
 };
 
