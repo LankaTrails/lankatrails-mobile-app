@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Animated, View } from "react-native";
+import { View, StyleSheet,TouchableOpacity,Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function TabsLayout() {
@@ -7,82 +7,76 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={({ route }) => ({
         tabBarShowLabel: false,
+        // tabBarActiveBackgroundColor: "#008080", // Uncomment and set a color if needed
         tabBarActiveTintColor: "#ffffff",
         tabBarInactiveTintColor: "#9CA3AF",
+        
         tabBarStyle: {
           backgroundColor: "#ffffff",
-          borderTopWidth: 1,
-          borderTopColor: "#F3F4F6",
-          paddingVertical: 8,
-          marginBottom:30,
+          borderTopWidth: 0, // Removed top border
           height: 70,
-          borderRadius: 50, // reduced border radius
-          marginLeft: 10, // reduced margin
-          marginRight: 10, // reduced margin
+          borderRadius: 35, // Half of height for pill shape
+          marginHorizontal: 16, // Consistent horizontal margin
+          marginBottom: 16,
+          position: 'absolute', // Helps with proper positioning
+          bottom: 10, // Distance from bottom
+          left: 16,
+          right: 16,
+          elevation: 1, // For Android shadow
+          shadowColor: '#000', // For iOS shadow
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.1,
+          shadowRadius: 2,
+
         },
         headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap;
+          let iconName: keyof typeof Ionicons.glyphMap = "home";
 
           if (route.name === "index") iconName = "home";
           else if (route.name === "explore") iconName = "search";
           else if (route.name === "trips") iconName = "restaurant";
           else if (route.name === "profile") iconName = "person";
           else if (route.name === "testing") iconName = "filter";
-        
-          // Wrap active tab icon with teal background
-          if (focused) {
-            return (
-              <View
-                style={{
-                  height:50,
-                  width:50,
-                  backgroundColor: "#008080", 
-                  padding: 4, // reduced padding
-                  borderRadius: 50, // reduced border radius
-                  shadowColor: "#000",
-                  shadowOffset: {
-                    width: 0,
-                    height: 0.5, // reduced shadow height
-                  },
-                  shadowOpacity: 0.18, // reduced opacity
-                  shadowRadius: 0.5, // reduced shadow radius
-                }}
-              >
-<Ionicons
-    name={iconName}
-    size={focused ? 18 : 24}
-    color={focused ? "#fff" : color}
-    style={focused ? {
-      backgroundColor: "#008080",
-      borderRadius: 16,
-      padding: 11,
-      justifyContent: "center",
-      alignItems: "center",
-    } : {}}
-  />    </View>
-            );
-          }
 
-          return <Ionicons name={iconName} size={24} color={color} 
-                  style={{
-                    justifyContent: "center",
-      alignItems: "center",
-      marginTop: 10, // reduced margin top
-                  }}
-
-                  
-
-          />;
+          return (
+            <View style={focused ? styles.activeIconContainer : styles.inactiveIconContainer}>
+              <Ionicons 
+                name={iconName} 
+                size={focused ? 24 : 22} 
+                color={focused ? "#fff" : color}
+              />
+              
+            </View>
+          );
         },
       })}
     >
       <Tabs.Screen name="index" />
-      <Tabs.Screen name="explore" options={{ title: "Explore" }} />
-      <Tabs.Screen name="trips" options={{ title: "Trips" }} />
-      <Tabs.Screen name="profile" options={{ title: "Profile" }} />
-            <Tabs.Screen name="testing" options={{ title: "Testing" }} />
-
+      <Tabs.Screen name="explore" />
+      <Tabs.Screen name="trips" />
+      <Tabs.Screen name="profile" />
+      <Tabs.Screen name="testing" />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  activeIconContainer: {
+    marginTop:32,
+    backgroundColor: "#008080",
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+  
+  },
+  inactiveIconContainer: {
+    marginTop:32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 50,
+    width: 50,
+  }
+});

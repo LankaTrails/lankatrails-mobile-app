@@ -58,6 +58,8 @@ import {
   StatusBar,
   SafeAreaView,
   Platform,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -133,7 +135,7 @@ const TravelApp = () => {
         <View className="px-4 pt-4 pb-2 bg-white">
           <View className="flex-row justify-between items-center mb-4">
             <View>
-              <Text className="text-gray-600 text-sm">Hello, Sarah</Text>
+              <Text className="text-primary text-2xl font-bold">Hello, Sarah</Text>
               <Text className="text-black text-lg font-semibold">Where do you want to go?</Text>
             </View>
             <TouchableOpacity className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center">
@@ -142,7 +144,7 @@ const TravelApp = () => {
           </View>
 
           {/* Search Bar */}
-          <View className="flex-row items-center bg-gray-50 rounded-lg px-4 py-3 mb-4">
+          <View className="flex-row items-center bg-gray-50 rounded-lg px-4 py-3 mb-4 shadow-sm">
             <Ionicons name="search-outline" size={20} color="#666" />
             <TextInput
               className="flex-1 ml-3 text-gray-700"

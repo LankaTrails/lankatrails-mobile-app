@@ -64,4 +64,29 @@ const Card: React.FC<CardProps> = ({ item, onPress, width = 160 }) => {
 };
 
 export default Card;
-export type { CardItem };
+
+
+      //  <View className="px-4 mb-6">
+      //       <Text className="text-black text-lg font-semibold mb-4">Popular Places</Text>
+      //       <View className="flex-row flex-wrap justify-between">
+      //         {popularPlaces.map((place) => (
+      //           <TouchableOpacity
+      //             key={place.id}
+      //             className="w-[48%] mb-4 rounded-xl overflow-hidden shadow-sm"
+      //             style={{ elevation: 1 }}
+      //           >
+      //             <Image
+      //               source={{ uri: place.image }}
+      //               className="w-full h-32"
+      //               resizeMode="cover"
+      //             />
+      //             <View className="p-3 bg-white">
+      //               <Text className="text-black font-medium text-sm mb-1">
+      //                 {place.name}
+      //               </Text>
+      //               <Text className="text-gray-500 text-xs">{place.location}</Text>
+      //             </View>
+      //           </TouchableOpacity>
+      //         ))}
+      //       </View>
+      //     </View>
