@@ -12,7 +12,7 @@ import {
 import { BlurView } from "expo-blur";
 import Icon from "react-native-vector-icons/Ionicons";
 import ProfileInfoItem from "../../components/ProfileInfoItem";
-import EditModal from "../../components/EditModal";
+import EditModal from "../../components/EditPopup";
 import { router } from "expo-router";
 import { theme } from "../../app/theme";
 
@@ -104,7 +104,7 @@ export default function Profile() {
       <ScrollView style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.heading}>Profile</Text>
-          <TouchableOpacity onPress={() => router.push("/editProfile")}>
+          <TouchableOpacity onPress={() => router.push("/screens/editProfile")}>
                         <Icon name="pencil" size={20} color="#008080" />
                       </TouchableOpacity>
         </View>
@@ -182,12 +182,14 @@ export default function Profile() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 24,
+    padding: 14,
     paddingBottom: 60,
+    marginBottom: 80,
     backgroundColor: "#f9fafb",
   },
   header: {
-    marginTop: 24,
+    marginTop: 60,
+    paddingLeft: 10,
     marginBottom: 16,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -198,15 +200,11 @@ const styles = StyleSheet.create({
     color: "#1f2937",
   },
   section: {
-    marginBottom: 40,
+    marginBottom: 20,
     backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
+    borderRadius: 20,
+    padding: 15,
+
   },
   infoHeader: {
     flexDirection: "row",
@@ -224,6 +222,7 @@ const styles = StyleSheet.create({
   alignItems: "center",
   marginBottom: 24,
   gap: 16,
+  paddingLeft: 10,
 },
 
 profileImage: {

@@ -6,10 +6,9 @@ import { theme } from '../app/theme';
 interface Props {
   label: string;
   value: string;
-  onPress: () => void;
 }
 
-const ProfileInfoItem: React.FC<Props> = ({ label, value, onPress }) => {
+const ProfileInfoItem: React.FC<Props> = ({ label, value}) => {
   const iconName = {
     Name: "person-outline",
     Email: "mail-outline",
@@ -17,7 +16,7 @@ const ProfileInfoItem: React.FC<Props> = ({ label, value, onPress }) => {
   }[label] || "information-circle-outline";
 
   return (
-    <TouchableOpacity onPress={onPress}>
+    <TouchableOpacity >
       <View style={styles.infoItem}>
         <View style={styles.row}>
           <Icon name={iconName} size={18} color="#6b7280" style={styles.icon} />
@@ -33,9 +32,9 @@ export default ProfileInfoItem;
 
 const styles = StyleSheet.create({
   infoItem: {
-  marginBottom: 24, // more vertical space
-  borderBottomWidth: 1,
-  borderBottomColor: "#e5e7eb",
+  marginBottom: 15, // more vertical space
+
+
   paddingBottom: 12,
 },
   row: {

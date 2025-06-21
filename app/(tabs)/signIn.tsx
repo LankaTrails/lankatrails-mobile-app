@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import InputField from '../../components/InputField';
 import { BlurView } from "expo-blur";
+import LongButton from '../../components/LongButton';
 
 
 const { width, height } = Dimensions.get('window');
@@ -157,15 +158,12 @@ const SignIn = () => {
 
               {/* Sign In Button */}
               <TouchableOpacity
-                style={[styles.signInButton, isLoading && styles.signInButtonDisabled]}
-                onPress={handleSignIn}
                 disabled={isLoading}
                 activeOpacity={0.8}
               >
-                <Text style={styles.signInButtonText}>
-                  {isLoading ? 'Signing In...' : 'Sign In'}
-                </Text>
+                <LongButton label="Sign In" onPress={handleSignIn} />
               </TouchableOpacity>
+              
 
               {/* Divider */}
               <View style={styles.dividerContainer}>
@@ -232,13 +230,13 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: 14,
     paddingTop: StatusBar.currentHeight || 40,
   },
   header: {
     alignItems: 'center',
     marginBottom: 40,
-    marginTop: 60,
+
   },
   welcomeText: {
     fontSize: 32,
@@ -268,9 +266,9 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   formContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.74)',
-    borderRadius: 24,
-    padding: 24,
+    backgroundColor: 'rgba(247, 247, 247, 0.84)',
+    borderRadius: 20,
+    padding: 20,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
     shadowColor: '#000',
@@ -313,47 +311,19 @@ const styles = StyleSheet.create({
   passwordInput: {
     flex: 1,
   },
-  eyeButton: {
-    padding: 8,
-  },
-  eyeText: {
-    fontSize: 16,
-  },
   forgotPassword: {
     alignSelf: 'flex-end',
-    marginBottom: 24,
+    marginBottom: 14,
   },
   forgotPasswordText: {
     color: '#008080',
     fontSize: 14,
     fontWeight: '600',
   },
-  signInButton: {
-    backgroundColor: '#008080',
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-    shadowColor: '#4ECDC4',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  signInButtonDisabled: {
-    opacity: 0.6,
-  },
-  signInButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 14,
   },
   dividerLine: {
     flex: 1,
@@ -372,8 +342,8 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   socialButton: {
-    width: 56,
-    height: 56,
+    width: 36,
+    height: 36,
     backgroundColor: 'rgba(115, 115, 115, 0)',
     borderRadius: 16,
     alignItems: 'center',

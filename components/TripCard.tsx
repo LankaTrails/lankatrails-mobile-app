@@ -27,7 +27,7 @@ const TripCard: React.FC<TripCardProps> = ({
         imageStyle={{ borderRadius: 16 }}
       >
         <LinearGradient
-          colors={["rgba(0,0,0,0.6)", "transparent"]}
+          colors={["rgba(37, 37, 37, 0.57)", "transparent"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.gradient}
@@ -50,7 +50,7 @@ const TripCard: React.FC<TripCardProps> = ({
 
 const styles = StyleSheet.create({
   imageBackground: {
-    borderRadius: 16,
+    borderRadius: 12,
   },
   gradient: {
     flex: 1,
@@ -84,18 +84,12 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   card: {
-  width: width - 48,
-  height: 140,        
-  marginBottom: 16,
-  borderRadius: 16,
+  width: '100%',
+  height: 120,        
+  marginBottom: 12,
+  borderRadius: 20,
   overflow: "hidden",
   backgroundColor: "#f9fafb",
-  alignSelf: "center",
-  elevation: 4,
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.1,
-  shadowRadius: 8,
 },
 image: {
   flex: 1,

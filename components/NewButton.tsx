@@ -26,7 +26,7 @@ const NewTripButton = ({ onPress }) => {
 export const styles = StyleSheet.create({
 fabContainer: {
     position: "absolute",
-    bottom: 30,
+    bottom: 120,
     right: 20,
   },
   fab: {

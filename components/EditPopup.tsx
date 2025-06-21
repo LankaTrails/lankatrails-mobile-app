@@ -4,11 +4,12 @@ import {
   Text,
   Modal,
   StyleSheet,
-  TextInput,
-  TouchableOpacity,
   TouchableWithoutFeedback,
   Keyboard,
 } from "react-native";
+import LongButton from "./LongButton";
+import InputField from "./InputField";
+
 
 interface EditModalProps {
   visible: boolean;
@@ -43,38 +44,34 @@ export default function EditModal({
   };
 
   return (
-   <Modal visible={visible} transparent animationType="fade">
+<Modal visible={visible} transparent animationType="fade">
   <View style={styles.overlay}>
-    {/* Backdrop closes modal and dismisses keyboard */}
-    <TouchableWithoutFeedback onPress={() => {
-      Keyboard.dismiss();
-      onClose();
-    }}>
+    <TouchableWithoutFeedback
+      onPress={() => {
+        Keyboard.dismiss();
+        onClose();
+      }}
+    >
       <View style={styles.backdrop} />
     </TouchableWithoutFeedback>
 
-    {/* Modal content without TouchableWithoutFeedback */}
     <View style={styles.modal}>
       <Text style={styles.modalTitle}>
         {isPassword ? "Change Password" : "Edit User Info"}
       </Text>
 
       {Object.entries(values).map(([key, value]) => (
-        <TextInput
-          key={key}
-          placeholder={formatLabel(key)}
-          secureTextEntry={isPassword}
-          style={styles.input}
-          value={value}
-          onChangeText={(text) => onChange(key, text)}
-        />
-      ))}
+  <InputField
+    key={key}
+    label={formatLabel(key)}
+    value={value}
+    onChange={(text) => onChange(key, text)}
+    placeholder={formatLabel(key)}
+    secureTextEntry={isPassword}
+  />
+))}
 
-      <TouchableOpacity style={styles.saveButton} onPress={onSubmit}>
-        <Text style={styles.saveButtonText}>
-          {isPassword ? "Change" : "Save"}
-        </Text>
-      </TouchableOpacity>
+      <LongButton label={isPassword ? "Change" : "Save"} onPress={onSubmit} />
     </View>
   </View>
 </Modal>
@@ -94,35 +91,15 @@ const styles = StyleSheet.create({
   },
   modal: {
     backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 24,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    padding: 20,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "600",
-    marginBottom: 16,
+    marginBottom: 26,
     textAlign: "center",
     color: "#111827",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
-    fontSize: 16,
-    backgroundColor: "#f9fafb",
-  },
-  saveButton: {
-    backgroundColor: "#008080",
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  saveButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 16,
   },
 });

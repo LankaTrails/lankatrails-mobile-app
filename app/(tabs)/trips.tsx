@@ -4,7 +4,6 @@ import {
   Text,
   FlatList,
   StyleSheet,
-  TouchableOpacity,
   ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -29,7 +28,7 @@ const dummyTrips = [
     details: "5 places | Cultural",
     budget: "Rs. 25,000",
     duration: "3 Days",
-    status: "upcoming",
+    status: "Upcoming",
   },
 ];
 
@@ -80,15 +79,13 @@ export default function TripsScreen() {
   scrollEnabled={false}
   contentContainerStyle={styles.tripList}
   renderItem={({ item }) => (
-    <View style={styles.tripCardWrapper}>
       <TripCard
-        onPress={() => router.push("/tripDetails(claude)")}
+        onPress={() => router.push("../screens/tripDetails")}
         title={item.title}
         details={item.details}
         budget={item.budget}
         duration={item.duration}
       />
-    </View>
   )}
 />
         )}
@@ -102,25 +99,19 @@ export default function TripsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 24,
+    padding: 14,
     backgroundColor: "#fff",
   },
   header: {
-    paddingHorizontal: 20,
+    marginTop: 60,
   },
   heading: {
     fontSize: 32,
+    paddingLeft: 10,
     fontWeight: "700",
     color: "#1f2937",
-    marginTop: 24,
-    marginBottom: 30,
   },
-tripList: {
-  paddingHorizontal: 20,
-},
-tripCardWrapper: {
-  marginBottom: 12,
-},
+
 filtersContainer: {
     backgroundColor: "#ffffff",
     marginBottom: 20,

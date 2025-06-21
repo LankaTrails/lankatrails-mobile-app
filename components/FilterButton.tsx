@@ -17,10 +17,12 @@ const FilterButton = ({ filter, isActive, onPress }) => (
 const styles = {
   
   filterButton: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
     paddingVertical: 8,
     marginRight: 12,
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(175, 175, 175, 0.13)',
     backgroundColor: theme.colors.lightPrimary,
   },
   activeFilterButton: {

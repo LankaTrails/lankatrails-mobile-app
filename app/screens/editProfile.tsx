@@ -7,11 +7,10 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
-  TextInput,
 } from "react-native";
 import { Stack, router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import ProfileInput from '../components/InputField';
+import InputField from '../../components/InputField';
 
 
 export default function Profile() {
@@ -73,7 +72,7 @@ export default function Profile() {
               source={
                 imageUri
                   ? { uri: imageUri }
-                  : require("../assets/images/profile.png")
+                  : require("../../assets/images/profile.png")
               }
               style={styles.image}
             />
@@ -84,12 +83,13 @@ export default function Profile() {
         {/* Editable Fields */}
         <View style={styles.section}>
           {Object.entries(tempValues).map(([key, value]) => (
-  <ProfileInput
-    key={key}
-    label={key}
-    value={value}
-    onChange={(text) => setTempValues((prev) => ({ ...prev, [key]: text }))}
-    icon={iconName[key]}
+          <InputField
+          key={key}
+          label={key}
+          value={value}
+          placeholder={`Enter your ${key.toLowerCase()}`}
+          onChange={(text) => setTempValues((prev) => ({ ...prev, [key]: text }))}
+          icon={iconName[key]}
   />
 ))}
         </View>
@@ -100,12 +100,13 @@ export default function Profile() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 24,
+    padding: 14,
     paddingBottom: 60,
     backgroundColor: "#f9fafb",
   },
   header: {
-    marginTop: 24,
+    marginTop: 60,
+    paddingLeft: 10,
     marginBottom: 16,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -128,22 +129,18 @@ const styles = StyleSheet.create({
     marginBottom: 40,
     backgroundColor: "#ffffff",
     borderRadius: 16,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
+    padding: 15,
   },
 
   imageContainer: {
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 26,
+    marginTop: 16,
   },
   image: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
+    width: 110,
+    height: 110,
+    borderRadius: 55,
     borderWidth: 3,
     borderColor: "#008080",
   },
@@ -155,16 +152,6 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 1,
-  },
-
-  input: {
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 10,
-    height: 48,
-    padding: 12,
-    marginBottom: 10,
-    fontSize: 16,
   },
   editButton: {
     flexDirection: 'row',
