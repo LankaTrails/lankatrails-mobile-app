@@ -357,11 +357,11 @@ const LocationSearchScreen = () => {
               className="flex-row items-center hover:bg-gray-50 active:bg-gray-100 p-3 rounded-lg"
               activeOpacity={0.8}
             >
-              <View className="bg-teal-100 p-2 rounded-lg mr-3">
-                <MapPinIcon size={20} color="#14B8A6" strokeWidth={2} />
+              <View className="bg-teal-100  p-5 rounded-lg mr-3">
+                <MapPinIcon size={30} color="primary" strokeWidth={2} />
               </View>
               <View className="flex-1">
-                <Text className="text-gray-800 font-medium text-base">Nearby</Text>
+                <Text className="text-gray-800 text-xl font-semibold">Nearby</Text>
               </View>
               <View className="flex-row items-center">
                 <MapPinIcon size={16} color="#6B7280" strokeWidth={2} />
