@@ -80,11 +80,7 @@ export default function TripsScreen() {
   contentContainerStyle={styles.tripList}
   renderItem={({ item }) => (
       <TripCard
-        onPress={() => router.push("../screens/tripDetails")}
-        title={item.title}
-        details={item.details}
-        budget={item.budget}
-        duration={item.duration}
+        {...item}
       />
   )}
 />

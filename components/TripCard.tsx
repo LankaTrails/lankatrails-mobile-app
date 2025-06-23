@@ -1,26 +1,28 @@
 import React from "react";
 import { View, Text, StyleSheet, Dimensions, ImageBackground,TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { Link } from "expo-router";
 
 const { width } = Dimensions.get("window");
 
 interface TripCardProps {
+  id : number | string;
   title: string;
   details: string;
   budget: string;
   duration: string;
-  onPress?: () => void;
 }
 
 const TripCard: React.FC<TripCardProps> = ({
+  id,
   title,
   details,
   budget,
   duration,
-  onPress,
 }) => {
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
+    <Link href={`/trips/${id}`} style={styles.imageBackground}>
+    <TouchableOpacity style={styles.card} activeOpacity={0.85}>
       <ImageBackground
         source={{ uri: "https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg" }}
         style={styles.image}
@@ -45,6 +47,7 @@ const TripCard: React.FC<TripCardProps> = ({
         </LinearGradient>
       </ImageBackground>
     </TouchableOpacity>
+    </Link>
   );
 };
 
