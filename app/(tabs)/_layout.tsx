@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { View, StyleSheet,TouchableOpacity,Pressable } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function TabsLayout() {
@@ -10,7 +10,7 @@ export default function TabsLayout() {
         // tabBarActiveBackgroundColor: "#008080", // Uncomment and set a color if needed
         tabBarActiveTintColor: "#ffffff",
         tabBarInactiveTintColor: "#9CA3AF",
-        
+
         tabBarStyle: {
           backgroundColor: "#ffffff",
           borderTopWidth: 0, // Removed top border
@@ -18,65 +18,68 @@ export default function TabsLayout() {
           borderRadius: 35, // Half of height for pill shape
           marginHorizontal: 16, // Consistent horizontal margin
           marginBottom: 16,
-          position: 'absolute', // Helps with proper positioning
+          position: "absolute", // Helps with proper positioning
           bottom: 10, // Distance from bottom
           left: 16,
           right: 16,
           elevation: 1, // For Android shadow
-          shadowColor: '#000', // For iOS shadow
+          shadowColor: "#000", // For iOS shadow
           shadowOffset: { width: 0, height: 1 },
           shadowOpacity: 0.1,
           shadowRadius: 2,
-
         },
         headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap = "home";
+          const name = route.name.split("/")[0]; // Extract main tab name
 
-          if (route.name === "index") iconName = "home";
-          else if (route.name === "explore") iconName = "search";
-          else if (route.name === "trips") iconName = "restaurant";
-          else if (route.name === "profile") iconName = "person";
-          else if (route.name === "testing") iconName = "filter";
+          let iconName: keyof typeof Ionicons.glyphMap = "home";
+          if (name === "home") iconName = "home";
+          else if (name === "explore") iconName = "search";
+          else if (name === "trips") iconName = "restaurant";
+          else if (name === "profile") iconName = "person";
 
           return (
-            <View style={focused ? styles.activeIconContainer : styles.inactiveIconContainer}>
-              <Ionicons 
-                name={iconName} 
-                size={focused ? 24 : 22} 
+            <View
+              style={
+                focused
+                  ? styles.activeIconContainer
+                  : styles.inactiveIconContainer
+              }
+            >
+              <Ionicons
+                name={iconName}
+                size={focused ? 24 : 22}
                 color={focused ? "#fff" : color}
               />
-              
             </View>
           );
         },
       })}
     >
-      <Tabs.Screen name="index" />
+      <Tabs.Screen name="home" />
       <Tabs.Screen name="explore" />
       <Tabs.Screen name="trips" />
       <Tabs.Screen name="profile" />
-      <Tabs.Screen name="testing" />
+      <Tabs.Screen name="testing/index" />
     </Tabs>
   );
 }
 
 const styles = StyleSheet.create({
   activeIconContainer: {
-    marginTop:32,
+    marginTop: 32,
     backgroundColor: "#008080",
     width: 50,
     height: 50,
     borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-  
+    justifyContent: "center",
+    alignItems: "center",
   },
   inactiveIconContainer: {
-    marginTop:32,
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginTop: 32,
+    justifyContent: "center",
+    alignItems: "center",
     height: 50,
     width: 50,
-  }
+  },
 });

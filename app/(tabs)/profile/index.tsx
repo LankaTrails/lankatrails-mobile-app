@@ -11,10 +11,10 @@ import {
 } from "react-native";
 import { BlurView } from "expo-blur";
 import Icon from "react-native-vector-icons/Ionicons";
-import ProfileInfoItem from "../../components/ProfileInfoItem";
-import EditModal from "../../components/EditPopup";
+import ProfileInfoItem from "../../../components/ProfileInfoItem";
+import EditModal from "../../../components/EditPopup";
 import { router } from "expo-router";
-import { theme } from "../../app/theme";
+import { theme } from "../../theme";
 
 export default function Profile() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -116,7 +116,7 @@ export default function Profile() {
       source={
         imageUri
           ? { uri: imageUri }
-          : require("../../assets/images/profile.png")
+          : require("../../../assets/images/profile.png")
       }
       style={styles.profileImage}
     />

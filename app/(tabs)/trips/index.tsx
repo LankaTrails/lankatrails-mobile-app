@@ -7,11 +7,11 @@ import {
   ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
-import TripCard from "../../components/TripCard";
-import NewTripButton from "../../components/NewButton";
-import FilterButton from "../../components/FilterButton";
-import EmptyState from "../../components/EmptyState";
-import StatsHeader from "../../components/StatsHeader";
+import TripCard from "../../../components/TripCard";
+import NewTripButton from "../../../components/NewButton";
+import FilterButton from "../../../components/FilterButton";
+import EmptyState from "../../../components/EmptyState";
+import StatsHeader from "../../../components/StatsHeader";
 
 const dummyTrips = [
   {
@@ -91,7 +91,7 @@ export default function TripsScreen() {
         )}
       </ScrollView>
 
-      <NewTripButton onPress={() => router.push("/createTrip")} />
+      <NewTripButton onPress={() => router.push("../screens/createTrip")} />
     </View>
   );
 }
@@ -111,9 +111,17 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#1f2937",
   },
-
-filtersContainer: {
+  tripList: {
+    paddingVertical: 10,
+  },
+  filtersContainer: {
     backgroundColor: "#ffffff",
     marginBottom: 20,
+  },
+  filtersList: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 4,
   },
 });

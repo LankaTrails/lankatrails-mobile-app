@@ -14,9 +14,10 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import InputField from '../../components/InputField';
+import InputField from '../components/InputField';
 import { BlurView } from "expo-blur";
-import LongButton from '../../components/LongButton';
+import LongButton from '../components/LongButton';
+import { router } from 'expo-router';
 
 
 const { width, height } = Dimensions.get('window');
@@ -52,16 +53,17 @@ const SignIn = () => {
   }, []);
 
   const handleSignIn = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
+    // if (!email || !password) {
+    //   Alert.alert('Error', 'Please fill in all fields');
+    //   return;
+    // }
     
     setIsLoading(true);
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
-      Alert.alert('Success', 'Sign in successful!');
+      router.replace('/(tabs)/home');
+      // Alert.alert('Success', 'Sign in successful!');
     }, 2000);
   };
 
@@ -128,7 +130,8 @@ const SignIn = () => {
                   label="Email or Phone Number"
                   placeholder="Enter your email or phone"
                   value={email}
-                  onChangeText={setEmail}
+                  onChange={setEmail}
+                  icon="mail"
                   />
 
 
@@ -137,11 +140,9 @@ const SignIn = () => {
                       label="Password"
                       placeholder="Enter your password"
                       value={password}
-                      onChangeText={setPassword}
-                      isPassword
+                      onChange={setPassword}
                       secureTextEntry
-                      showPassword={showPassword}
-                      onTogglePassword={() => setShowPassword(!showPassword)}
+                      icon="lock"
                     />
                     <TouchableOpacity
                       style={styles.eyeButton}
@@ -199,7 +200,8 @@ const SignIn = () => {
               {/* Sign Up Link */}
               <View style={styles.signUpContainer}>
                 <Text style={styles.signUpText}>Don't have an account? </Text>
-                <TouchableOpacity>
+                <TouchableOpacity 
+                  onPress={() => router.replace('/signUp')}>
                   <Text style={styles.signUpLink}>Sign Up</Text>
                 </TouchableOpacity>
               </View>
@@ -370,6 +372,13 @@ const styles = StyleSheet.create({
     color: '#008080',
     fontSize: 16,
     fontWeight: '700',
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: 16,
+    top: 42,
+    padding: 8,
+    zIndex: 1,
   },
 });
 
