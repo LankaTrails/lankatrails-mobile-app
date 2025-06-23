@@ -30,12 +30,8 @@
     "expo-symbols": "~0.4.5",
     "expo-system-ui": "~5.0.8",
     "expo-web-browser": "~14.1.6",
-<<<<<<< HEAD
-    "lucide-react-native": "^0.518.0",
-=======
     "lucide-react": "^0.522.0",
     "lucide-react-native": "^0.522.0",
->>>>>>> 4aa007fcc305ea530370259dc4ea8c6daf7dcd94
     "nativewind": "^4.1.23",
     "react": "19.0.0",
     "react-dom": "19.0.0",
