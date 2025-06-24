@@ -142,7 +142,7 @@ const SignIn = () => {
                       value={password}
                       onChange={setPassword}
                       secureTextEntry
-                      icon="lock"
+                      icon="key"
                     />
                     <TouchableOpacity
                       style={styles.eyeButton}

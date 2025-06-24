@@ -19,8 +19,8 @@ import { theme } from "../../theme";
 export default function Profile() {
   const [modalVisible, setModalVisible] = useState(false);
   const [fieldValues, setFieldValues] = useState({
-    Name: "Eran Wijesekara",
-    Email: "eran@email.com",
+    Name: "Eren Wijesekara",
+    Email: "eren@email.com",
     Phone: "+94 712 345 678",
   });
   const [tempValues, setTempValues] = useState({ ...fieldValues });
