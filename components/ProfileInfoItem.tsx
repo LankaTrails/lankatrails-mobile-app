@@ -19,8 +19,8 @@ const ProfileInfoItem: React.FC<Props> = ({ label, value}) => {
     <TouchableOpacity >
       <View style={styles.infoItem}>
         <View style={styles.row}>
-          <Icon name={iconName} size={18} color="#6b7280" style={styles.icon} />
-          <Text style={styles.label}>{label}</Text>
+          <Icon name={iconName} size={18} color='#008080' style={styles.icon} />
+          <Text style={styles.labelText}>{label}</Text>
         </View>
         <Text style={styles.value}>{value}</Text>
       </View>
@@ -41,18 +41,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  label: {
-    fontSize: 14,
-    marginBottom: 4,
-    color: theme.colors.primary,
+  icon: {
+    marginRight: 6,
+    marginBottom: 8,
+  },
+  labelText: {
+    fontWeight: "600",
+    color: "#008080",
+    marginBottom: 8,
   },
   value: {
     fontSize: 16,
     fontWeight: "500",
     color: "#111827",
-  },
-  icon: {
-    marginRight: 6,
-    color: theme.colors.primary,
   },
 });

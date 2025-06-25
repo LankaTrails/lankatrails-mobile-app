@@ -20,7 +20,7 @@ interface EditModalProps {
   onSubmit: () => void;
 }
 
-export default function EditModal({
+export default function EditPopup({
   visible,
   type,
   values,
@@ -44,7 +44,7 @@ export default function EditModal({
   };
 
   return (
-<Modal visible={visible} transparent animationType="fade">
+<Modal visible={visible} transparent animationType="slide">
   <View style={styles.overlay}>
     <TouchableWithoutFeedback
       onPress={() => {
@@ -57,7 +57,7 @@ export default function EditModal({
 
     <View style={styles.modal}>
       <Text style={styles.modalTitle}>
-        {isPassword ? "Change Password" : "Edit User Info"}
+        {isPassword ? "Change Password" : ""}
       </Text>
 
       {Object.entries(values).map(([key, value]) => (
@@ -83,7 +83,6 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.2)",
   },
   backdrop: {
     flex: 1,

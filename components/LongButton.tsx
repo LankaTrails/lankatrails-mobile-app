@@ -5,8 +5,6 @@ import {
   StyleSheet,
   Text,
 } from "react-native";
-import { theme } from "../app/theme";
-import { Ionicons } from "@expo/vector-icons";
 
 export default function LongButton({ label = "", onPress }) {
   const [scaleValue] = useState(new Animated.Value(1));

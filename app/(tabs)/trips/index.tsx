@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import TripCard from "../../../components/TripCard";
-import NewTripButton from "../../../components/NewButton";
+import NewTripButton from "../../../components/FAB";
 import FilterButton from "../../../components/FilterButton";
 import EmptyState from "../../../components/EmptyState";
 import StatsHeader from "../../../components/StatsHeader";

@@ -12,7 +12,7 @@ import { Stack, router } from 'expo-router';
 import FilterButton from '../../components/FilterButton'; 
 import BackButton from '../../components/BackButton';
 import ChatButton from '../../components/ChatButton';
-import NewButton from '../../components/NewButton';
+import NewButton from '../../components/FAB';
 import SummaryCard from '../../components/SummaryCard';
 import { theme } from '../theme';
 

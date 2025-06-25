@@ -3,20 +3,16 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   StyleSheet,
-  Dimensions,
   SafeAreaView,
 } from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import FilterButton from '../../../../components/FilterButton'; 
 import BackButton from '../../../../components/BackButton';
 import ChatButton from '../../../../components/ChatButton';
-import NewButton from '../../../../components/NewButton';
 import SummaryCard from '../../../../components/SummaryCard';
-import { theme } from '../../../theme';
-
-const { width } = Dimensions.get('window');
+import ScheduleView from './ScheduleView';
+import FloatingActionButton from '../../../../components/OptionsButton';
 
 interface Service {
   id: string;
@@ -38,7 +34,7 @@ interface TripDay {
 
 const TripDetails = () => {
   const tripID = useLocalSearchParams().id as string;
-  const [viewMode, setViewMode] = useState<'schedule' | 'bookings' | 'budget'>('schedule');
+  const [viewMode, setViewMode] = useState<'schedule' | 'bookings'>('schedule');
 
   // Sample trip data
   const tripData = {
@@ -151,125 +147,80 @@ const TripDetails = () => {
     }
   ];
 
-  const getWeatherIcon = (weather: string) => {
-    switch (weather) {
-      case 'sunny': return '☀️';
-      case 'cloudy': return '☁️';
-      case 'rainy': return '🌧️';
-      default: return '☀️';
-    }
-  };
-
-  const handleDayClick = (day: TripDay) => {
-    router.push({
-      pathname: '/screens/day-details',
-      params: {
-        date: day.date,
-        dayName: day.dayName,
-        weather: day.weather,
-        services: JSON.stringify(day.services),
-        tripTitle: tripData.title
-      }
-    });
-  };
-
-  const tabs = ["Schedule", "Bookings", "Budget"];
+  const tabs = ["Schedule", "Bookings"];
 
   const TabNavigation = () => (
-    <View style={{ flexDirection: "row", marginBottom: 24 }}>
+    <View style={styles.tabContainer}>
       {tabs.map((tab) => (
         <FilterButton
           key={tab}
           filter={tab}
           isActive={viewMode === tab.toLowerCase()}
-          onPress={() => setViewMode(tab.toLowerCase() as 'schedule' | 'bookings' | 'budget')}
+          onPress={() => setViewMode(tab.toLowerCase() as 'schedule' | 'bookings')}
         />
       ))}
     </View>
   );
 
-  const DaysView = () => (
-    <ScrollView showsVerticalScrollIndicator={false}>
-      {tripDays.map((day, index) => (
-        <TouchableOpacity
-          key={day.date}
-          style={styles.dayCard}
-          onPress={() => handleDayClick(day)}
-          activeOpacity={0.8}
-        >
-          <View style={styles.dayHeader}>
-            <View style={styles.dayInfo}>
-              <View style={styles.dayDot} />
-              <View style={styles.dayTextContainer}>
-                <Text style={styles.dayDate}>{day.date}</Text>
-                <Text style={styles.dayName}>{day.dayName}</Text>
-              </View>
-            </View>
-            <View style={styles.weatherContainer}>
-              <Text style={styles.weatherIcon}>{getWeatherIcon(day.weather)}</Text>
-              <Text style={styles.weatherText}>{day.weather}</Text>
-            </View>
-          </View>
-
-          <View style={styles.servicesContainer}>
-            {day.services.map((service) => (
-              <View key={service.id} style={styles.serviceItem}>
-                <View style={styles.serviceInfo}>
-                  <Text style={styles.serviceName}>{service.name}</Text>
-                </View>
-                <Text style={styles.serviceTime}>{service.time}</Text>
-              </View>
-            ))}
-          </View>
-
-          <View style={styles.dayFooter}>
-            <Text style={styles.dayFooterText}>{day.services.length} activities</Text>
-            <Text style={styles.dayFooterText}>
-              LKR {day.services.reduce((sum, s) => sum + s.cost, 0)}
-            </Text>
-          </View>
-        </TouchableOpacity>
-      ))}
-      
-    </ScrollView>
+  const BookingsView = () => (
+    <View style={styles.comingSoonContainer}>
+      <View style={styles.comingSoonContent}>
+        <Text style={styles.comingSoonIcon}>📋</Text>
+        <Text style={styles.comingSoonTitle}>Bookings Management</Text>
+        <Text style={styles.comingSoonText}>
+          View and manage all your trip bookings in one place. Coming soon!
+        </Text>
+      </View>
+    </View>
   );
-  
+
+  const renderCurrentView = () => {
+    switch (viewMode) {
+      case 'schedule':
+        return <ScheduleView tripDays={tripDays} tripTitle={tripData.title} />;
+      case 'bookings':
+        return <BookingsView />;
+      default:
+        return <ScheduleView tripDays={tripDays} tripTitle={tripData.title} />;
+    }
+  };
 
   return (
     <>
-    <Stack.Screen options={{ headerShown: false }} />
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-              <BackButton/>
-              <View style={styles.headerText}>
-                <Text style={styles.headerTitle}>{tripData.title}</Text>
-              </View>
-              <ChatButton />
-            </View>
-
-      <ScrollView style={styles.content}>
-          <SummaryCard
-  tripData={{
-    dateRange: 'June 22 - June 26',
-    totalCost: '45,000',
-    distance: '120km',
-    duration: '4 Days',
-    members: 3,
-  }}/>
-
-
-        <TabNavigation />
-        
-        <View style={styles.viewContainer}>
-          {viewMode === 'schedule' && <DaysView />}
-          {viewMode === 'bookings' && <Text>Bookings screen coming soon!</Text>}
-          {viewMode === 'budget' && <Text>Budget screen coming soon!</Text>}
+      <Stack.Screen options={{ headerShown: false }} />
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <BackButton />
+          <View style={styles.headerText}>
+            <Text style={styles.headerTitle}>{tripData.title}</Text>
+          </View>
+          <ChatButton/>
         </View>
-      </ScrollView>
-      <NewButton
-        onPress={() => alert("Route -> add new day!")}
-      />
-    </SafeAreaView>
+
+        <ScrollView style={styles.content}>
+          <SummaryCard
+            tripData={{
+              dateRange: 'June 22 - June 26',
+              totalCost: '45,000',
+              distance: '120km',
+              duration: '4 Days',
+              members: 3,
+            }}
+          />
+
+          <TabNavigation />
+          
+          <View style={styles.viewContainer}>
+            {renderCurrentView()}
+          </View>
+        </ScrollView>
+
+        {/* Floating Action Button positioned absolutely */}
+        
+      </SafeAreaView>
+      <View style={styles.fabContainer}>
+          <FloatingActionButton />
+        </View>
     </>
   );
 };
@@ -287,7 +238,6 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: 'space-between',
     alignItems: 'center',
- 
   },
   headerText: {
     flex: 1,
@@ -299,107 +249,62 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#111827',
   },
- 
+  headerRightSpace: {
+    width: 56, // Same width as the FAB to center the title properly
+  },
   content: {
     flex: 1,
     paddingHorizontal: 14,
   },
+  tabContainer: {
+    flexDirection: "row", 
+    marginBottom: 24
+  },
   viewContainer: {
     flex: 1,
     minHeight: 400,
+    marginBottom: 80, // Add margin to prevent content from being hidden behind FAB
   },
-  dayCard: {
+  comingSoonContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  comingSoonContent: {
+    alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    padding: 15,
-    marginBottom: 16,
+    padding: 32,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  dayHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+  comingSoonIcon: {
+    fontSize: 48,
+    marginBottom: 16,
   },
-  dayInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  dayDot: {
-    width: 12,
-    height: 12,
-    backgroundColor: theme.colors.primary,
-    borderRadius: 6,
-    marginRight: 12,
-  },
-  dayTextContainer: {
-    flexDirection: 'column',
-  },
-  dayDate: {
-    fontSize: 16,
-    fontWeight: '600',
+  comingSoonTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
     color: '#111827',
-  },
-  dayName: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  weatherContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  weatherIcon: {
-    fontSize: 16,
-    marginRight: 4,
-  },
-  weatherText: {
-    fontSize: 12,
-    color: '#6B7280',
-    textTransform: 'capitalize',
-  },
-  servicesContainer: {
     marginBottom: 12,
+    textAlign: 'center',
   },
-  serviceItem: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 20,
-    padding: 12,
-    marginBottom: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  serviceInfo: {
-    flex: 1,
-  },
-  serviceName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 2,
-  },
-  serviceLocation: {
-    fontSize: 12,
+  comingSoonText: {
+    fontSize: 16,
     color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 24,
+    maxWidth: 280,
   },
-  serviceTime: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  dayFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
-  dayFooterText: {
-    fontSize: 12,
-    color: '#6B7280',
+  fabContainer: {
+    position: 'absolute',
+    bottom: 30,
+    right: 20,
+    zIndex: 1000,
   },
 });
 
