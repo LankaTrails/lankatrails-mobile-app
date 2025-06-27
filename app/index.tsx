@@ -1,15 +1,25 @@
-import { StyleSheet, Text, View } from 'react-native'
-import { Redirect } from 'expo-router'
-import React from 'react'
+// app/index.tsx
+import { Redirect } from 'expo-router';
+import { useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { ActivityIndicator, View } from 'react-native';
 
-const index = () => {
-    const isLoggedIn = false; // Replace with your actual authentication logic
-  return (
-    <Redirect
-      href={isLoggedIn ? '/(tabs)/home' : '/signIn'} />
-  )
+export default function Index() {
+  const { isAuthenticated, isLoading, checkAuth } = useAuth();
+  console.log('[Index] isLoading:', isLoading, 'isAuthenticated:', isAuthenticated);
+
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  return <Redirect href={isAuthenticated ? '/(tabs)/home' : '/signIn'} />;
 }
-
-export default index
-
-const styles = StyleSheet.create({})

@@ -15,13 +15,15 @@ import ProfileInfoItem from "../../../components/ProfileInfoItem";
 import EditPopup from "../../../components/EditPopup";
 import { router } from "expo-router";
 import { theme } from "../../theme";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Profile() {
   const [modalVisible, setModalVisible] = useState(false);
+  const { signIn, logout, user, isLoading } = useAuth();
   const [fieldValues, setFieldValues] = useState({
-    Name: "Eren Wijesekara",
-    Email: "eren@email.com",
-    Phone: "+94 712 345 678",
+    Name: user?.firstName ? user.firstName + " " + user.lastName : "Eren Yeager",
+    Email: user?.email ? user.email : "eren@email.com",
+    Phone: user?.id ? user.id : "+94 712 345 678",
   });
   const [tempValues, setTempValues] = useState({ ...fieldValues });
   const [imageUri, setImageUri] = useState<string | null>(null);
@@ -51,6 +53,11 @@ export default function Profile() {
   const handleSave = () => {
     setFieldValues(tempValues);
     setModalVisible(false);
+  };
+
+  const handleLogout = () => {
+    logout();
+    router.replace("/signIn");
   };
 
   const handleChangePassword = () => {
@@ -123,7 +130,7 @@ export default function Profile() {
           </View>
 
           {Object.entries(fieldValues).map(([key, value]) => (
-            <ProfileInfoItem key={key} label={key} value={value} />
+            <ProfileInfoItem key={key} label={key} value={String(value)} />
           ))}
         </View>
 
@@ -158,7 +165,9 @@ export default function Profile() {
               <Icon name="chevron-forward" size={20} color="#008080" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.actionButton, styles.logoutButton]}>
+            <TouchableOpacity style={[styles.actionButton, styles.logoutButton]}
+              onPress={() => {handleLogout()}}
+            >
               <View style={styles.actionButtonContent}>
                 <Icon name="log-out" size={20} color="#FF6B6B" />
                 <Text style={[styles.actionButtonText, styles.logoutText]}>Sign Out</Text>

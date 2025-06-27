@@ -1,9 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
   Dimensions,
   ImageBackground,
@@ -13,26 +11,28 @@ import {
   Platform,
   ScrollView,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
-import InputField from '../components/InputField';
+import InputField from '../../components/InputField';
 import { BlurView } from "expo-blur";
-import LongButton from '../components/LongButton';
+import LongButton from '../../components/LongButton';
 import { router } from 'expo-router';
-
+import { useAuth } from '@/hooks/useAuth';
 
 const { width, height } = Dimensions.get('window');
 
 const SignIn = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const blurFadeAnim = useRef(new Animated.Value(0)).current;
 
-  React.useEffect(() => {
+  const { signIn, isLoading, error, clearError, isAuthenticated } = useAuth();
+
+  useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -45,37 +45,43 @@ const SignIn = () => {
         useNativeDriver: true,
       }),
       Animated.timing(blurFadeAnim, {
-      toValue: 1,
-      duration: 1000,
-      useNativeDriver: true,
-    }),
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
     ]).start();
   }, []);
 
+  useEffect(() => {
+    if (error) {
+      Alert.alert('Login Failed', error);
+      clearError();
+    }
+  }, [error]);
+
+  useEffect(() => {
+  console.log('Login Screen Auth State:', { isAuthenticated, isLoading, error });
+  if (isAuthenticated) {
+    router.replace('/(tabs)/home');
+  }
+}, [isAuthenticated]);
+
   const handleSignIn = async () => {
-    // if (!email || !password) {
-    //   Alert.alert('Error', 'Please fill in all fields');
-    //   return;
-    // }
-    
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      router.replace('/(tabs)/home');
-      // Alert.alert('Success', 'Sign in successful!');
-    }, 2000);
+    if (!email || !password) {
+      Alert.alert('Error', 'Please enter both email and password');
+      return;
+    }
+    await signIn(email, password);
   };
 
   const handleSocialSignIn = (provider: string) => {
-    Alert.alert('Social Sign In', `Sign in with ${provider}`);
+    Alert.alert('Coming Soon', `${provider} login will be available soon`);
   };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
-      {/* Background Image */}
       <ImageBackground
         source={{
           uri: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2340&q=80'
@@ -83,7 +89,6 @@ const SignIn = () => {
         style={styles.backgroundImage}
         resizeMode="cover"
       >
-        {/* Gradient Overlay */}
         <View style={styles.gradientOverlay} />
         
         <KeyboardAvoidingView
@@ -95,7 +100,6 @@ const SignIn = () => {
             showsVerticalScrollIndicator={false}
             bounces={false}
           >
-            {/* Header */}
             <Animated.View
               style={[
                 styles.header,
@@ -112,7 +116,6 @@ const SignIn = () => {
               <Text style={styles.tagline}>Start Your Journey!</Text>
             </Animated.View>
 
-            {/* Sign In Form */}
             <Animated.View
               style={[
                 styles.formContainer,
@@ -123,85 +126,65 @@ const SignIn = () => {
               ]}
             >
               <Animated.View style={{ ...StyleSheet.absoluteFillObject, opacity: blurFadeAnim }}>
-    <BlurView intensity={15} tint="light" style={StyleSheet.absoluteFill} />
-  </Animated.View>
-              {/* Email Input */}
-                  <InputField
-                  label="Email or Phone Number"
-                  placeholder="Enter your email or phone"
-                  value={email}
-                  onChange={setEmail}
-                  icon="mail"
-                  />
+                <BlurView intensity={15} tint="light" style={StyleSheet.absoluteFill} />
+              </Animated.View>
+              
+              <InputField
+                label="Email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={setEmail}
+                icon="mail"
+                keyboardType="email-address"
+              />
 
+              <InputField
+                label="Password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={setPassword}
+                secureTextEntry={!showPassword}
+                icon="key"
+                // rightIcon={showPassword ? 'eye-off' : 'eye'}
+                // onRightIconPress={() => setShowPassword(!showPassword)}
+              />
 
-              {/* Password Input */}
-                    <InputField
-                      label="Password"
-                      placeholder="Enter your password"
-                      value={password}
-                      onChange={setPassword}
-                      secureTextEntry
-                      icon="key"
-                    />
-                    <TouchableOpacity
-                      style={styles.eyeButton}
-                      onPress={() => setShowPassword(!showPassword)}
-                    >
-                    </TouchableOpacity>
-
-
-
-              {/* Forgot Password */}
-              <TouchableOpacity style={styles.forgotPassword}>
+              <TouchableOpacity 
+                style={styles.forgotPassword}
+                // onPress={() => router.push('/forgot-password')}
+              >
                 <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
               </TouchableOpacity>
 
-              {/* Sign In Button */}
-              <TouchableOpacity
-                disabled={isLoading}
-                activeOpacity={0.8}
-              >
-                <LongButton label="Sign In" onPress={handleSignIn} />
-              </TouchableOpacity>
+              <LongButton 
+                label={isLoading ? 'Signing In...' : 'Sign In'} 
+                onPress={handleSignIn}
+              />
               
-
-              {/* Divider */}
               <View style={styles.dividerContainer}>
                 <View style={styles.dividerLine} />
                 <Text style={styles.dividerText}>or sign in with</Text>
                 <View style={styles.dividerLine} />
               </View>
 
-              {/* Social Sign In */}
               <View style={styles.socialContainer}>
-                <TouchableOpacity
-                  style={styles.socialButton}
-                  onPress={() => handleSocialSignIn('Google')}
-                >
-                  <Text style={styles.socialButtonText}>G</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={styles.socialButton}
-                  onPress={() => handleSocialSignIn('Facebook')}
-                >
-                  <Text style={styles.socialButtonText}>f</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={styles.socialButton}
-                  onPress={() => handleSocialSignIn('Apple')}
-                >
-                  <Text style={styles.socialButtonText}>🍎</Text>
-                </TouchableOpacity>
+                {['Google', 'Facebook', 'Apple'].map((provider) => (
+                  <TouchableOpacity
+                    key={provider}
+                    style={styles.socialButton}
+                    onPress={() => handleSocialSignIn(provider)}
+                  >
+                    <Text style={styles.socialButtonText}>
+                      {provider === 'Google' ? 'G' : 
+                       provider === 'Facebook' ? 'f' : '🍎'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
 
-              {/* Sign Up Link */}
               <View style={styles.signUpContainer}>
                 <Text style={styles.signUpText}>Don't have an account? </Text>
-                <TouchableOpacity 
-                  onPress={() => router.replace('/signUp')}>
+                <TouchableOpacity onPress={() => router.replace('/signUp')}>
                   <Text style={styles.signUpLink}>Sign Up</Text>
                 </TouchableOpacity>
               </View>
@@ -238,7 +221,6 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 40,
-
   },
   welcomeText: {
     fontSize: 32,
@@ -280,39 +262,6 @@ const styles = StyleSheet.create({
     elevation: 8,
     overflow: 'hidden',
   },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  inputWrapper: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#008080',
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-  },
-  inputLabel: {
-    fontSize: 12,
-    color: '#008080',
-    fontWeight: '600',
-    marginTop: 8,
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  textInput: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    paddingVertical: 12,
-    fontWeight: '500',
-  },
-  passwordContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  passwordInput: {
-    flex: 1,
-  },
   forgotPassword: {
     alignSelf: 'flex-end',
     marginBottom: 14,
@@ -325,7 +274,7 @@ const styles = StyleSheet.create({
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 14,
+    marginVertical: 14,
   },
   dividerLine: {
     flex: 1,
@@ -372,13 +321,6 @@ const styles = StyleSheet.create({
     color: '#008080',
     fontSize: 16,
     fontWeight: '700',
-  },
-  eyeButton: {
-    position: 'absolute',
-    right: 16,
-    top: 42,
-    padding: 8,
-    zIndex: 1,
   },
 });
 
