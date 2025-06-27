@@ -17,6 +17,9 @@ import {
   StaggeredListItem,
   LoadingSkeleton,
 } from "@/components/transitions/animations";
+import TripCard from "@/components/TripCard";
+import ImageSlider from "@/components/transitions/ImageSlider";
+
 
 const TravelApp = () => {
   const [searchText, setSearchText] = useState("");
@@ -133,8 +136,21 @@ const TravelApp = () => {
                 </TouchableOpacity>
               </StaggeredListItem>
             ))}
+            <ImageSlider images={[
+              "https://images.unsplash.com/photo-1566552881560-0be862a7c445?w=400&h=300&fit=crop",
+              "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=400&h=300&fit=crop"
+            ]}>
+             
+             </ImageSlider>
+             <TripCard
+               id={1}
+               title="Sample Trip"
+               details="A wonderful trip to Sri Lanka's most beautiful places."
+               budget={"Rs. 50,000"}
+               duration={"5 Days"}
+             />
           </View>
-
+           
           {/* Popular Places */}
           <View className="px-4 mb-6">
             <Text className="text-black text-lg font-semibold mb-4">Popular Places</Text>

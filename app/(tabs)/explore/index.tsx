@@ -18,6 +18,8 @@ import {
   MapIcon,
   UserIcon 
 } from 'react-native-heroicons/outline';
+import SearchBar from '@/components/SearchBar';
+import { useRouter } from 'expo-router';
 
 const { width, height } = Dimensions.get('window');
 
@@ -235,6 +237,7 @@ const LocationSearchScreen = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [isLoading, setIsLoading] = useState(true);
   const [pageVisible, setPageVisible] = useState(false);
+  const router = useRouter();
 
   // Simulate page loading
   useEffect(() => {
@@ -328,24 +331,9 @@ const LocationSearchScreen = () => {
             <Text className="text-xs text-gray-500 text-right mb-4">12:39</Text>
             
             {/* Search Bar */}
+            {/* <SearchBar onPress={() => router.push('/testing')} /> */}
             <View className="relative">
-              <TextInput
-                value={searchText}
-                onChangeText={setSearchText}
-                placeholder="Search your favorite places"
-                className="bg-gray-100 rounded-full py-5 px-4 pr-12 text-gray-700 hover:bg-gray-200 focus:bg-white focus:border focus:border-teal-500"
-                placeholderTextColor="#9CA3AF"
-              />
-              <TouchableOpacity 
-                className="absolute right-3 top-3 p-1 hover:bg-gray-300 rounded-full"
-                activeOpacity={0.7}
-              >
-                <MagnifyingGlassIcon size={24} color="#6B7280" style={{
-                  marginRight: 5,
-                  marginTop: 2,
-                  opacity: 0.8,
-                }} />
-              </TouchableOpacity>
+              <SearchBar onPress={() => router.push({ pathname: '/explore/searchResult' })} />
             </View>
           </View>
         </StaggeredListItem>
@@ -356,10 +344,15 @@ const LocationSearchScreen = () => {
             <TouchableOpacity 
               className="flex-row items-center hover:bg-gray-50 active:bg-gray-100 p-3 rounded-lg"
               activeOpacity={0.8}
+              onPress={() => router.push({ pathname: '/explore/searchResult' })}
+
             >
-              <View className="bg-teal-100  p-5 rounded-lg mr-3">
-                <MapPinIcon size={30} color="primary" strokeWidth={2} />
-              </View>
+              <TouchableOpacity
+                className="bg-teal-100  p-5 rounded-lg mr-3"
+                activeOpacity={0.8}   
+              >
+                <MapPinIcon size={30} color="#008080" strokeWidth={2} />
+              </TouchableOpacity>
               <View className="flex-1">
                 <Text className="text-gray-800 text-xl font-semibold">Nearby</Text>
               </View>

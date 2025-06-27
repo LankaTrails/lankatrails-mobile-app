@@ -1,184 +1,4 @@
-// // import React, { useEffect, useRef } from 'react';
-// // import { Animated, Text, View } from 'react-native';
-// // import Card from '@/components/Card';
-
-// // interface FadeInViewProps {
-// //     style?: object;
-// //     children?: React.ReactNode;
-// // }
-
-// // const FadeInView: React.FC<FadeInViewProps> = (props) => {
-// //     const fadeAnim = useRef(new Animated.Value(0)).current; // Initial value for opacity: 0
-
-// //     useEffect(() => {
-// //         Animated.timing(fadeAnim, {
-// //             toValue: 1,
-// //             duration: 1000,
-// //             useNativeDriver: true,
-// //         }).start();
-// //     }, [fadeAnim]);
-
-// //     return (
-// //         <Animated.View // Special animatable View
-// //             style={{
-// //                 ...props.style,
-// //                 opacity: fadeAnim, // Bind opacity to animated value
-// //             }}>
-// //             {props.children}
-// //         </Animated.View>
-// //     );
-// // };
-
-// // // You can then use your `FadeInView` in place of a `View` in your components:
-// // export default () => {
-// //     return (
-// //         <View
-// //             style={{
-// //                 flex: 1,
-// //                 alignItems: 'center',
-// //                 justifyContent: 'center',
-// //             }}>
-// //             <FadeInView
-// //                 >
-// //                <Text className="text-6xl font-bold">
-// //         <Text className="text-primary">Lanka</Text>
-// //         <Text className="text-secondary">Trails</Text>
-// //       </Text>
-// //             </FadeInView>
-// //             <Card/>
-// //         </View>
-// //     );
-// // };
-
-// import React from 'react';
-// import {
-//   ScrollView,
-//   Text,
-//   StyleSheet,
-//   View,
-//   ImageBackground,
-//   Animated,
-//   useWindowDimensions,
-//   useAnimatedValue,
-// } from 'react-native';
-// import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
-
-// const images = new Array(6).fill(
-//   'https://images.unsplash.com/photo-1556740749-887f6717d7e4',
-// );
-
-// const App = () => {
-//   const scrollX = useAnimatedValue(0);
-
-//   const {width: windowWidth} = useWindowDimensions();
-
-//   return (
-//     <SafeAreaProvider>
-//       <SafeAreaView style={styles.container}>
-//         <View style={styles.scrollContainer}>
-//           <ScrollView
-//             horizontal={true}
-//             pagingEnabled
-//             showsHorizontalScrollIndicator={false}
-//             onScroll={Animated.event([
-//               {
-//                 nativeEvent: {
-//                   contentOffset: {
-//                     x: scrollX,
-//                   },
-//                 },
-//               },
-//             ])}
-//             scrollEventThrottle={1}>
-//             {images.map((image, imageIndex) => {
-//               return (
-//                 <View
-//                   style={{width: windowWidth, height: 250}}
-//                   key={imageIndex}>
-//                   <ImageBackground source={{uri: image}} style={styles.card}>
-//                     <View style={styles.textContainer}>
-//                       <Text style={styles.infoText}>
-//                         {'Image - ' + imageIndex}
-//                       </Text>
-//                     </View>
-//                   </ImageBackground>
-//                 </View>
-//               );
-//             })}
-//           </ScrollView>
-//           <View style={styles.indicatorContainer}>
-//             {images.map((image, imageIndex) => {
-//               const width = scrollX.interpolate({
-//                 inputRange: [
-//                   windowWidth * (imageIndex - 1),
-//                   windowWidth * imageIndex,
-//                   windowWidth * (imageIndex + 1),
-//                 ],
-//                 outputRange: [8, 16, 8],
-//                 extrapolate: 'clamp',
-//               });
-//               return (
-//                 <Animated.View
-//                   key={imageIndex}
-//                   style={[styles.normalDot, {width}]}
-//                 />
-//               );
-//             })}
-//           </View>
-//         </View>
-//       </SafeAreaView>
-//     </SafeAreaProvider>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//   },
-//   scrollContainer: {
-//     height: 300,
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//   },
-//   card: {
-//     flex: 1,
-//     marginVertical: 4,
-//     marginHorizontal: 16,
-//     borderRadius: 5,
-//     overflow: 'hidden',
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//   },
-//   textContainer: {
-//     backgroundColor: 'rgba(0,0,0, 0.7)',
-//     paddingHorizontal: 24,
-//     paddingVertical: 8,
-//     borderRadius: 5,
-//   },
-//   infoText: {
-//     color: 'white',
-//     fontSize: 16,
-//     fontWeight: 'bold',
-//   },
-//   normalDot: {
-//     height: 8,
-//     width: 8,
-//     borderRadius: 4,
-//     backgroundColor: 'silver',
-//     marginHorizontal: 4,
-//   },
-//   indicatorContainer: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//   },
-// });
-
-// export default App;
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -188,16 +8,21 @@ import {
   Animated,
   Dimensions,
   StatusBar,
+  ToastAndroid,
+  Platform,
+  Alert
 } from 'react-native';
 import { Heart, Share, ArrowLeft, Star } from 'lucide-react-native';
-
+import TripCard from '@/components/TripCard';
+import { router } from 'expo-router';
 const { width } = Dimensions.get('window');
 
 const GalleApp = () => {
   const [loading, setLoading] = useState(true);
-  const fadeInValue = new Animated.Value(0);
-  const slideInValue = new Animated.Value(50);
-  const scaleValue = new Animated.Value(0.8);
+  const [isFavourite, setIsFavourite] = useState(false);
+  const fadeInValue = useRef(new Animated.Value(0)).current;
+  const slideInValue = useRef(new Animated.Value(0)).current;
+  const scaleValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     // Simulate loading
@@ -227,13 +52,9 @@ const GalleApp = () => {
     ]).start();
   };
 
-  interface AnimatedCardProps {
-    children: React.ReactNode;
-    delay?: number;
-  }
-  const AnimatedCard: React.FC<AnimatedCardProps> = ({ children, delay = 0 }) => {
+  const AnimatedCard = ({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) => {
     const cardFade = new Animated.Value(0);
-    const cardSlide = new Animated.Value(30);
+    const cardSlide = new Animated.Value(0.2);
 
     useEffect(() => {
       if (!loading) {
@@ -266,14 +87,17 @@ const GalleApp = () => {
     );
   };
 
-  interface RestaurantCardProps {
+  const RestaurantCard = ({
+    name,
+    rating,
+    location,
+    delay,
+  }: {
     name: string;
     rating: string;
     location: string;
-    delay: number;
-  }
-
-  const RestaurantCard: React.FC<RestaurantCardProps> = ({ name, rating, location, delay }) => {
+    delay?: number;
+  }) => {
     const [pressed, setPressed] = useState(false);
     const pressScale = new Animated.Value(1);
 
@@ -296,28 +120,28 @@ const GalleApp = () => {
     return (
       <AnimatedCard delay={delay}>
         <TouchableOpacity
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
+          // onPressIn={handlePressIn}
+          // onPressOut={handlePressOut}
           activeOpacity={0.9}
         >
           <Animated.View
-            className="bg-white rounded-xl shadow-sm mr-4 w-40"
+            className="bg-white rounded-xl shadow-sm mr-4 w-50"
             style={{
               transform: [{ scale: pressScale }],
             }}
           >
-            <View className="h-24 bg-gradient-to-br from-orange-200 to-pink-200 rounded-t-xl relative overflow-hidden">
+            <View className="h-40  bg-pink-200 rounded-t-xl relative overflow-hidden mr-3">
               <View className="absolute inset-0 bg-gradient-to-br from-orange-300/30 to-pink-300/30" />
               <View className="absolute bottom-2 left-2">
                 <View className="w-8 h-8 bg-white/20 rounded-full" />
               </View>
             </View>
             <View className="p-3">
-              <Text className="font-semibold text-primary text-sm mb-1">{name}</Text>
-              <Text className="text-xs text-gray-500 mb-2">{location}</Text>
+              <Text className="font-semibold text-primary text-xl mb-1">{name}</Text>
+              <Text className="text-10 text-gray-500 mb-2">{location}</Text>
               <View className="flex-row items-center">
-                <Star size={12} color="#FBB03B" fill="#FBB03B" />
-                <Text className="text-xs text-gray-600 ml-1">{rating}</Text>
+                <Star size={16} color="#FBB03B" fill="#FBB03B" />
+                <Text className="text-s text-gray-600 ml-1">{rating}</Text>
               </View>
             </View>
           </Animated.View>
@@ -326,14 +150,14 @@ const GalleApp = () => {
     );
   };
 
-  interface ReviewCardProps {
+  type ReviewCardProps = {
     name: string;
     location: string;
     review: string;
-    delay: number;
-  }
+    delay?: number;
+  };
 
-  const ReviewCard: React.FC<ReviewCardProps> = ({ name, location, review, delay }) => (
+  const ReviewCard = ({ name, location, review, delay }: ReviewCardProps) => (
     <AnimatedCard delay={delay}>
       <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100">
         <View className="flex-row items-center mb-3">
@@ -341,7 +165,7 @@ const GalleApp = () => {
             <Text className="text-teal-600 font-semibold">{name.charAt(0)}</Text>
           </View>
           <View className="flex-1">
-            <Text className="font-semibold text-primary">{name}</Text>
+            <Text className="font-semibold text-primary text-xl">{name}</Text>
             <Text className="text-sm text-gray-500">{location}</Text>
           </View>
         </View>
@@ -354,7 +178,7 @@ const GalleApp = () => {
       </View>
     </AnimatedCard>
   );
-
+      // loading view
   if (loading) {
     return (
       <View className="flex-1 bg-white items-center justify-center">
@@ -370,73 +194,102 @@ const GalleApp = () => {
             ],
           }}
         >
-          <View
-            style={{
-              width: 48,
-              height: 48,
-              borderWidth: 4,
-              borderColor: '#14b8a6', // teal-500
-              borderTopColor: 'transparent',
-              borderRadius: 24,
-            }}
-          />
+          <View className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full" />
         </Animated.View>
-        <Text className="text-primary mt-4 font-medium">Loading Galle...</Text>
+        <Text className="text-primary mt-4 font-medium">Loading...</Text>
       </View>
     );
   }
 
+  const handleFavourite = () => {
+    setIsFavourite((prev) => {
+      const newState = !prev;
+      if (Platform.OS === 'android') {
+        ToastAndroid.show(
+          newState ? 'Added to favourites' : 'Removed from favourites',
+          ToastAndroid.SHORT
+        );
+      } else {
+        Alert.alert(newState ? 'Added to favourites' : 'Removed from favourites');
+      }
+      return newState;
+    });
+  };
+
+  const handleShare = () => {
+    const message = 'Check out this amazing place in Galle!';   
+    if (Platform.OS === 'android') {
+      ToastAndroid.show('Sharing is not implemented yet', ToastAndroid.SHORT);
+    } else {
+      Alert.alert('Sharing is not implemented yet');
+    }
+    };
+
+
   return (
     <View className="flex-1 bg-gray-50">
       <StatusBar barStyle="light-content" backgroundColor="#0D9488" />
-      
       {/* Header */}
-      <Animated.View 
-        className="bg-primary pt-12 pb-4"
-        style={{
-          opacity: fadeInValue,
-          transform: [{ translateY: slideInValue }],
-        }}
+      <View 
+        className="bg-gray-50 pt-12 pb-4"
+        // style={{
+        //   opacity: fadeInValue,
+        //   transform: [{ translateY: slideInValue }],
+        // }}
       >
-        <View className="flex-row items-center justify-between px-4">
-          <TouchableOpacity>
-            <ArrowLeft size={24} color="white" />
+        <View className="flex-row items-center justify-between mt-5 mb-2 px-4">
+          <TouchableOpacity onPress={() => router.push('/explore')}>
+            <ArrowLeft size={34} color="#008080"  />
           </TouchableOpacity>
-          <Text className="text-white text-xl font-bold">Galle</Text>
+          <Text className="text-primary text-3xl font-bold">Galle</Text>
           <View className="flex-row">
-            <TouchableOpacity className="mr-4">
-              <Heart size={24} color="white" />
+            <TouchableOpacity className="mr-4" onPress={handleFavourite}>
+              <Heart size={30} color="#008080" fill={isFavourite ? '#008080' : 'none'} />
             </TouchableOpacity>
-            <TouchableOpacity>
-              <Share size={24} color="white" />
+            <TouchableOpacity onPress={handleShare}>
+              <Share size={30} color="#008080"  />
             </TouchableOpacity>
           </View>
         </View>
-      </Animated.View>
+      </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Hero Section */}
-        <Animated.View
-          style={{
-            opacity: fadeInValue,
-            transform: [{ scale: scaleValue }],
-          }}
+        <View
+        //   style={{
+        //     opacity: fadeInValue,
+        //     transform: [{ scale: scaleValue }],
+        //   }}
         >
-          <View className="bg-white mx-4 mt-4 rounded-xl shadow-sm overflow-hidden">
-            <View className="h-48 bg-gradient-to-br from-blue-400 to-primary relative">
-              <View className="absolute inset-0 bg-gradient-to-br from-blue-500/40 to-teal-600/40" />
+          <View className="bg-white mx-4 mt-4 rounded-xl shadow-sm overflow-hidden ">
+            <View className="h-96 bg-gradient-to-br from-blue-400 relative">
+              <View className="absolute inset-0 bg-teal-600/40" />
               <View className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/30 to-transparent h-20" />
+          <Image
+            source={{ uri: "https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg" }}
+            style={{ width: '100%', height:350, borderRadius: 16 }}
+            resizeMode="cover"
+          />
             </View>
             <View className="p-4">
-              <Text className="text-lg font-bold text-gray-800 mb-2">
+              <Text className="text-2xl font-bold text-gray-800 mb-2 justify-center mt-3 ml-3 mr-3">
                 A Charming Coastal Gem in Sri Lanka
               </Text>
               <Text className="text-sm text-gray-600 leading-5">
                 Galle, on Sri Lanka's southwest coast, is a popular tourist destination known for its historic charm and scenic beauty. The iconic Galle Fort, a UNESCO World Heritage Site, boasts colonial architecture, cobblestone streets, and ocean views. Visitors enjoy beaches like Unawatuna and Jungle Beach, whale watching, turtle hatcheries, and local cuisine. With its blend of history, culture, and seaside relaxation, Galle offers a memorable travel experience.
               </Text>
             </View>
+            <ScrollView>
+          {/* <TripCard
+               id={1}
+               title="Sample Trip"
+               details="A wonderful trip to Sri Lanka's most beautiful places."
+               budget={"Rs. 50,000"}
+               duration={"5 Days"}
+             /> */}
+        </ScrollView>
           </View>
-        </Animated.View>
+        </View>
 
         {/* Navigation Tabs */}
         <AnimatedCard delay={200}>
@@ -449,7 +302,7 @@ const GalleApp = () => {
                 }`}
               >
                 <Text
-                  className={`text-sm font-medium ${
+                  className={`text-lg font-medium ${
                     index === 0 ? 'text-white' : 'text-gray-600'
                   }`}
                 >
@@ -464,7 +317,7 @@ const GalleApp = () => {
         <View className="mb-6">
           <AnimatedCard delay={300}>
             <View className="flex-row items-center justify-between px-4 mb-4">
-              <Text className="text-lg font-bold text-gray-800">Accommodation</Text>
+              <Text className="text-xl font-bold text-gray-800">Accommodation</Text>
               <TouchableOpacity>
                 <Text className="text-primary font-medium">See more →</Text>
               </TouchableOpacity>
@@ -497,7 +350,7 @@ const GalleApp = () => {
         <View className="mb-6">
           <AnimatedCard delay={700}>
             <View className="flex-row items-center justify-between px-4 mb-4">
-              <Text className="text-lg font-bold text-gray-800">Foods</Text>
+              <Text className="text-xl font-bold text-gray-800">Foods</Text>
               <TouchableOpacity>
                 <Text className="text-teal-600 font-medium">See more →</Text>
               </TouchableOpacity>
@@ -557,7 +410,7 @@ const GalleApp = () => {
         <View className="mb-6">
           <AnimatedCard delay={1400}>
             <View className="px-4 mb-4">
-              <Text className="text-lg font-bold text-gray-800">Reviews</Text>
+              <Text className="text-xl font-bold text-gray-800">Reviews</Text>
             </View>
           </AnimatedCard>
           
