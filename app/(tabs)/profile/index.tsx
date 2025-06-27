@@ -12,15 +12,15 @@ import {
 import { BlurView } from "expo-blur";
 import Icon from "react-native-vector-icons/Ionicons";
 import ProfileInfoItem from "../../../components/ProfileInfoItem";
-import EditModal from "../../../components/EditPopup";
+import EditPopup from "../../../components/EditPopup";
 import { router } from "expo-router";
 import { theme } from "../../theme";
 
 export default function Profile() {
   const [modalVisible, setModalVisible] = useState(false);
   const [fieldValues, setFieldValues] = useState({
-    Name: "Eran Wijesekara",
-    Email: "eran@email.com",
+    Name: "Eren Wijesekara",
+    Email: "eren@email.com",
     Phone: "+94 712 345 678",
   });
   const [tempValues, setTempValues] = useState({ ...fieldValues });
@@ -74,22 +74,12 @@ export default function Profile() {
       {/* Combined Blur Overlay */}
       {(modalVisible || passwordModalVisible) && (
         <Animated.View style={[styles.overlay, { opacity: blurOpacity }]}>
-          <BlurView intensity={50} tint="light" style={StyleSheet.absoluteFill} />
+          <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
         </Animated.View>
       )}
 
-      <EditModal
-  visible={modalVisible}
-  type="info"
-  values={tempValues}
-  onChange={(key, value) =>
-    setTempValues((prev) => ({ ...prev, [key]: value }))
-  }
-  onSubmit={handleSave}
-  onClose={() => setModalVisible(false)}
-/>
 
-<EditModal
+<EditPopup
   visible={passwordModalVisible}
   type="password"
   values={passwords}

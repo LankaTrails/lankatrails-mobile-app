@@ -4,12 +4,13 @@ import {
   Animated,
   StyleSheet,
   Text,
+  TouchableOpacity,
 } from "react-native";
 import { router } from "expo-router";
 import { theme } from "../app/theme";
 import { Ionicons } from "@expo/vector-icons";
 
-export default function ChatButton() {
+export default function ShareButton() {
   const [scaleValue] = useState(new Animated.Value(1));
 
   const handlePressIn = () => {
@@ -27,31 +28,31 @@ export default function ChatButton() {
   };
 
   const handleBackToDays = () => {
-    alert("Route -> Chat Box!"); // Replace with `router.push('/chat')` if you have a chat screen
+    alert("Route -> share social links!"); // Replace with `router.push('/chat')` if you have a chat screen
   };
 
   return (
-    <TouchableWithoutFeedback
+    <TouchableOpacity
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       onPress={handleBackToDays}
     >
       <Animated.View
         style={[
-          styles.chatButton,
+          styles.shareButton,
           {
             transform: [{ scale: scaleValue }],
           },
         ]}
       >
-        <Ionicons name="chatbubble-ellipses-outline" size={25} color={theme.colors.primary} />
+        <Ionicons name="share-social-outline" size={25} color={theme.colors.primary} />
       </Animated.View>
-    </TouchableWithoutFeedback>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({ 
-chatButton: {
+shareButton: {
   paddingHorizontal: 5,
   paddingVertical: 5,
   borderRadius: 24,

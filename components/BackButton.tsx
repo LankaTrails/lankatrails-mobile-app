@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { TouchableWithoutFeedback, Animated, StyleSheet } from "react-native";
+import { TouchableWithoutFeedback, Animated, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { theme } from "../app/theme";
@@ -26,7 +26,7 @@ export default function BackButton() {
   };
 
   return (
-    <TouchableWithoutFeedback
+    <TouchableOpacity
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       onPress={handleBackToDays}
@@ -34,7 +34,7 @@ export default function BackButton() {
       <Animated.View style={[styles.backButton, { transform: [{ scale: scaleValue }] }]}>
         <Ionicons name="arrow-back" size={22} color={theme.colors.primary} />
       </Animated.View>
-    </TouchableWithoutFeedback>
+    </TouchableOpacity>
   );
 }
 

@@ -3,7 +3,7 @@ import { TouchableOpacity, Animated, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { theme } from "../app/theme";
 
-const NewTripButton = ({ onPress }) => {
+const FAB = ({ onPress }) => {
   const [scaleValue] = useState(new Animated.Value(1));
   const handlePressIn = () => Animated.spring(scaleValue, { toValue: 0.9, useNativeDriver: true }).start();
   const handlePressOut = () => Animated.spring(scaleValue, { toValue: 1, useNativeDriver: true }).start();
@@ -26,7 +26,7 @@ const NewTripButton = ({ onPress }) => {
 export const styles = StyleSheet.create({
 fabContainer: {
     position: "absolute",
-    bottom: 120,
+    bottom: 130,
     right: 20,
   },
   fab: {
@@ -43,4 +43,4 @@ fabContainer: {
     elevation: 8,
   },
 });
-export default NewTripButton;
+export default FAB;
