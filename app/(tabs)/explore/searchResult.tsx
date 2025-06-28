@@ -15,6 +15,7 @@ import {
 import { Heart, Share, ArrowLeft, Star } from 'lucide-react-native';
 import TripCard from '@/components/TripCard';
 import { router } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
 const { width } = Dimensions.get('window');
 
 const GalleApp = () => {
@@ -318,9 +319,9 @@ const GalleApp = () => {
           <AnimatedCard delay={300}>
             <View className="flex-row items-center justify-between px-4 mb-4">
               <Text className="text-xl font-bold text-gray-800">Accommodation</Text>
-              <TouchableOpacity>
-                <Text className="text-primary font-medium">See more →</Text>
-              </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push({ pathname: '/explore/accommodation-foods-transport', params: { tab: 'accommodation' } })}>
+              <Text className="text-primary font-medium">See more →</Text>
+            </TouchableOpacity>
             </View>
           </AnimatedCard>
           
@@ -351,7 +352,7 @@ const GalleApp = () => {
           <AnimatedCard delay={700}>
             <View className="flex-row items-center justify-between px-4 mb-4">
               <Text className="text-xl font-bold text-gray-800">Foods</Text>
-              <TouchableOpacity>
+              <TouchableOpacity  onPress={() => router.push({ pathname: '/explore/accommodation-foods-transport', params: { tab: 'foods' } })}>
                 <Text className="text-teal-600 font-medium">See more →</Text>
               </TouchableOpacity>
             </View>
@@ -384,7 +385,7 @@ const GalleApp = () => {
           <AnimatedCard delay={1100}>
             <View className="flex-row items-center justify-between px-4 mb-4">
               <Text className="text-lg font-bold text-gray-800">Transport</Text>
-              <TouchableOpacity>
+              <TouchableOpacity  onPress={() => router.push({ pathname: '/explore/accommodation-foods-transport', params: { tab: 'transport' } })}>
                 <Text className="text-teal-600 font-medium">See more →</Text>
               </TouchableOpacity>
             </View>
