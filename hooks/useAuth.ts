@@ -1,6 +1,6 @@
 // hooks/useAuth.ts
 import { useAppDispatch, useAppSelector } from '@/redux/store';
-import { login, checkAuth, clearError, logoutUser } from '@/redux/slices/authSlice';
+import { login, checkAuth, clearError, logoutUser, googleLogin } from '@/redux/slices/authSlice';
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
@@ -13,6 +13,7 @@ export const useAuth = () => {
     isLoading,
     error,
     signIn: (email: string, password: string) => dispatch(login({ email, password })),
+    signInWithGoogle: (idToken: string) => dispatch(googleLogin(idToken)),
     logout: () => dispatch(logoutUser()),
     checkAuth: () => dispatch(checkAuth()),
     clearError: () => dispatch(clearError()),

@@ -18,6 +18,7 @@ import { BlurView } from "expo-blur";
 import LongButton from '../../components/LongButton';
 import { router } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
+import { useGoogleAuth } from '@/services/googleAuthService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -30,7 +31,8 @@ const SignIn = () => {
   const slideAnim = useRef(new Animated.Value(50)).current;
   const blurFadeAnim = useRef(new Animated.Value(0)).current;
 
-  const { signIn, isLoading, error, clearError, isAuthenticated } = useAuth();
+  const { signIn, isLoading, error, clearError, isAuthenticated, signInWithGoogle } = useAuth();
+  const { promptAsync, exchangeToken, response } = useGoogleAuth();
 
   useEffect(() => {
     Animated.parallel([
@@ -74,8 +76,33 @@ const SignIn = () => {
     await signIn(email, password);
   };
 
+  useEffect(() => {
+    (async () => {
+      if (response?.type === 'success') {
+        try {
+          const tokens = await exchangeToken();
+          if (tokens.idToken) {
+            signInWithGoogle(tokens.idToken);
+          } else {
+            Alert.alert('Google login failed', 'No ID token received');
+          }
+        } catch (err) {
+          if (err instanceof Error) {
+            Alert.alert('Google login failed', err.message);
+          } else {
+            Alert.alert('Google login failed', 'An unknown error occurred');
+          }
+        }
+      }
+    })();
+  }, [response]);
+
   const handleSocialSignIn = (provider: string) => {
-    Alert.alert('Coming Soon', `${provider} login will be available soon`);
+    if (provider === 'Google') {
+      promptAsync();
+    } else {
+      Alert.alert('Coming Soon', `Sign in with ${provider} is not implemented yet.`);
+    }
   };
 
   return (

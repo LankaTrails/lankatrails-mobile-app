@@ -2,6 +2,18 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { saveToken, getToken, clearAllTokens } from '@/utils/secureStore';
 import api from '@/api/axiosInstance';
 import { router } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import {
+    makeRedirectUri,
+    useAuthRequest,
+    exchangeCodeAsync,
+    ResponseType
+} from 'expo-auth-session';
+
+WebBrowser.maybeCompleteAuthSession();
+
+// Replace this with your actual client ID
+const GOOGLE_CLIENT_ID = '680243298823-f7d0ielrise2vtoq5hm63cf59jbk2n2s.apps.googleusercontent.com';
 
 // Tourist-specific user structure
 export interface TouristUser {
@@ -41,7 +53,7 @@ export const login = createAsyncThunk(
             const loginData = loginResponse.data.data;
 
             // 2. Role check
-            if (loginData.role !== 'TOURIST') {
+            if (loginData.role !== 'ROLE_TOURIST') {
                 return rejectWithValue('Only tourist accounts are allowed in this app.');
             }
 
@@ -73,6 +85,32 @@ export const login = createAsyncThunk(
         }
     }
 );
+
+export const googleLogin = createAsyncThunk(
+  'auth/googleLogin',
+  async (idToken: string, { rejectWithValue }) => {
+    try {
+      const backendRes = await api.post('/oauth2/authorization/google', { idToken });
+
+      await saveToken('ACCESS_TOKEN', backendRes.data.jwtToken);
+      await saveToken('REFRESH_TOKEN', backendRes.data.refreshToken);
+
+      return {
+        id: backendRes.data.id,
+        email: backendRes.data.email,
+        role: 'TOURIST' as 'TOURIST',
+        emailVerified: backendRes.data.emailVerified,
+        firstName: backendRes.data.firstName,
+        lastName: backendRes.data.lastName,
+        country: backendRes.data.country,
+      };
+    } catch (err: any) {
+      await clearAllTokens();
+      return rejectWithValue(err.message || 'Google login failed. Please try again.');
+    }
+  }
+);
+
 
 
 // Check authentication and get profile
@@ -185,6 +223,21 @@ const authSlice = createSlice({
             })
             .addCase(logoutUser.rejected, (state) => {
                 state.isLoading = false;
+            })
+
+            // Google login flow
+            .addCase(googleLogin.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(googleLogin.fulfilled, (state, action: PayloadAction<TouristUser>) => {
+                state.isLoading = false;
+                state.isAuthenticated = true;
+                state.user = action.payload;
+            })
+            .addCase(googleLogin.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload as string;
             });
     },
 });
