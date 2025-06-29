@@ -5,7 +5,7 @@
     "owner": "pkmst",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo-icon.png",
+    "icon": "./assets/images/logo-icon.jpg",
     "scheme": "lankatrailsmobileapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -19,7 +19,12 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.pkmst.lankatrails"
+      "package": "com.pkmst.lankatrails",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyA47Q-I515EK0DU4pvk5jgUcatYcdnf8cY"
+        }
+      }
     },
     "web": {
       "bundler": "metro",

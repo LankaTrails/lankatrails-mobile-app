@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, ScrollView, ActivityIndicator } from "react-native";
 import { fetchGroupedPlaces } from "../../../services/googlePlacesService";
 import Card from "../../../components/Card";
+import MapScreen from "@/app/screens/MapScreen";
+import { TouchableHighlight } from "react-native";
+import { router } from "expo-router";
 
 const GOOGLE_PLACES_API_KEY = 'AIzaSyA47Q-I515EK0DU4pvk5jgUcatYcdnf8cY';
 
@@ -42,40 +45,50 @@ export default function NearbyPlacesScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 10 }}>
-      {groupedPlaces.map(({ group, places }) => (
-        <View key={group} style={{ marginBottom: 20 }}>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
-            {group} ({places.length})
-          </Text>
-          {places.length > 0 ? (
-            <FlatList
-              data={places}
-              keyExtractor={(item) => item.place_id}
-              renderItem={({ item }) => (
-                <Card
-                  item={{
-                    id: Number(item.place_id),
-                    title: item.name,
-                    subtitle: item.vicinity,
-                    rating: typeof item.rating === "number" ? item.rating : (typeof item.rating === "string" ? Number(item.rating) : 0),
-                    image: item.photos?.[0] 
-                      ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${item.photos[0].photo_reference}&key=${GOOGLE_PLACES_API_KEY}`
-                      : "",
-                  }}
-                  onPress={() => console.log("Pressed:", item.name)}
-                  width={180}
-                />
-              )}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-            />
-          ) : (
-            <Text style={{ color: '#666' }}>No public places found in this category.</Text>
-          )}
-        </View>
-      ))}
-    </ScrollView>
+    <>
+    <TouchableHighlight onPress={() => router.push("/screens/MapScreen")} style={{ padding: 20, backgroundColor: '#f0f0f0', borderRadius: 10, margin: 10 }}>
+        <Text>Map Screen</Text> 
+      </TouchableHighlight>
+
+
+      <ScrollView contentContainerStyle={{ padding: 10 }}>
+        {groupedPlaces.map(({ group, places }) => (
+          <View key={group} style={{ marginBottom: 20 }}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
+              {group} ({places.length})
+            </Text>
+            {places.length > 0 ? (
+              <FlatList
+                data={places}
+                keyExtractor={(item) => item.place_id}
+                renderItem={({ item }) => (
+                  <Card
+                    item={{
+                      id: Number(item.place_id),
+                      title: item.name,
+                      subtitle: item.vicinity,
+                      rating: typeof item.rating === "number" ? item.rating : (typeof item.rating === "string" ? Number(item.rating) : 0),
+                      image: item.photos?.[0] 
+                        ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${item.photos[0].photo_reference}&key=${GOOGLE_PLACES_API_KEY}`
+                        : "",
+                    }}
+                    onPress={() => console.log("Pressed:", item.place_id)}
+                    width={180}
+                  />
+                )}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+              />
+            ) : (
+              <Text style={{ color: '#666' }}>No public places found in this category.</Text>
+            )}
+          </View>
+        ))}
+      </ScrollView>
+
+      {/* load map screen */}
+      <MapScreen />
+    </>
   );
 }
 
