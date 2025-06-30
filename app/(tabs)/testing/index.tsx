@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, ScrollView, ActivityIndicator } from "react-native";
 import { fetchGroupedPlaces } from "../../../services/googlePlacesService";
@@ -679,3 +680,4 @@ export default function NearbyPlacesScreen() {
 // //     </SafeAreaView>
 // //   );
 // // }
+

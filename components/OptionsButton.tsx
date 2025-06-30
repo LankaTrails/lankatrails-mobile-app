@@ -112,13 +112,17 @@ const OptionsButton = () => {
     // Add your navigation logic here
     if (option === 'Budget')
       router.push('./{id}/BudgetView');
+    else if (option === 'Map')
+      alert("Route -> map view!");
+    else if (option === 'Chat')
+      alert("Route -> chatbox!");
 
   };
 
   const options = [
     { name: 'Budget', icon: 'wallet-outline', color: '#FF6B6B' },
     { name: 'Map', icon: 'map-outline', color: '#4ECDC4' },
-    { name: 'Calendar', icon: 'calendar-outline', color: '#45B7D1' },
+    { name: 'Chat', icon: 'chatbubble-outline', color: '#45B7D1' },
    
   ];
 

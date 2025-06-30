@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import BackButton from '../../../../components/BackButton';
-import ChatButton from '../../../../components/ChatButton';
+import ChatButton from '../../../../components/ShareButton';
 import LongButton from '../../../../components/LongButton';
 import { theme } from '../../../theme';
 

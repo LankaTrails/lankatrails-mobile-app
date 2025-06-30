@@ -1,21 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { saveToken, getToken, clearAllTokens } from '@/utils/secureStore';
 import api from '@/api/axiosInstance';
+import { saveToken, getToken, clearAllTokens } from '@/utils/secureStore';
 import { router } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
-import {
-    makeRedirectUri,
-    useAuthRequest,
-    exchangeCodeAsync,
-    ResponseType
-} from 'expo-auth-session';
 
-WebBrowser.maybeCompleteAuthSession();
-
-// Replace this with your actual client ID
-const GOOGLE_CLIENT_ID = '680243298823-f7d0ielrise2vtoq5hm63cf59jbk2n2s.apps.googleusercontent.com';
-
-// Tourist-specific user structure
 export interface TouristUser {
     id: number;
     email: string;
@@ -26,46 +13,44 @@ export interface TouristUser {
     country: string;
 }
 
-// Auth state strictly for tourists
-interface AuthState {
-    isAuthenticated: boolean;
+export interface AuthState {
     user: TouristUser | null;
+    isAuthenticated: boolean;
     isLoading: boolean;
     error: string | null;
 }
 
 const initialState: AuthState = {
-    isAuthenticated: false,
     user: null,
+    isAuthenticated: false,
     isLoading: false,
     error: null,
 };
 
-export const login = createAsyncThunk(
+// Async Thunks
+
+export const login = createAsyncThunk<
+    TouristUser,
+    { email: string; password: string },
+    { rejectValue: string }
+>(
     'auth/login',
-    async (
-        { email, password }: { email: string; password: string },
-        { rejectWithValue }
-    ) => {
+    async ({ email, password }, { rejectWithValue }) => {
         try {
-            // 1. Login call
             const loginResponse = await api.post('/auth/login', { email, password });
             const loginData = loginResponse.data.data;
 
-            // 2. Role check
             if (loginData.role !== 'ROLE_TOURIST') {
                 return rejectWithValue('Only tourist accounts are allowed in this app.');
             }
 
-            // 3. Save tokens
             await saveToken('ACCESS_TOKEN', loginData.jwtToken);
             await saveToken('REFRESH_TOKEN', loginData.refreshToken);
 
-            // 4. Fetch full profile after login success
+            // Fetch full profile
             const profileResponse = await api.get('/auth/logged-user');
             const profileData = profileResponse.data.data;
 
-            // 5. Return full tourist user profile
             return {
                 id: profileData.id,
                 email: profileData.email,
@@ -74,58 +59,51 @@ export const login = createAsyncThunk(
                 firstName: profileData.firstName,
                 lastName: profileData.lastName,
                 country: profileData.country,
-            } as TouristUser;
-
+            };
         } catch (error: any) {
             return rejectWithValue(
-                error.response?.data?.message ||
-                error.message ||
-                'Login failed. Please try again.'
+                error.response?.data?.message || error.message || 'Login failed. Please try again.'
             );
         }
     }
 );
 
-export const googleLogin = createAsyncThunk(
-  'auth/googleLogin',
-  async (idToken: string, { rejectWithValue }) => {
+export const googleLogin = createAsyncThunk<
+    TouristUser,
+    string,
+    { rejectValue: string }
+>('auth/googleLogin', async (idToken, { rejectWithValue }) => {
     try {
-      const backendRes = await api.post('/oauth2/authorization/google', { idToken });
+        const res = await api.post('/oauth2/authorization/google', { idToken });
 
-      await saveToken('ACCESS_TOKEN', backendRes.data.jwtToken);
-      await saveToken('REFRESH_TOKEN', backendRes.data.refreshToken);
+        await saveToken('ACCESS_TOKEN', res.data.jwtToken);
+        await saveToken('REFRESH_TOKEN', res.data.refreshToken);
 
-      return {
-        id: backendRes.data.id,
-        email: backendRes.data.email,
-        role: 'TOURIST' as 'TOURIST',
-        emailVerified: backendRes.data.emailVerified,
-        firstName: backendRes.data.firstName,
-        lastName: backendRes.data.lastName,
-        country: backendRes.data.country,
-      };
-    } catch (err: any) {
-      await clearAllTokens();
-      return rejectWithValue(err.message || 'Google login failed. Please try again.');
+        return {
+            id: res.data.id,
+            email: res.data.email,
+            role: 'TOURIST',
+            emailVerified: res.data.emailVerified,
+            firstName: res.data.firstName,
+            lastName: res.data.lastName,
+            country: res.data.country,
+        };
+    } catch (error: any) {
+        await clearAllTokens();
+        return rejectWithValue(error.message || 'Google login failed. Please try again.');
     }
-  }
-);
+});
 
-
-
-// Check authentication and get profile
-export const checkAuth = createAsyncThunk(
-    'auth/check',
+export const checkAuth = createAsyncThunk<TouristUser, void, { rejectValue: string }>(
+    'auth/checkAuth',
     async (_, { rejectWithValue }) => {
         try {
             const token = await getToken('ACCESS_TOKEN');
-            if (!token) throw new Error('No token found');
+            if (!token) throw new Error('No access token found');
 
             const response = await api.get('/auth/logged-user');
-
             const data = response.data.data;
 
-            // Return profile (must be tourist)
             return {
                 id: data.id,
                 email: data.email,
@@ -134,70 +112,77 @@ export const checkAuth = createAsyncThunk(
                 firstName: data.firstName,
                 lastName: data.lastName,
                 country: data.country,
-            } as TouristUser;
+            };
         } catch (error: any) {
             await clearAllTokens();
-            return rejectWithValue(
-                error.response?.data?.message ||
-                'Session expired. Please login again.'
-            );
+            return rejectWithValue(error.response?.data?.message || 'Session expired. Please login again.');
         }
     }
 );
 
-// Logout async thunk (replace reducer version)
-export const logoutUser = createAsyncThunk(
-    'auth/logout',
+export const logoutUser = createAsyncThunk<void, void>(
+    'auth/logoutUser',
     async (_, { dispatch }) => {
         try {
             await api.post('/auth/logout');
-            console.log('[AUTH] Backend logout successful');
+            console.info('[AUTH] Backend logout successful');
         } catch (error: any) {
-            console.warn('[AUTH] Backend logout failed or unauthorized:', error?.response?.data || error?.message);
+            console.warn('[AUTH] Backend logout failed or unauthorized:', error?.message || error);
         } finally {
             await clearAllTokens();
             router.replace('/signIn');
+            dispatch(authSlice.actions.clearSession());
         }
-
-        // Clear Redux state
-        dispatch(authSlice.actions.clearSession());
     }
 );
 
-
-// Tourist-only auth slice
 const authSlice = createSlice({
     name: 'auth',
     initialState,
     reducers: {
-        clearError: (state) => {
+        clearError(state) {
             state.error = null;
         },
-        clearSession: (state) => {
+        clearSession(state) {
             state.isAuthenticated = false;
             state.user = null;
+            state.isLoading = false;
             state.error = null;
-        }
+        },
     },
     extraReducers: (builder) => {
         builder
-            // Login flow
+            // Login
             .addCase(login.pending, (state) => {
                 state.isLoading = true;
                 state.error = null;
             })
             .addCase(login.fulfilled, (state, action: PayloadAction<TouristUser>) => {
-                console.log('[AUTH SLICE] login.fulfilled, payload:', action.payload);
                 state.isLoading = false;
                 state.isAuthenticated = true;
                 state.user = action.payload;
             })
             .addCase(login.rejected, (state, action) => {
                 state.isLoading = false;
-                state.error = action.payload as string;
+                state.error = action.payload || 'Login failed';
             })
 
-            // Check auth flow
+            // Google login
+            .addCase(googleLogin.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(googleLogin.fulfilled, (state, action: PayloadAction<TouristUser>) => {
+                state.isLoading = false;
+                state.isAuthenticated = true;
+                state.user = action.payload;
+            })
+            .addCase(googleLogin.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload || 'Google login failed';
+            })
+
+            // Check auth
             .addCase(checkAuth.pending, (state) => {
                 state.isLoading = true;
             })
@@ -212,7 +197,7 @@ const authSlice = createSlice({
                 state.user = null;
             })
 
-            // Logout flow
+            // Logout
             .addCase(logoutUser.pending, (state) => {
                 state.isLoading = true;
             })
@@ -223,24 +208,16 @@ const authSlice = createSlice({
             })
             .addCase(logoutUser.rejected, (state) => {
                 state.isLoading = false;
-            })
-
-            // Google login flow
-            .addCase(googleLogin.pending, (state) => {
-                state.isLoading = true;
-                state.error = null;
-            })
-            .addCase(googleLogin.fulfilled, (state, action: PayloadAction<TouristUser>) => {
-                state.isLoading = false;
-                state.isAuthenticated = true;
-                state.user = action.payload;
-            })
-            .addCase(googleLogin.rejected, (state, action) => {
-                state.isLoading = false;
-                state.error = action.payload as string;
             });
     },
 });
+
+// Selectors for ease of access
+export const selectAuthState = (state: { auth: AuthState }) => state.auth;
+export const selectIsAuthenticated = (state: { auth: AuthState }) => state.auth.isAuthenticated;
+export const selectAuthUser = (state: { auth: AuthState }) => state.auth.user;
+export const selectAuthLoading = (state: { auth: AuthState }) => state.auth.isLoading;
+export const selectAuthError = (state: { auth: AuthState }) => state.auth.error;
 
 export const { clearError } = authSlice.actions;
 export default authSlice.reducer;
