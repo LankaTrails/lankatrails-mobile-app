@@ -9,7 +9,7 @@ import {
 import { Stack, useLocalSearchParams } from 'expo-router';
 import FilterButton from '../../../../components/FilterButton'; 
 import BackButton from '../../../../components/BackButton';
-import ChatButton from '../../../../components/ChatButton';
+import ChatButton from '../../../../components/ShareButton';
 import SummaryCard from '../../../../components/SummaryCard';
 import ScheduleView from './ScheduleView';
 import FloatingActionButton from '../../../../components/OptionsButton';

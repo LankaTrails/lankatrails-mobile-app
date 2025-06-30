@@ -14,7 +14,7 @@ import FAB from '../../../../components/FAB';
 import EditPopup from '../../../../components/EditPopup';
 import { theme } from '../../../theme';
 import SelectPopup from '../../../../components/SelectPopup';
-import ChatButton from '../../../../components/ChatButton';
+import ChatButton from '../../../../components/ShareButton';
 import BackButton from '../../../../components/BackButton';
 import FilterButton from '../../../../components/FilterButton';
 
