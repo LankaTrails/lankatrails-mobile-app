@@ -54,7 +54,18 @@ const SignUp = () => {
     ]).start();
   }, []);
 
-  const handleChange = (key, value) => {
+  interface SignUpForm {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    password: string;
+    confirmPassword: string;
+  }
+
+  type FormKey = keyof SignUpForm;
+
+  const handleChange = (key: FormKey, value: string) => {
     setForm({ ...form, [key]: value });
   };
 
