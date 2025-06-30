@@ -292,7 +292,7 @@ const LocationSearchScreen = () => {
     item: RecentSearchItem;
     index: number;
   }) => (
-    <StaggeredListItem index={index} delay={200}>
+    <StaggeredListItem index={index} delay={100}>
       <TouchableOpacity
         className="flex-row items-center justify-between py-4 px-4 hover:bg-gray-50 active:bg-gray-100"
         activeOpacity={0.8}
@@ -328,7 +328,7 @@ const LocationSearchScreen = () => {
         {/* Header */}
         <StaggeredListItem index={0} delay={0}>
           <View className="px-4 pt-2 pb-4">
-            <Text className="text-xs text-gray-500 text-right mb-4">12:39</Text>
+            <Text className="text-xs text-white text-right mb-4">1</Text>
             
             {/* Search Bar */}
             {/* <SearchBar onPress={() => router.push('/testing')} /> */}
@@ -339,7 +339,7 @@ const LocationSearchScreen = () => {
         </StaggeredListItem>
 
         {/* Nearby Section */}
-        <StaggeredListItem index={1} delay={100}>
+        <StaggeredListItem index={1} delay={80}>
           <View className="px-4 mb-6">
             <TouchableOpacity 
               className="flex-row items-center hover:bg-gray-50 active:bg-gray-100 p-3 rounded-lg"

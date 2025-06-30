@@ -16,6 +16,9 @@ import { Heart, Share, ArrowLeft, Star } from 'lucide-react-native';
 import TripCard from '@/components/TripCard';
 import { router } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
+
+import HeaderSection from '@/components/explorer-components/HeaderSection';
+
 const { width } = Dimensions.get('window');
 
 const GalleApp = () => {
@@ -202,56 +205,44 @@ const GalleApp = () => {
     );
   }
 
-  const handleFavourite = () => {
-    setIsFavourite((prev) => {
-      const newState = !prev;
-      if (Platform.OS === 'android') {
-        ToastAndroid.show(
-          newState ? 'Added to favourites' : 'Removed from favourites',
-          ToastAndroid.SHORT
-        );
-      } else {
-        Alert.alert(newState ? 'Added to favourites' : 'Removed from favourites');
-      }
-      return newState;
-    });
-  };
-
-  const handleShare = () => {
-    const message = 'Check out this amazing place in Galle!';   
+ const handleFavourite = () => {
+  setIsFavourite((prev) => {
+    const newState = !prev;
     if (Platform.OS === 'android') {
-      ToastAndroid.show('Sharing is not implemented yet', ToastAndroid.SHORT);
+      ToastAndroid.show(
+        newState ? 'Added to favourites' : 'Removed from favourites',
+        ToastAndroid.SHORT
+      );
     } else {
-      Alert.alert('Sharing is not implemented yet');
+      Alert.alert(newState ? 'Added to favourites' : 'Removed from favourites');
     }
-    };
+    return newState;
+  });
+};
+
+const handleShare = () => {
+  const message = 'Check out this amazing place in Galle!';
+  if (Platform.OS === 'android') {
+    ToastAndroid.show('Sharing is not implemented yet', ToastAndroid.SHORT);
+  } else {
+    Alert.alert('Sharing is not implemented yet');
+  }
+};
+
 
 
   return (
     <View className="flex-1 bg-gray-50">
-      <StatusBar barStyle="light-content" backgroundColor="#0D9488" />
+      <StatusBar  backgroundColor="#0D9488" />
       {/* Header */}
-      <View 
+     <View 
         className="bg-gray-50 pt-12 pb-4"
-        // style={{
-        //   opacity: fadeInValue,
-        //   transform: [{ translateY: slideInValue }],
-        // }}
       >
-        <View className="flex-row items-center justify-between mt-5 mb-2 px-4">
-          <TouchableOpacity onPress={() => router.push('/explore')}>
-            <ArrowLeft size={34} color="#008080"  />
-          </TouchableOpacity>
-          <Text className="text-primary text-3xl font-bold">Galle</Text>
-          <View className="flex-row">
-            <TouchableOpacity className="mr-4" onPress={handleFavourite}>
-              <Heart size={30} color="#008080" fill={isFavourite ? '#008080' : 'none'} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleShare}>
-              <Share size={30} color="#008080"  />
-            </TouchableOpacity>
-          </View>
-        </View>
+        <HeaderSection
+          isFavourite={isFavourite}
+          handleFavourite={handleFavourite}
+          handleShare={handleShare}
+        /> 
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
