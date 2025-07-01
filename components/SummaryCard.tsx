@@ -16,7 +16,6 @@ export default function SummaryCard({ tripData }) {
       style={styles.card}>
           <View style={styles.blurWrapper}>
    <BlurView intensity={10} tint="light" style={styles.blurContainer}>
-  <Text style={styles.title}>Trip Summary</Text>
 
   {/* Row 1 */}
   <View style={styles.gridRow}>
@@ -56,15 +55,15 @@ const styles = StyleSheet.create({
     margin: 16,
     borderRadius: 20,
     overflow: 'hidden',
-    height: 200,
+    height: 170,
     width: '100%',
     marginLeft: 0,
   },
   gridRow: {
   flexDirection: 'row',
   justifyContent: 'space-between',
-  marginBottom: 12,
-  gap: 12,
+  columnGap: 10,
+  paddingVertical: 5,
 },
 
 item: {
@@ -72,26 +71,19 @@ item: {
   flexDirection: 'row',
   alignItems: 'center',
   backgroundColor: 'rgba(255,255,255,0.1)',
-  padding: 10,
+  padding: 15,
   borderRadius: 20,
 },
   blurContainer: {
     flex: 1,
-    padding: 20,
+    padding: 15,
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(0, 0, 0, 0.08)',
   },
   blurWrapper: {
     flex: 1,
     borderRadius: 20,
     overflow: 'hidden', // Clip the blur view
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 12,
-    marginTop: 8,
   },
   row: {
     flexDirection: 'row',
@@ -100,7 +92,7 @@ item: {
   },
   text: {
     color: '#fff',
-    marginLeft: 10,
+    marginLeft: 5,
     fontSize: 14,
     fontWeight: '500',
   },

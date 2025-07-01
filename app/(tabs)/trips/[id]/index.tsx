@@ -12,6 +12,7 @@ import BackButton from '../../../../components/BackButton';
 import ChatButton from '../../../../components/ShareButton';
 import SummaryCard from '../../../../components/SummaryCard';
 import ScheduleView from './ScheduleView';
+import BookingsView from './BookingsView';
 import FloatingActionButton from '../../../../components/OptionsButton';
 
 interface Service {
@@ -159,18 +160,6 @@ const TripDetails = () => {
           onPress={() => setViewMode(tab.toLowerCase() as 'schedule' | 'bookings')}
         />
       ))}
-    </View>
-  );
-
-  const BookingsView = () => (
-    <View style={styles.comingSoonContainer}>
-      <View style={styles.comingSoonContent}>
-        <Text style={styles.comingSoonIcon}>📋</Text>
-        <Text style={styles.comingSoonTitle}>Bookings Management</Text>
-        <Text style={styles.comingSoonText}>
-          View and manage all your trip bookings in one place. Coming soon!
-        </Text>
-      </View>
     </View>
   );
 

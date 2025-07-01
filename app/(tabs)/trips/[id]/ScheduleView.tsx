@@ -12,9 +12,7 @@ import { theme } from '../../../theme';
 interface Service {
   id: string;
   name: string;
-  description: string;
   time: string;
-  duration: string;
   cost: number;
   location: string;
   weather?: 'sunny' | 'cloudy' | 'rainy';
@@ -83,11 +81,9 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({ tripDays, tripTitle }) => {
               <View key={service.id} style={styles.serviceItem}>
                 <View style={styles.serviceInfo}>
                   <Text style={styles.serviceName}>{service.name}</Text>
-                  <Text style={styles.serviceDescription}>{service.description}</Text>
                 </View>
                 <View style={styles.serviceDetails}>
                   <Text style={styles.serviceTime}>{service.time}</Text>
-                  <Text style={styles.serviceDuration}>{service.duration}</Text>
                 </View>
               </View>
             ))}
@@ -104,17 +100,16 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({ tripDays, tripTitle }) => {
         </TouchableOpacity>
       ))}
       
-      {/* Add Day Card */}
+      {/* Add service */}
       <TouchableOpacity
         style={styles.addDayCard}
-        onPress={() => alert("Add new day functionality")}
+        onPress={() => router.push('../../explore')}
         activeOpacity={0.8}
       >
         <View style={styles.addDayContent}>
           <View style={styles.addIcon}>
             <Text style={styles.addIconText}>+</Text>
           </View>
-          <Text style={styles.addDayText}>Add Another Day</Text>
           <Text style={styles.addDaySubtext}>Plan more activities</Text>
         </View>
       </TouchableOpacity>

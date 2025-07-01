@@ -115,14 +115,14 @@ const OptionsButton = () => {
     else if (option === 'Map')
       alert("Route -> map view!");
     else if (option === 'Chat')
-      alert("Route -> chatbox!");
+     router.push('./{id}/Chat');
 
   };
 
   const options = [
-    { name: 'Budget', icon: 'wallet-outline', color: '#FF6B6B' },
-    { name: 'Map', icon: 'map-outline', color: '#4ECDC4' },
-    { name: 'Chat', icon: 'chatbubble-outline', color: '#45B7D1' },
+    { name: 'Budget', icon: 'wallet-outline', color: '#008080' },
+    { name: 'Map', icon: 'map-outline', color: '#008080' },
+    { name: 'Chat', icon: 'chatbubble-outline', color: '#008080' },
    
   ];
 
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 12,
-    marginBottom: 100,
+    marginBottom: 120,
   },
   fabIcon: {
     justifyContent: 'center',
@@ -318,12 +318,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.15)',
-    backdropFilter: 'blur(5px)',
+    backgroundColor: 'rgba(0, 0, 0, 0.28)',
+    backdropFilter: 'blur(9px)',
   },
   optionsContainer: {
     position: 'absolute',
-    bottom: 160,
+    bottom: 180,
     right: 50,
     alignItems: 'center',
     justifyContent: 'center',
