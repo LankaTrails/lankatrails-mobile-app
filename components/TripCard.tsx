@@ -1,12 +1,12 @@
 import React from "react";
-import { View, Text, StyleSheet, Dimensions, ImageBackground,TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, Dimensions, ImageBackground, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Link } from "expo-router";
 
 const { width } = Dimensions.get("window");
 
 interface TripCardProps {
-  id : number | string;
+  id: number | string;
   title: string;
   details: string;
   budget: string;
@@ -21,40 +21,39 @@ const TripCard: React.FC<TripCardProps> = ({
   duration,
 }) => {
   return (
-    <Link href={`/trips/${id}`} style={styles.imageBackground}>
-    <TouchableOpacity style={styles.card} activeOpacity={0.85}>
-      <ImageBackground
-        source={{ uri: "https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg" }}
-        style={styles.image}
-        imageStyle={{ borderRadius: 16 }}
-      >
-        <LinearGradient
-          colors={["rgba(37, 37, 37, 0.57)", "transparent"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.gradient}
+    <Link href={`/trips/${id}`} asChild>
+      <TouchableOpacity style={styles.card} activeOpacity={0.85}>
+        <ImageBackground
+          source={{
+            uri: "https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg",
+          }}
+          style={styles.image}
+          imageStyle={{ borderRadius: 16 }}
         >
-          <Text style={styles.tripTitle}>{title}</Text>
-          <Text style={styles.tripDetail}>{details}</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>
-              Budget: <Text style={styles.info}>{budget}</Text>
-            </Text>
-            <Text style={styles.label}>
-              Duration: <Text style={styles.info}>{duration}</Text>
-            </Text>
-          </View>
-        </LinearGradient>
-      </ImageBackground>
-    </TouchableOpacity>
+          <LinearGradient
+            colors={["rgba(37, 37, 37, 0.57)", "transparent"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.gradient}
+          >
+            <Text style={styles.tripTitle}>{title}</Text>
+            <Text style={styles.tripDetail}>{details}</Text>
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>
+                Budget: <Text style={styles.info}>{budget}</Text>
+              </Text>
+              <Text style={styles.label}>
+                Duration: <Text style={styles.info}>{duration}</Text>
+              </Text>
+            </View>
+          </LinearGradient>
+        </ImageBackground>
+      </TouchableOpacity>
     </Link>
   );
 };
 
 const styles = StyleSheet.create({
-  imageBackground: {
-    borderRadius: 12,
-  },
   gradient: {
     flex: 1,
     padding: 16,
@@ -87,19 +86,18 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   card: {
-  width: '100%',
-  height: 120,        
-  marginBottom: 12,
-  borderRadius: 20,
-  overflow: "hidden",
-  backgroundColor: "#f9fafb",
-},
-image: {
-  flex: 1,
-  width: "100%",
-  height: "100%",
-},
-  
+    width: "100%",
+    height: 120,
+    marginBottom: 12,
+    borderRadius: 20,
+    overflow: "hidden",
+    backgroundColor: "#f9fafb",
+  },
+  image: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+  },
 });
 
 export default TripCard;

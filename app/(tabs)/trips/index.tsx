@@ -87,7 +87,7 @@ export default function TripsScreen() {
         )}
       </ScrollView>
 
-      <NewTripButton onPress={() => router.push("../screens/createTrip")} />
+      <NewTripButton onPress={() => alert("route -> New Trip")} />
     </View>
   );
 }

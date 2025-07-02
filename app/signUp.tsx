@@ -22,10 +22,7 @@ const { width, height } = Dimensions.get('window');
 
 const SignUp = () => {
   const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
     email: '',
-    phone: '',
     password: '',
     confirmPassword: '',
   });
@@ -55,10 +52,7 @@ const SignUp = () => {
   }, []);
 
   interface SignUpForm {
-    firstName: string;
-    lastName: string;
     email: string;
-    phone: string;
     password: string;
     confirmPassword: string;
   }
@@ -70,8 +64,8 @@ const SignUp = () => {
   };
 
   const handleSignUp = () => {
-    const { firstName, lastName, email, password, confirmPassword } = form;
-    if (!firstName || !lastName || !email || !password || !confirmPassword) {
+    const { email, password, confirmPassword } = form;
+    if (!email || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
@@ -89,9 +83,7 @@ const SignUp = () => {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <ImageBackground
-        source={{
-          uri: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=2340&q=80',
-        }}
+        source={require('../assets/images/login.jpeg')}
         style={styles.backgroundImage}
         resizeMode="cover"
       >
@@ -113,36 +105,12 @@ const SignUp = () => {
               </Animated.View>
 
               <Text style={styles.header}>Create Account</Text>
-
-              <InputField
-                label="First Name"
-                placeholder="Enter your first name"
-                value={form.firstName}
-                onChange={(text) => handleChange('firstName', text)}
-                icon="person"
-              />
-              <InputField
-                label="Last Name"
-                placeholder="Enter your last name"
-                value={form.lastName}
-                onChange={(text) => handleChange('lastName', text)}
-                icon="person"
-              />
               <InputField
                 label="Email"
                 placeholder="Enter your email"
                 value={form.email}
                 onChange={(text) => handleChange('email', text)}
                 icon="mail"
-              />
-              <InputField
-                label="Phone Number"
-                placeholder="Enter your phone number"
-                value={form.phone}
-                onChange={(text) => handleChange('phone', text.replace(/[^0-9]/g, ''))} // keep only numbers
-                icon="call"
-                keyboardType="phone-pad"
-                maxLength={10}
               />
               <InputField
                 label="Password"

@@ -11,11 +11,12 @@ const persistor = persistStore(store);
 
 export default function RootLayout() {
   return (
+    
     <Provider store={store}>
       {/* Remove AuthProvider since we're using Redux only */}
       {/* Optional: Add PersistGate if you want to persist your Redux state */}
       {/* <PersistGate loading={null} persistor={persistor}> */}
-        <Stack screenOptions={{ headerShown: false }} />
+        <Stack screenOptions={{ headerShown: false,animation: "none" }} />
       {/* </PersistGate> */}
     </Provider>
   );
