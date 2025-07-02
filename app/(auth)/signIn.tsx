@@ -110,9 +110,7 @@ const SignIn = () => {
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
       <ImageBackground
-        source={{
-          uri: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2340&q=80'
-        }}
+        source={require('../../assets/images/login.jpeg')}
         style={styles.backgroundImage}
         resizeMode="cover"
       >
@@ -203,7 +201,7 @@ const SignIn = () => {
                   >
                     <Text style={styles.socialButtonText}>
                       {provider === 'Google' ? 'G' : 
-                       provider === 'Facebook' ? 'f' : '🍎'}
+                       provider === 'Facebook' ? 'f' : 'i'}
                     </Text>
                   </TouchableOpacity>
                 ))}
