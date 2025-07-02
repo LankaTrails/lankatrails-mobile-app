@@ -5,13 +5,15 @@ import { router } from 'expo-router';
 
 import PropTypes from 'prop-types';
 
-const HeaderSection = ({ isFavourite, handleFavourite, handleShare }) => {
+const HeaderSection = ({ title = '', onBack ,isFavourite, handleFavourite, handleShare }) => {
+  
   return (
     <View className="flex-row items-center justify-between mt-5 mb-2 px-4">
-      <TouchableOpacity onPress={() => router.push('/explore')}>
+      <TouchableOpacity           onPress={onBack ? onBack : () => router.back()}
+        className="flex-row items-center">
         <ArrowLeft size={34} color="#008080" />
       </TouchableOpacity>
-      <Text className="text-primary text-3xl font-bold">Galle</Text>
+      <Text className="text-primary text-3xl font-bold">{title}</Text>
       <View className="flex-row">
         <TouchableOpacity className="mr-4" onPress={handleFavourite}>
           <Heart size={30} color="#008080" fill={isFavourite ? '#008080' : 'none'} />
