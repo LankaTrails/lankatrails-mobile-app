@@ -217,17 +217,17 @@ const ServiceView = () => {
 
   return (
     <>
-      <SafeAreaView className="bg-white">
+      <SafeAreaView className="bg-white ">
         <HeaderSection 
           title="Sunset Food Cafe"
           isFavourite={isFavourite}
           handleFavourite={handleFavourite}
           handleShare={handleShare}
-          onBack={() => router.push('/explore')} 
+          onBack={() => router.push('/explore/searchResult')} 
         />
       </SafeAreaView>
       
-      <ScrollView className="flex-1 bg-gray-50">
+      <ScrollView className="flex-1 mb-20 bg-gray-50">
         {/* Horizontal Image Gallery */}
         <View className="ml-6 mb-6">
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -360,7 +360,7 @@ const ServiceView = () => {
         </View>
 
         {/* You May Also Like */}
-        <View className="px-4 mb-8">
+        <View className="px-4 mb-20">
           <Text className="text-xl font-semibold text-gray-800 mb-4">You may also like</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {['Beach Bar', 'Seafood Grill', 'Sunset Lounge'].map((suggestion, i) => (

@@ -8,7 +8,7 @@ const Header = ({ title = '', onBack }) => {
     <View className="bg-white shadow-sm">
       <View className="px-6 mt-6  flex-row items-center justify-between ">
         <TouchableOpacity
-          onPress={onBack ? onBack : () => router.back()}
+        onPress={onBack ?? (() => router.back())}
           className="flex-row items-center"
         >
           <ArrowLeft size={36} color="#008080" />

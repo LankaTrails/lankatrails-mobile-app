@@ -85,6 +85,10 @@ const TravelApp = () => {
 
   return (
     <View className="flex-1 bg-white">
+      {/* Overlay for darkening home and navbar when notifications are open */}
+      {showNotifications && (
+        <View pointerEvents="auto" className="absolute inset-0 bg-black/40 z-40" />
+      )}
       <StatusBar
         barStyle="dark-content"
         translucent
@@ -93,7 +97,7 @@ const TravelApp = () => {
       <View style={{ height: insets.top, backgroundColor: "#ffffff" }} />
 
       {/* Header */}
-      <View className="px-4 pt-4 pb-2 bg-white">
+      <View className={`px-4 pt-4 pb-2 ${showNotifications ? 'bg-white/80' : 'bg-white'}`}> 
         <View className="flex-row justify-between items-center mb-4">
           <View>
             <Text className="text-primary mt-6 text-4xl font-bold">
@@ -114,7 +118,7 @@ const TravelApp = () => {
       </View>
 
       {/* Scrollable Content */}
-      <ScrollView className="flex-1 " showsVerticalScrollIndicator={false}>
+      <ScrollView className={`flex-1 ${showNotifications ? 'opacity-60' : ''}`} showsVerticalScrollIndicator={false} scrollEnabled={!showNotifications}>
         {/* Image Slider */}
         <View className="px-4 mb-6">
           <ImageSlider
@@ -301,14 +305,14 @@ const TravelApp = () => {
 
       {/* Notification Popup */}
       {showNotifications && (
-        <View className="absolute inset-0 bg-black/40 justify-center items-center z-50">
+        <View className="absolute inset-0 justify-center items-center z-50">
           <TouchableOpacity
             className="absolute inset-0"
             onPress={() => setShowNotifications(false)}
             activeOpacity={1}
           />
           <View className="bg-white w-[90%] rounded-2xl p-4 shadow-lg">
-            <Text className="text-3xl font-bold m-8 ml-20 text-black">
+            <Text className="text-3xl font-bold m-8 items-center text-black">
               Notifications
             </Text>
             <StaggeredListItem index={0} delay={400}>
@@ -322,14 +326,10 @@ const TravelApp = () => {
                   🌍 New destination added: Trincomalee
                 </Text>
               </View>
-              <View className="m-4">
-                <Text className="text-lg text-black">
-                  ✈️ Flight deals to Ella updated!
-                </Text>
-              </View>
+              
             </StaggeredListItem>
             <TouchableOpacity
-              className="mt-4 self-end bg-primary w-40 h-15 px-4 py-2 rounded-full"
+              className="mt-4 self-end bg-primary  h-15 px-4 py-2 rounded-full"
               onPress={() => setShowNotifications(false)}
             >
               <Text className="text-white font-medium p-2">Close</Text>
@@ -337,6 +337,8 @@ const TravelApp = () => {
           </View>
         </View>
       )}
+
+      
     </View>
   );
 };
