@@ -41,7 +41,7 @@ const Card: React.FC<CardProps> = ({ item, onPress, width = 160 }) => {
       className="bg-white rounded-xl shadow-sm mr-4 mb-4"
       style={{ width }}
       onPress={() => {
-        console.log(`Card pressed: ${cardData.title}`);
+        // console.log(`Card pressed: ${cardData.title}`);
         onPress?.(cardData);
       }}
     >
