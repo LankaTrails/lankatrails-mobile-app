@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
-function SearchBar() {
+function SearchBar({ onPress }: { onPress?: () => void }) {
   const [searchText, setSearchText] = useState('');
 
   return (
@@ -20,6 +20,7 @@ function SearchBar() {
               <TouchableOpacity 
                 className="absolute right-3 top-3 p-1 hover:bg-gray-300 rounded-full"
                 activeOpacity={0.7}
+                onPress={onPress}
               >
                 <MagnifyingGlassIcon size={24} color="#6B7280" style={{
                   marginRight: 5,
