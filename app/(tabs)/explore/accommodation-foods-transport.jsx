@@ -1,158 +1,167 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   Image,
   TouchableOpacity,
   Animated,
   Dimensions,
   StatusBar,
   SafeAreaView,
-  FlatList
+  FlatList,
+  ScrollView,
 } from 'react-native';
-import { ArrowLeft, Star, MapPin, Phone, Clock, Wifi, Coffee, Utensils } from 'lucide-react-native';
+import { ArrowLeft, Star } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useRoute } from '@react-navigation/native';
+import { fetchGroupedPlaces } from '../../../services/googlePlacesService';
+import Card from '../../../components/Card';
 
 const { width } = Dimensions.get('window');
+const GOOGLE_PLACES_API_KEY = 'AIzaSyA47Q-I515EK0DU4pvk5jgUcatYcdnf8cY';
+
+type Place = {
+  place_id: string;
+  name: string;
+  vicinity: string;
+  rating?: number | string;
+  photos?: { photo_reference: string }[];
+};
+
+type PlaceGroup = {
+  group: string;
+  places: Place[];
+};
 
 const AccommodationFoodsTransportView = () => {
   const { tab } = useLocalSearchParams();
   const [activeView, setActiveView] = useState(tab || 'accommodation');
-  const [loading, setLoading] = useState(false);
+  const [groupedPlaces, setGroupedPlaces] = useState([]);
+  const [loadingPlaces, setLoadingPlaces] = useState(true);
   const fadeInValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Set initial tab from URL parameter
-    if (tab) {
-      setActiveView(tab);
-    }
-    
-    // Animate in when component mounts
+    if (tab) setActiveView(tab);
+
     Animated.timing(fadeInValue, {
       toValue: 1,
       duration: 300,
       useNativeDriver: true,
     }).start();
+
+    const fetchPlaces = async () => {
+      try {
+        setLoadingPlaces(true);
+        // const groups = await fetchGroupedPlaces(6.9271, 79.8612); // Colombo
+        const groups = await fetchGroupedPlaces(7.2906, 80.6337); // Kandy coordinates
+
+        setGroupedPlaces(groups);
+      } catch (error) {
+        console.error('Place fetch error:', error);
+      } finally {
+        setLoadingPlaces(false);
+      }
+    };
+
+    fetchPlaces();
   }, [tab]);
 
   const getTitle = () => {
     switch (activeView) {
-      case 'accommodation':
-        return 'Accommodation';
-      case 'foods':
-        return 'Foods';
-      case 'transport':
-        return 'Transport';
-      default:
-        return 'Accommodation';
+      case 'accommodation': return 'Accommodation';
+      case 'foods': return 'Foods';
+      case 'transport': return 'Transport';
+      default: return 'Accommodation';
     }
   };
 
-  const renderContent = () => {
-    switch (activeView) {
-      case 'accommodation':
-        return <Text className="text-center text-lg">Accommodation Content</Text>;
-      case 'foods':
-        return <Text className="text-center text-lg">Foods Content</Text>;
-      case 'transport':
-        return <Text className="text-center text-lg">Transport Content</Text>;
-      default:
-        return null;
-    }
+  const getCurrentGroupPlaces = () => {
+    return groupedPlaces.find(g => g.group.toLowerCase() === activeView.toLowerCase())?.places || [];
   };
-
-  const accommodationData = [
-    {
-      id: 1,
-      name: "Galle Fort Hotel",
-      rating: "4.8",
-      location: "Inside Galle Fort",
-      price: "Rs. 15,000",
-      image: "https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=400",
-      amenities: ["Wifi", "Pool", "Restaurant"],
-      phone: "+94 91 223 2870"
-    },
-    // ... rest of your data
-  ];
-
-  // ... rest of your component code (AnimatedCard, AccommodationCard, etc.)
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
       <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
-      
-      <Animated.View 
-        className="flex-1"
-        style={{ opacity: fadeInValue }}
-      >
+      <Animated.View className="flex-1" style={{ opacity: fadeInValue }}>
         {/* Header */}
         <View className="bg-white shadow-sm">
-          <View className="px-4 py-6">
+          <View className="px-4 py-6 mt-9">
             <View className="flex-row items-center justify-between">
-              <TouchableOpacity 
-                onPress={() => router.back()}
-                className="flex-row items-center"
-              >
-                <ArrowLeft size={24} color="#0D9488" />
+              <TouchableOpacity onPress={() => router.back()} className="flex-row items-center">
+                <ArrowLeft size={36} color="#0D9488" />
               </TouchableOpacity>
-              <Text className="text-xl font-bold text-gray-800">{getTitle()}</Text>
+              <Text className="text-3xl font-bold text-gray-800">{getTitle()}</Text>
               <View className="w-6" />
             </View>
           </View>
 
-          {/* Tab Navigation */}
+          {/* Tabs */}
           <View className="flex-row border-b border-gray-200">
-            <TouchableOpacity
-              onPress={() => setActiveView('accommodation')}
-              className={`flex-1 py-3 px-4 items-center ${
-                activeView === 'accommodation' ? 'border-b-2 border-teal-600' : ''
-              }`}
-            >
-              <Text className={`font-medium ${
-                activeView === 'accommodation' ? 'text-teal-600' : 'text-gray-600'
-              }`}>
-                Accommodation
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              onPress={() => setActiveView('foods')}
-              className={`flex-1 py-3 px-4 items-center ${
-                activeView === 'foods' ? 'border-b-2 border-teal-600' : ''
-              }`}
-            >
-              <Text className={`font-medium ${
-                activeView === 'foods' ? 'text-teal-600' : 'text-gray-600'
-              }`}>
-                Foods
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              onPress={() => setActiveView('transport')}
-              className={`flex-1 py-3 px-4 items-center ${
-                activeView === 'transport' ? 'border-b-2 border-teal-600' : ''
-              }`}
-            >
-              <Text className={`font-medium ${
-                activeView === 'transport' ? 'text-teal-600' : 'text-gray-600'
-              }`}>
-                Transport
-              </Text>
-            </TouchableOpacity>
+            {['accommodation', 'foods', 'transport'].map((tabKey) => (
+              <TouchableOpacity
+                key={tabKey}
+                onPress={() => setActiveView(tabKey)}
+                className={`flex-1 py-3 px-4 items-center ${
+                  activeView === tabKey ? 'border-b-2 border-teal-600' : ''
+                }`}
+              >
+                <Text
+                  className={`font-medium ${
+                    activeView === tabKey ? 'text-teal-600' : 'text-gray-600'
+                  }`}
+                >
+                  {tabKey.charAt(0).toUpperCase() + tabKey.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
-        {/* Content */}
-        <View className="flex-1 pt-6">
-          {renderContent()}
-        </View>
+        {/* Filtered Tab Content */}
+        <ScrollView contentContainerStyle={{ padding: 16 }}>
+          {loadingPlaces ? (
+            <Text className="text-center text-gray-500">Loading places...</Text>
+          ) : (
+            <View>
+              <Text className="text-lg font-bold mb-2 capitalize">
+                {activeView} ({getCurrentGroupPlaces().length})
+              </Text>
+              {getCurrentGroupPlaces().length > 0 ? (
+                <FlatList 
+                  data={getCurrentGroupPlaces()}
+                  keyExtractor={(item) => item.place_id}
+                  renderItem={({ item }) => (
+                    <Card
+                      item={{
+                        id: Number(item.place_id),
+                        title: item.name,
+                        subtitle: item.vicinity,
+                        rating:
+                          typeof item.rating === 'number'
+                            ? item.rating
+                            : typeof item.rating === 'string'
+                            ? parseFloat(item.rating)
+                            : 0,
+                        image:
+                          item.photos?.[0]
+                            ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${item.photos[0].photo_reference}&key=${GOOGLE_PLACES_API_KEY}`
+                            : '',
+                      }}
+                      onPress={() => console.log('Pressed:', item.place_id)}
+                      width={180}
+                    />
+                  )}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                />
+              ) : (
+                <Text className="text-gray-500">No places found in this category.</Text>
+              )}
+            </View>
+          )}
+        </ScrollView>
       </Animated.View>
     </SafeAreaView>
   );
 };
 
 export default AccommodationFoodsTransportView;
-

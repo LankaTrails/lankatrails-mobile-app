@@ -17,6 +17,28 @@ const groupConfigs = [
     minRating: 2
   },
   { 
+    group: 'Accommodation', 
+    types: ['natural_feature'], 
+    keyword: 'beach',
+    excludeKeywords: ['resort', 'private', 'tour', 'hotel'],
+    minRating: 2
+  },
+  { 
+    group: 'Foods', 
+    types: ['museum', 'tourist_attraction'], 
+    keyword: 'tour|restaurant|cafe|food',
+    excludeKeywords: [ 'guide required'],
+    minRating: 2
+  },
+ { 
+    group: 'Transport', 
+    types: ['park'], 
+    keyword: 'tour|restaurant|cafe|food',
+    excludeKeywords: [ 'guide required'],
+    minRating: 2
+  },
+  
+  { 
     group: 'Waterfalls & Nature', 
     types: ['natural_feature'], 
     keyword: 'waterfall|forest|hike|trail',
