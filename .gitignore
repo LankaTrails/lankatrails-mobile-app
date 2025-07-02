@@ -184,3 +184,9 @@ app-example
 
 .vscode/
 # Visual Studio Code settings
+
+/android
+# Android Studio settings
+
+/ios
+# Xcode settings

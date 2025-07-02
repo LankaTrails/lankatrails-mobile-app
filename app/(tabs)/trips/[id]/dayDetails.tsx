@@ -102,12 +102,24 @@ const DayDetails = () => {
                 <Text style={styles.serviceWeatherText}>Weather forecast</Text>
               </View>
               <TouchableOpacity onPress={() => handleViewServiceDetails(service.id)}>
-                <Text style={styles.changeDetailsButton}>Change Details</Text>
+                <Text style={styles.changeDetailsButton}>Edit Details</Text>
               </TouchableOpacity>
             </View>
           </View>
         ))}
-          <LongButton label="+ Add New Service" onPress={handleAddNewService} />
+          {/* Add service */}
+                <TouchableOpacity
+                  style={styles.addDayCard}
+                  onPress={() => router.push('../../explore')}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.addDayContent}>
+                    <View style={styles.addIcon}>
+                      <Text style={styles.addIconText}>+</Text>
+                    </View>
+                    <Text style={styles.addDaySubtext}>Plan more activities</Text>
+                  </View>
+                </TouchableOpacity>
 
         <View style={styles.dayTotal}>
           <View style={styles.dayTotalHeader}>
@@ -287,7 +299,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
     borderRadius: 20,
     padding: 20,
-    marginBottom: 24,
+    marginBottom: 70,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
@@ -308,6 +320,44 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   dayTotalSubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+   addDayCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addDayContent: {
+    alignItems: 'center',
+  },
+  addIcon: {
+    width: 48,
+    height: 48,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  addIconText: {
+    fontSize: 24,
+    color: '#6B7280',
+    fontWeight: '300',
+  },
+  addDayText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  addDaySubtext: {
     fontSize: 14,
     color: '#6B7280',
   },

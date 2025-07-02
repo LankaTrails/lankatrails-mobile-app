@@ -56,9 +56,9 @@ export default function EditPopup({
     </TouchableWithoutFeedback>
 
     <View style={styles.modal}>
-      <Text style={styles.modalTitle}>
-        {isPassword ? "Change Password" : ""}
-      </Text>
+      
+        {isPassword ? <Text style={styles.modalTitle}>Change Password</Text> : ""}
+      
 
       {Object.entries(values).map(([key, value]) => (
   <InputField

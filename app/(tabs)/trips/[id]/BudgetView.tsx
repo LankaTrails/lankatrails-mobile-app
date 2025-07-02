@@ -17,6 +17,8 @@ import SelectPopup from '../../../../components/SelectPopup';
 import ChatButton from '../../../../components/ShareButton';
 import BackButton from '../../../../components/BackButton';
 import FilterButton from '../../../../components/FilterButton';
+import Svg, { Circle } from 'react-native-svg';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 interface BudgetCategory {
@@ -192,9 +194,9 @@ const BudgetView = () => {
 
     return (
       <View style={{ width: size, height: size }}>
-        <svg width={size} height={size} style={{ position: 'absolute' }}>
+        <Svg width={size} height={size} style={{ position: 'absolute' }}>
           {/* Background circle */}
-          <circle
+          <Circle
             cx={size / 2}
             cy={size / 2}
             r={radius}
@@ -203,7 +205,7 @@ const BudgetView = () => {
             fill="transparent"
           />
           {/* Progress circle */}
-          <circle
+          <Circle
             cx={size / 2}
             cy={size / 2}
             r={radius}
@@ -216,7 +218,7 @@ const BudgetView = () => {
             transform={`rotate(-90 ${size / 2} ${size / 2})`}
             style={{ filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.1))' }}
           />
-        </svg>
+        </Svg>
         <View style={styles.progressTextContainer}>
           <Text style={[styles.progressPercentageText, { color }]}>
             {Math.round(percentage)}%
@@ -362,11 +364,13 @@ const BudgetView = () => {
         </Animated.View>
       )}
 
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
           <BackButton/>
+        <View style={styles.headerText}>
           <Text style={styles.headerTitle}>Budget Overview</Text>
+          </View>
           <ChatButton />
         </View>
 
@@ -379,18 +383,18 @@ const BudgetView = () => {
             
             <View style={styles.overviewRow}>
               <View style={styles.overviewItem}>
-                <Text style={styles.overviewValue}>LKR {totalBudget.toLocaleString()}</Text>
+                <Text style={styles.overviewValue}> {totalBudget.toLocaleString()}</Text>
                 <Text style={styles.overviewLabel}>Total Budget</Text>
               </View>
               <View style={styles.overviewItem}>
                 <Text style={[styles.overviewValue, { color: '#EF4444' }]}>
-                  LKR {totalSpent.toLocaleString()}
+                   {totalSpent.toLocaleString()}
                 </Text>
                 <Text style={styles.overviewLabel}>Spent</Text>
               </View>
               <View style={styles.overviewItem}>
                 <Text style={[styles.overviewValue, { color: remainingBudget >= 0 ? '#008080' : '#EF4444' }]}>
-                  LKR {Math.abs(remainingBudget).toLocaleString()}
+                  {Math.abs(remainingBudget).toLocaleString()}
                 </Text>
                 <Text style={styles.overviewLabel}>{remainingBudget >= 0 ? 'Remaining' : 'Over Budget'}</Text>
               </View>
@@ -560,7 +564,7 @@ const BudgetView = () => {
           onClose={handleCloseModal}
           onSubmit={handleUpdateBudget}
         />
-      </View>
+      </SafeAreaView>
     </>
   );
 };
@@ -582,23 +586,22 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: 'space-between',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
+  },
+  headerText: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1E293B',
+    color: '#111827',
   },
-  
   // Enhanced Overview Card Styles
   overviewCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
-    padding: 24,
+    padding: 16,
     margin: 16,
     marginBottom: 20,
     shadowColor: '#000',
@@ -608,7 +611,7 @@ const styles = StyleSheet.create({
     elevation: 5,
     borderWidth: 1,
     borderColor: '#F1F5F9',
-    height: 200,
+    height: 170,
   },
   overviewHeader: {
     flexDirection: 'row',
@@ -624,29 +627,17 @@ const styles = StyleSheet.create({
   overviewRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 4,
+
   },
   overviewItem: {
     alignItems: 'center',
     flex: 1,
   },
-  overviewIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#F8FAFC',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  overviewIcon: {
-    fontSize: 20,
-  },
   overviewValue: {
-    fontSize: 18,
+    fontSize: 23,
     fontWeight: 'bold',
     color: '#1E293B',
-    marginBottom: 4,
+
   },
   overviewLabel: {
     fontSize: 12,
@@ -657,9 +648,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   progressBarContainer: {
-    backgroundColor: '#F8FAFC',
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
   },
   progressBar: {
     height: 10,
@@ -702,8 +692,8 @@ const styles = StyleSheet.create({
   },
   editButton: {
     backgroundColor: theme.colors.lightPrimary,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: theme.colors.primary,
