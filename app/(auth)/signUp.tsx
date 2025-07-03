@@ -17,8 +17,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import InputField from "../../components/InputField";
-import LongButton from "../../components/LongButton";
+import InputField from "@/components/InputField";
+import LongButton from "@/components/LongButton";
+import CountryDropdown from "@/components/CountryDropdown";
 
 const { width, height } = Dimensions.get("window");
 
@@ -127,9 +128,28 @@ const SignUp = () => {
     if (!form.password) {
       newErrors.password = "Password is required";
       hasErrors = true;
-    } else if (form.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
-      hasErrors = true;
+    } else {
+      const passwordErrors = [];
+
+      if (form.password.length < 8) {
+        passwordErrors.push("at least 8 characters");
+      }
+      if (!/[A-Z]/.test(form.password)) {
+        passwordErrors.push("one uppercase letter");
+      }
+      if (!/[0-9]/.test(form.password)) {
+        passwordErrors.push("one number");
+      }
+      if (!/[!@#$%^&*(),.?":{}|<>]/.test(form.password)) {
+        passwordErrors.push("one special character");
+      }
+
+      if (passwordErrors.length > 0) {
+        newErrors.password = `Password must contain ${passwordErrors.join(
+          ", "
+        )}`;
+        hasErrors = true;
+      }
     }
 
     if (!form.confirmPassword) {
@@ -171,12 +191,13 @@ const SignUp = () => {
       );
 
       // Success - show success message with more details
+      // alert message to say please check your email and verify your account to continue
       Alert.alert(
         "Success",
-        `Welcome ${response.data.email}! Your account has been created successfully.`,
+        `Welcome ${response.data.email}! Your account has been created successfully. Please check your email and verify your account to continue.`,
         [
           {
-            text: "Continue to Sign In",
+            text: "OK",
             onPress: () => router.replace("/signIn"),
           },
         ]
@@ -295,9 +316,9 @@ const SignUp = () => {
                   </View>
 
                   <View style={styles.inputWrapper}>
-                    <InputField
+                    <CountryDropdown
                       label="Country"
-                      placeholder="Enter your country"
+                      placeholder="Select your country"
                       value={form.country}
                       onChange={(text) => handleChange("country", text)}
                       icon="earth"
