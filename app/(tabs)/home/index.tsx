@@ -120,7 +120,7 @@ const TravelApp = () => {
       {/* Scrollable Content */}
       <ScrollView className={`flex-1 ${showNotifications ? 'opacity-60' : ''}`} showsVerticalScrollIndicator={false} scrollEnabled={!showNotifications}>
         {/* Image Slider */}
-        <View className="px-4 mb-6">
+        <View className="px-4 mb-6 w-full">
           <ImageSlider
             images={[
               "https://images.unsplash.com/photo-1646894232861-a0ad84f1ad5d?q=80&w=2071&auto=format&fit=crop",
@@ -146,7 +146,7 @@ const TravelApp = () => {
                     rating: place.rating || 0,
                     image: place.image,
                   }}
-                  width={width * 0.44}
+                  width={width * 0.5 - 16} // Adjust width for two columns
                   onPress={(selectedPlace) => {
                     console.log("Pressed:", selectedPlace.title);
                   }}
@@ -179,13 +179,13 @@ const TravelApp = () => {
           </Text>
           <TouchableOpacity
             className="bg-white rounded-full px-6 py-3 mb-2"
-            onPress={() => router.push("/explore")} // Navigate to Plan Trip screen
+            onPress={() => router.push("/trips")} // Navigate to Plan Trip screen
           >
             <Text className="text-primary font-medium">Plan Trip</Text>
           </TouchableOpacity>
           <TouchableOpacity
             className="bg-white/20 rounded-full px-6 py-3"
-            onPress={() => router.push("/trips")}
+            onPress={() => router.push("/explore")} // Navigate to Explore screen
           >
             <Text className="text-white font-medium">Explore</Text>
           </TouchableOpacity>

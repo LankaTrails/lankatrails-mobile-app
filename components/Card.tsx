@@ -38,7 +38,7 @@ const Card: React.FC<CardProps> = ({ item, onPress, width = 160 }) => {
 
   return (
     <TouchableOpacity
-      className="bg-white rounded-xl shadow-sm mr-4 mb-4"
+      className="bg-white rounded-xl shadow-sm mb-4"
       style={{ width }}
       onPress={() => {
         // console.log(`Card pressed: ${cardData.title}`);
@@ -47,14 +47,14 @@ const Card: React.FC<CardProps> = ({ item, onPress, width = 160 }) => {
     >
       <Image
         source={{ uri: cardData.image }}
-        className="w-full h-48 rounded-t-xl"
+        className="w-full h-44 rounded-t-xl"
         resizeMode="cover"
       />
       <View className="p-3">
-        <Text className="text-lg font-bold  text-primary mb-1" numberOfLines={1}>
+        <Text className="text-lg font-bold  text-primary" numberOfLines={1}>
           {cardData.title}
         </Text>
-        <Text className="text-sm text-gray-500 mb-2" numberOfLines={1}>
+        <Text className="text-sm text-gray-500" numberOfLines={1}>
           {cardData.subtitle}
         </Text>
         <View className="flex-row items-center">

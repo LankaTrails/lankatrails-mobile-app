@@ -299,7 +299,7 @@ const LocationSearchScreen = () => {
       >
         <View className="flex-row items-center flex-1">
           <Text className="text-2xl mr-3">{item.icon}</Text>
-          <Text className="text-gray-800 text-base font-medium">{item.name}</Text>
+          <Text className="text-gray-800 text-lg">{item.name}</Text>
         </View>
         <TouchableOpacity 
           className="p-2 hover:bg-gray-200 rounded-full"
@@ -358,7 +358,7 @@ const LocationSearchScreen = () => {
               </View>
               <View className="flex-row items-center">
                 <MapPinIcon size={16} color="#6B7280" strokeWidth={2} />
-                <Text className="text-gray-500 text-sm ml-1">Colombo</Text>
+                <Text className="text-gray-500 text-lg ml-1">Galle</Text>
               </View>
             </TouchableOpacity>
           </View>

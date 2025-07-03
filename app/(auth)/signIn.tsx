@@ -201,7 +201,7 @@ const SignIn = () => {
                   >
                     <Text style={styles.socialButtonText}>
                       {provider === 'Google' ? 'G' : 
-                       provider === 'Facebook' ? 'f' : 'i'}
+                       provider === 'Facebook' ? 'f' : ''}
                     </Text>
                   </TouchableOpacity>
                 ))}

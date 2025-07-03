@@ -13,8 +13,8 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import InputField from '../components/InputField';
-import LongButton from '../components/LongButton';
+import InputField from '../../components/InputField';
+import LongButton from '../../components/LongButton';
 import { router } from 'expo-router';
 import { BlurView } from 'expo-blur';
 
@@ -83,7 +83,7 @@ const SignUp = () => {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <ImageBackground
-        source={require('../assets/images/login.jpeg')}
+        source={require('../../assets/images/login.jpeg')}
         style={styles.backgroundImage}
         resizeMode="cover"
       >

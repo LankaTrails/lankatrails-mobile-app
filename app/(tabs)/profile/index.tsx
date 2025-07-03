@@ -23,7 +23,7 @@ export default function Profile() {
   const [fieldValues, setFieldValues] = useState({
     Name: user?.firstName ? user.firstName + " " + user.lastName : "Eren Yeager",
     Email: user?.email ? user.email : "eren@email.com",
-    Phone: user?.id ? user.id : "+94 712 345 678",
+    // Phone: user?.id ? user.id : "+94 712 345 678",
   });
   const [tempValues, setTempValues] = useState({ ...fieldValues });
   const [imageUri, setImageUri] = useState<string | null>(null);
