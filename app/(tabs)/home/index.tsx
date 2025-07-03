@@ -157,7 +157,7 @@ const TravelApp = () => {
         </View>
 
         {/* Signup Area */}
-        <View className="mx-4 mb-6 bg-teal-100 rounded-2xl p-5">
+        {/* <View className="mx-4 mb-6 bg-teal-100 rounded-2xl p-5">
           <Text className="text-black text-2xl font-bold mb-2">
             Join LankaTrails
           </Text>
@@ -170,7 +170,7 @@ const TravelApp = () => {
               Sign Up
             </Text>
           </TouchableOpacity>
-        </View>
+        </View> */}
 
         {/* Plan Trip CTA */}
         <View className="mx-4 mb-8 bg-primary/60 rounded-2xl p-6 items-center">

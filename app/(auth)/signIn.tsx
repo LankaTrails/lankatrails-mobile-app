@@ -136,7 +136,7 @@ const SignIn = () => {
             >
               <Text style={styles.welcomeText}>Step in!</Text>
               <Text style={styles.subtitle}>
-                Welcome to <Text style={styles.brandText}>LankaTrails</Text>
+                Welcome to <Text style={styles.brandText}>Lanka<Text style={{ color: '#ff6600' }}>Trails</Text></Text>
               </Text>
               <Text style={styles.tagline}>Start Your Journey!</Text>
             </Animated.View>
@@ -193,7 +193,7 @@ const SignIn = () => {
               </View>
 
               <View style={styles.socialContainer}>
-                {['Google', 'Facebook', 'Apple'].map((provider) => (
+                {['Google', 'Facebook'].map((provider) => (
                   <TouchableOpacity
                     key={provider}
                     style={styles.socialButton}
