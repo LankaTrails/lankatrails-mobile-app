@@ -92,6 +92,7 @@ export default function NearbyPlacesScreen() {
     </>
   );
 }
+// this the map view
 
 
 // // // import React, { useEffect, useRef } from 'react';
@@ -681,3 +682,275 @@ export default function NearbyPlacesScreen() {
 // //   );
 // // }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+// import React, { useState, useEffect } from 'react';
+// import {
+//   View,
+//   Text,
+//   ScrollView,
+//   TouchableOpacity,
+//   Animated,
+//   StatusBar,
+//   Alert,
+// } from 'react-native';
+// import { ArrowLeft, Heart, Share2 } from 'lucide-react-native';
+// import MenuCard, { MenuItem } from '@/components/explorer-components/MenuCard';
+
+// const SunsetFoodCafe = () => {
+//   const [liked, setLiked] = useState(false);
+  
+//   // Animated values for progress bars
+//   const [progressAnimations] = useState({
+//     excellent: new Animated.Value(0),
+//     veryGood: new Animated.Value(0),
+//     average: new Animated.Value(0),
+//     poor: new Animated.Value(0),
+//     terrible: new Animated.Value(0),
+//   });
+
+//   const reviewData = {
+//     excellent: 85,
+//     veryGood: 70,
+//     average: 45,
+//     poor: 20,
+//     terrible: 10,
+//   };
+
+//   const menuItems: MenuItem[] = [
+//     {
+//       id: 1,
+//       name: 'Grilled King Prawns',
+//       description: 'Large grilled prawns served with garlic butter',
+//       price: 'LKR 2500',
+//       rating: 4.8,
+//       image: { 
+//         uri: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg' 
+//       },
+//     },
+//     {
+//       id: 2,
+//       name: 'Grilled King Prawns',
+//       description: 'Large grilled prawns served with garlic butter',
+//       price: 'LKR 2500',
+//       rating: 4.8,
+//       image: { 
+//         uri: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg' 
+//       },
+//     },
+//     {
+//       id: 3,
+//       name: 'Grilled King Prawns',
+//       description: 'Fresh king prawns with local herbs',
+//       price: 'LKR 2800',
+//       rating: 4.6,
+//       image: { 
+//         uri: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg' 
+//       },
+//     },
+//     {
+//       id: 4,
+//       name: 'Grilled King Prawns',
+//       description: 'Spiced grilled prawns with local sauce',
+//       price: 'LKR 2500',
+//       rating: 4.8,
+//       image: { 
+//         uri: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg' 
+//       },
+//     },
+//   ];
+
+//   useEffect(() => {
+//     // Animate progress bars with staggered timing
+//     const animations = Object.keys(progressAnimations).map((key, index) => {
+//       const typedKey = key as keyof typeof progressAnimations;
+//       return Animated.timing(progressAnimations[typedKey], {
+//         toValue: reviewData[typedKey] / 100,
+//         duration: 1000,
+//         delay: index * 200,
+//         useNativeDriver: false,
+//       });
+//     });
+
+//     Animated.stagger(100, animations).start();
+//   }, []);
+
+//   type ProgressBarProps = {
+//     label: string;
+//     animatedValue: Animated.Value;
+//     color?: string;
+//   };
+
+//   const ProgressBar = ({ label, animatedValue, color = '#10b981' }: ProgressBarProps) => (
+//     <View className="flex-row items-center mb-2">
+//       <Text className="text-sm text-gray-600 w-16 text-right mr-3">{label}</Text>
+//       <View className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+//         <Animated.View
+//           className="h-full rounded-full"
+//           style={{
+//             backgroundColor: color,
+//             width: animatedValue.interpolate({
+//               inputRange: [0, 1],
+//               outputRange: ['0%', '100%'],
+//             }),
+//           }}
+//         />
+//       </View>
+//     </View>
+//   );
+
+//   const handleMenuItemPress = (item: MenuItem) => {
+//     Alert.alert(
+//       item.name,
+//       `${item.description}\n\nPrice: ${item.price}\nRating: ${item.rating}⭐`,
+//       [
+//         { text: 'Cancel', style: 'cancel' },
+//         { text: 'Add to Cart', style: 'default' },
+//       ]
+//     );
+//   };
+
+//   const handleBackPress = () => {
+//     Alert.alert('Go Back', 'Are you sure you want to go back?', [
+//       { text: 'Cancel', style: 'cancel' },
+//       { text: 'Yes', style: 'default' },
+//     ]);
+//   };
+
+//   const handleSharePress = () => {
+//     Alert.alert('Share', 'Share Sunset Food Cafe with friends!');
+//   };
+
+//   return (
+//     <View className="flex-1 bg-gray-50">
+//       <StatusBar barStyle="dark-content" backgroundColor="#f9fafb" />
+      
+//       {/* Header */}
+//       <View className="flex-row items-center justify-between px-4 py-3 bg-white">
+//         <TouchableOpacity className="p-2" onPress={handleBackPress}>
+//           <ArrowLeft size={24} color="#374151" />
+//         </TouchableOpacity>
+//         <View className="flex-row items-center space-x-4">
+//           <TouchableOpacity 
+//             onPress={() => setLiked(!liked)}
+//             className="p-2"
+//           >
+//             <Heart 
+//               size={24} 
+//               color={liked ? "#ef4444" : "#9ca3af"} 
+//               fill={liked ? "#ef4444" : "none"}
+//             />
+//           </TouchableOpacity>
+//           <TouchableOpacity className="p-2" onPress={handleSharePress}>
+//             <Share2 size={24} color="#9ca3af" />
+//           </TouchableOpacity>
+//         </View>
+//       </View>
+
+//       <ScrollView showsVerticalScrollIndicator={false}>
+//         {/* Hero Images */}
+//         <ScrollView 
+//           horizontal 
+//           showsHorizontalScrollIndicator={false}
+//           className="mb-6"
+//           pagingEnabled
+//         >
+//           {/* Hero images would go here */}
+//           <View className="w-screen h-64 bg-gradient-to-r from-blue-400 to-blue-600 items-center justify-center">
+//             <Text className="text-white text-xl font-bold">Beautiful Ocean View</Text>
+//           </View>
+//           <View className="w-screen h-64 bg-gradient-to-r from-orange-400 to-pink-600 items-center justify-center">
+//             <Text className="text-white text-xl font-bold">Stunning Sunset</Text>
+//           </View>
+//         </ScrollView>
+
+//         {/* Restaurant Info */}
+//         <View className="px-4 mb-6">
+//           <Text className="text-2xl font-bold text-gray-800 mb-2">
+//             Sunset Food Cafe
+//           </Text>
+//           <Text className="text-gray-600 leading-6">
+//             Located right on the golden shores of Unawatuna, Sunset Food Cafe is a cozy beachside spot famous for its fresh seafood and stunning sunset views. Whether you're here for a romantic dinner, a casual cocktail or just to chill with friends, this cafe promises an unforgettable dining experience.
+//           </Text>
+//         </View>
+
+//         {/* Menu Highlights */}
+//         <View className="px-4 mb-6">
+//           <Text className="text-xl font-bold text-gray-800 mb-4">
+//             Menu Highlights
+//           </Text>
+//           <View className="flex-row flex-wrap justify-between">
+//             {menuItems.map((item) => (
+//               <View key={item.id} className="w-[48%]">
+//                 <MenuCard 
+//                   item={item} 
+//                   onPress={handleMenuItemPress}
+//                 />
+//               </View>
+//             ))}
+//           </View>
+//         </View>
+
+//         {/* Reviews Section */}
+//         <View className="px-4 mb-8">
+//           <View className="bg-white rounded-xl p-6 shadow-sm">
+//             {/* Overall Rating */}
+//             <View className="flex-row items-center mb-6">
+//               <View className="bg-teal-500 rounded-full w-16 h-16 items-center justify-center mr-4">
+//                 <Text className="text-white text-xl font-bold">4.9</Text>
+//               </View>
+//               <View className="flex-1">
+//                 <Text className="text-lg font-semibold text-gray-800 mb-1">
+//                   Reviews
+//                 </Text>
+//                 <Text className="text-sm text-gray-600">
+//                   Based on 284 reviews
+//                 </Text>
+//               </View>
+//             </View>
+
+//             {/* Progress Bars */}
+//             <ProgressBar 
+//               label="Excellent" 
+//               animatedValue={progressAnimations.excellent}
+//               color="#10b981"
+//             />
+//             <ProgressBar 
+//               label="Very Good" 
+//               animatedValue={progressAnimations.veryGood}
+//               color="#22c55e"
+//             />
+//             <ProgressBar 
+//               label="Average" 
+//               animatedValue={progressAnimations.average}
+//               color="#eab308"
+//             />
+//             <ProgressBar 
+//               label="Poor" 
+//               animatedValue={progressAnimations.poor}
+//               color="#f97316"
+//             />
+//             <ProgressBar 
+//               label="Terrible" 
+//               animatedValue={progressAnimations.terrible}
+//               color="#ef4444"
+//             />
+//           </View>
+//         </View>
+//       </ScrollView>
+//     </View>
+//   );
+// };
+
+// export default SunsetFoodCafe;

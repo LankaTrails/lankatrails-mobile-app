@@ -89,7 +89,7 @@ export default function Profile() {
           value={value}
           placeholder={`Enter your ${key.toLowerCase()}`}
           onChange={(text) => setTempValues((prev) => ({ ...prev, [key]: text }))}
-          icon={iconName[key]}
+          icon={iconName[key as keyof typeof iconName]}
   />
 ))}
         </View>

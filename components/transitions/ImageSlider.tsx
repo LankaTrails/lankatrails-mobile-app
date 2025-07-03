@@ -1,97 +1,70 @@
-// components/ImageSlider.js
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
   ScrollView,
-  ImageBackground,
-  Animated,
-  useWindowDimensions,
+  Image,
+  Dimensions,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
 } from 'react-native';
 
-const ImageSlider = ({ images }) => {
-  const scrollX = React.useRef(new Animated.Value(0)).current;
-  const { width: windowWidth } = useWindowDimensions();
+const { width } = Dimensions.get('window');
+
+interface ImageSliderProps {
+  images: string[];
+}
+
+const ImageSlider: React.FC<ImageSliderProps> = ({ images }) => {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      let nextIndex = activeIndex + 1;
+      if (nextIndex >= images.length) {
+        nextIndex = 0;
+        scrollRef.current?.scrollTo({ x: 0, animated: false });
+      } else {
+        scrollRef.current?.scrollTo({ x: nextIndex * width, animated: true });
+      }
+      setActiveIndex(nextIndex);
+    }, 4000); // Change image every 4 seconds
+
+    return () => clearInterval(interval);
+  }, [activeIndex, images.length]);
+
+  const handleMomentumScrollEnd = (e: any) => {
+    let newIndex = Math.round(e.nativeEvent.contentOffset.x / width);
+    if (newIndex >= images.length) {
+      newIndex = 0;
+      scrollRef.current?.scrollTo({ x: 0, animated: false });
+    }
+    setActiveIndex(newIndex);
+  };
 
   return (
-    <View style={styles.scrollContainer}>
-      <ScrollView
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          { useNativeDriver: false }
-        )}
-        scrollEventThrottle={16}
-      >
-        {images.map((image, index) => (
-          <View style={{ width: windowWidth, height: 200 }} key={index}>
-            <ImageBackground source={{ uri: image }} style={styles.card}>
-              <View style={styles.overlay}>
-                <Text style={styles.imageLabel}>{'Image ' + (index + 1)}</Text>
-              </View>
-            </ImageBackground>
-          </View>
-        ))}
-      </ScrollView>
-
-      <View style={styles.indicatorContainer}>
-        {images.map((_, index) => {
-          const width = scrollX.interpolate({
-            inputRange: [
-              windowWidth * (index - 1),
-              windowWidth * index,
-              windowWidth * (index + 1),
-            ],
-            outputRange: [8, 16, 8],
-            extrapolate: 'clamp',
-          });
-
-          return (
-            <Animated.View
-              key={index}
-              style={[styles.normalDot, { width }]}
-            />
-          );
-        })}
-      </View>
-    </View>
+    <ScrollView
+      ref={scrollRef}
+      horizontal
+      pagingEnabled
+      showsHorizontalScrollIndicator={false}
+      onMomentumScrollEnd={handleMomentumScrollEnd}
+    >
+      {images.map((img, idx) => (
+        <Image
+          key={idx}
+          source={{ uri: img }}
+          style={{
+            width: 380, // Adjust width to fit the screen with some margin
+            height: 200,
+            borderRadius: 30,
+            marginBottom: 20,
+            marginRight: 10,
+          }}
+          resizeMode="cover"
+        />
+      ))}
+    </ScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  scrollContainer: {
-    marginBottom: 10,
-  },
-  card: {
-    flex: 1,
-    marginHorizontal: 10,
-    borderRadius: 8,
-    overflow: 'hidden',
-    justifyContent: 'flex-end',
-  },
-  overlay: {
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 8,
-  },
-  imageLabel: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  normalDot: {
-    height: 8,
-    width: 8,
-    borderRadius: 4,
-    backgroundColor: 'silver',
-    marginHorizontal: 4,
-  },
-  indicatorContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 8,
-  },
-});
 
 export default ImageSlider;

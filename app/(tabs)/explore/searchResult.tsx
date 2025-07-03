@@ -10,55 +10,103 @@ import {
   StatusBar,
   ToastAndroid,
   Platform,
-  Alert
+  Alert,
+  FlatList,
+  ActivityIndicator,
 } from 'react-native';
-import { Heart, Share, ArrowLeft, Star } from 'lucide-react-native';
-import TripCard from '@/components/TripCard';
+import { fetchGroupedPlaces } from '../../../services/googlePlacesService';
 import { router } from 'expo-router';
-import { useNavigation } from '@react-navigation/native';
-
+import Card from '@/components/Card';
 import HeaderSection from '@/components/explorer-components/HeaderSection';
 
 const { width } = Dimensions.get('window');
 
+const GOOGLE_PLACES_API_KEY = 'AIzaSyA47Q-I515EK0DU4pvk5jgUcatYcdnf8cY';
+
+type Place = {
+  place_id: string;
+  name: string;
+  vicinity: string;
+  rating?: number | string;
+  photos?: { photo_reference: string }[];
+};
+type PlaceGroup = {
+  group: string;
+  places: Place[];
+};
+
 const GalleApp = () => {
   const [loading, setLoading] = useState(true);
+  const [groupedPlaces, setGroupedPlaces] = useState<PlaceGroup[]>([]);
+  const [placesLoading, setPlacesLoading] = useState(true);
   const [isFavourite, setIsFavourite] = useState(false);
+  const [selectedTab, setSelectedTab] = useState('All');
   const fadeInValue = useRef(new Animated.Value(0)).current;
-  const slideInValue = useRef(new Animated.Value(0)).current;
-  const scaleValue = useRef(new Animated.Value(0)).current;
+  const mainFadeAnim = useRef(new Animated.Value(0)).current;
+  const mainSlideAnim = useRef(new Animated.Value(40)).current;
 
   useEffect(() => {
-    // Simulate loading
     setTimeout(() => {
       setLoading(false);
-      startAnimations();
-    }, 1000);
-  }, []);
-
-  const startAnimations = () => {
-    Animated.parallel([
       Animated.timing(fadeInValue, {
         toValue: 1,
         duration: 800,
         useNativeDriver: true,
-      }),
-      Animated.timing(slideInValue, {
-        toValue: 0,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleValue, {
-        toValue: 1,
-        duration: 700,
-        useNativeDriver: true,
-      }),
-    ]).start();
+      }).start();
+    }, 1000);
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setPlacesLoading(true);
+        const groups = await fetchGroupedPlaces(6.0329, 80.2168);
+        setGroupedPlaces(groups);
+      } catch (err) {
+        console.error("Fetch error:", err);
+      } finally {
+        setPlacesLoading(false);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      Animated.parallel([
+        Animated.timing(mainFadeAnim, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(mainSlideAnim, {
+          toValue: 0,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [loading]);
+
+  const handleFavourite = () => {
+    setIsFavourite((prev) => {
+      const newState = !prev;
+      const message = newState ? 'Added to favourites' : 'Removed from favourites';
+      Platform.OS === 'android'
+        ? ToastAndroid.show(message, ToastAndroid.SHORT)
+        : Alert.alert(message);
+      return newState;
+    });
+  };
+
+  const handleShare = () => {
+    Platform.OS === 'android'
+      ? ToastAndroid.show('Sharing is not implemented yet', ToastAndroid.SHORT)
+      : Alert.alert('Sharing is not implemented yet');
   };
 
   const AnimatedCard = ({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) => {
-    const cardFade = new Animated.Value(0);
-    const cardSlide = new Animated.Value(0.2);
+    const cardFade = useRef(new Animated.Value(0)).current;
+    const cardSlide = useRef(new Animated.Value(0.2)).current;
 
     useEffect(() => {
       if (!loading) {
@@ -77,112 +125,15 @@ const GalleApp = () => {
           ]).start();
         }, delay);
       }
-    }, [loading, delay]);
+    }, [loading]);
 
     return (
-      <Animated.View
-        style={{
-          opacity: cardFade,
-          transform: [{ translateY: cardSlide }],
-        }}
-      >
+      <Animated.View style={{ opacity: cardFade, transform: [{ translateY: cardSlide }] }}>
         {children}
       </Animated.View>
     );
   };
 
-  const RestaurantCard = ({
-    name,
-    rating,
-    location,
-    delay,
-  }: {
-    name: string;
-    rating: string;
-    location: string;
-    delay?: number;
-  }) => {
-    const [pressed, setPressed] = useState(false);
-    const pressScale = new Animated.Value(1);
-
-    const handlePressIn = () => {
-      setPressed(true);
-      Animated.spring(pressScale, {
-        toValue: 0.95,
-        useNativeDriver: true,
-      }).start();
-    };
-
-    const handlePressOut = () => {
-      setPressed(false);
-      Animated.spring(pressScale, {
-        toValue: 1,
-        useNativeDriver: true,
-      }).start();
-    };
-
-    return (
-      <AnimatedCard delay={delay}>
-        <TouchableOpacity
-          // onPressIn={handlePressIn}
-          // onPressOut={handlePressOut}
-          activeOpacity={0.9}
-        >
-          <Animated.View
-            className="bg-white rounded-xl shadow-sm mr-4 w-50"
-            style={{
-              transform: [{ scale: pressScale }],
-            }}
-          >
-            <View className="h-40  bg-pink-200 rounded-t-xl relative overflow-hidden mr-3">
-              <View className="absolute inset-0 bg-gradient-to-br from-orange-300/30 to-pink-300/30" />
-              <View className="absolute bottom-2 left-2">
-                <View className="w-8 h-8 bg-white/20 rounded-full" />
-              </View>
-            </View>
-            <View className="p-3">
-              <Text className="font-semibold text-primary text-xl mb-1">{name}</Text>
-              <Text className="text-10 text-gray-500 mb-2">{location}</Text>
-              <View className="flex-row items-center">
-                <Star size={16} color="#FBB03B" fill="#FBB03B" />
-                <Text className="text-s text-gray-600 ml-1">{rating}</Text>
-              </View>
-            </View>
-          </Animated.View>
-        </TouchableOpacity>
-      </AnimatedCard>
-    );
-  };
-
-  type ReviewCardProps = {
-    name: string;
-    location: string;
-    review: string;
-    delay?: number;
-  };
-
-  const ReviewCard = ({ name, location, review, delay }: ReviewCardProps) => (
-    <AnimatedCard delay={delay}>
-      <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100">
-        <View className="flex-row items-center mb-3">
-          <View className="w-12 h-12 bg-teal-100 rounded-full mr-3 items-center justify-center">
-            <Text className="text-teal-600 font-semibold">{name.charAt(0)}</Text>
-          </View>
-          <View className="flex-1">
-            <Text className="font-semibold text-primary text-xl">{name}</Text>
-            <Text className="text-sm text-gray-500">{location}</Text>
-          </View>
-        </View>
-        <Text className="text-gray-700 text-sm leading-5 mb-3">"{review}"</Text>
-        <View className="flex-row">
-          {[...Array(5)].map((_, i) => (
-            <Star key={i} size={14} color="#FBB03B" fill="#FBB03B" />
-          ))}
-        </View>
-      </View>
-    </AnimatedCard>
-  );
-      // loading view
   if (loading) {
     return (
       <View className="flex-1 bg-white items-center justify-center">
@@ -205,254 +156,238 @@ const GalleApp = () => {
     );
   }
 
- const handleFavourite = () => {
-  setIsFavourite((prev) => {
-    const newState = !prev;
-    if (Platform.OS === 'android') {
-      ToastAndroid.show(
-        newState ? 'Added to favourites' : 'Removed from favourites',
-        ToastAndroid.SHORT
-      );
-    } else {
-      Alert.alert(newState ? 'Added to favourites' : 'Removed from favourites');
-    }
-    return newState;
-  });
-};
-
-const handleShare = () => {
-  const message = 'Check out this amazing place in Galle!';
-  if (Platform.OS === 'android') {
-    ToastAndroid.show('Sharing is not implemented yet', ToastAndroid.SHORT);
-  } else {
-    Alert.alert('Sharing is not implemented yet');
-  }
-};
-
-
-
   return (
     <View className="flex-1 bg-gray-50">
-      <StatusBar  backgroundColor="#0D9488" />
-      {/* Header */}
-     <View 
-        className="bg-gray-50 pt-12 pb-4"
-      >
+      <StatusBar backgroundColor="#0D9488" />
+      <View className="bg-gray-50 pt-12 pb-4">
         <HeaderSection
+          title="Galle"
           isFavourite={isFavourite}
           handleFavourite={handleFavourite}
           handleShare={handleShare}
-        /> 
+          onBack={() => router.back()}
+        />
       </View>
-
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        {/* Hero Section */}
-        <View
-        //   style={{
-        //     opacity: fadeInValue,
-        //     transform: [{ scale: scaleValue }],
-        //   }}
-        >
-          <View className="bg-white mx-4 mt-4 rounded-xl shadow-sm overflow-hidden ">
-            <View className="h-96 bg-gradient-to-br from-blue-400 relative">
-              <View className="absolute inset-0 bg-teal-600/40" />
-              <View className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/30 to-transparent h-20" />
-          <Image
-            source={{ uri: "https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg" }}
-            style={{ width: '100%', height:350, borderRadius: 16 }}
-            resizeMode="cover"
-          />
-            </View>
+      <Animated.View
+        style={{
+          flex: 1,
+          opacity: mainFadeAnim,
+          transform: [{ translateY: mainSlideAnim }],
+        }}
+      >
+        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+          {/* Hero Section */}
+          <View className="bg-white mx-4 mt-4 rounded-xl shadow-sm overflow-hidden">
+            <Image
+              source={{
+                uri:
+                  'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg',
+              }}
+              style={{ width: '100%', height: 350, borderRadius: 16 }}
+              resizeMode="cover"
+            />
+            <View className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/30 to-transparent h-20" />
             <View className="p-4">
-              <Text className="text-2xl font-bold text-gray-800 mb-2 justify-center mt-3 ml-3 mr-3">
+              <Text className="text-3xl font-bold text-primary mt-4 mb-4">
                 A Charming Coastal Gem in Sri Lanka
               </Text>
               <Text className="text-sm text-gray-600 leading-5">
-                Galle, on Sri Lanka's southwest coast, is a popular tourist destination known for its historic charm and scenic beauty. The iconic Galle Fort, a UNESCO World Heritage Site, boasts colonial architecture, cobblestone streets, and ocean views. Visitors enjoy beaches like Unawatuna and Jungle Beach, whale watching, turtle hatcheries, and local cuisine. With its blend of history, culture, and seaside relaxation, Galle offers a memorable travel experience.
+                Galle, on Sri Lanka's southwest coast, is a popular tourist destination known for its
+                historic charm and scenic beauty...
               </Text>
             </View>
-            <ScrollView>
-          {/* <TripCard
-               id={1}
-               title="Sample Trip"
-               details="A wonderful trip to Sri Lanka's most beautiful places."
-               budget={"Rs. 50,000"}
-               duration={"5 Days"}
-             /> */}
-        </ScrollView>
           </View>
-        </View>
 
-        {/* Navigation Tabs */}
-        <AnimatedCard delay={200}>
-          <View className="flex-row justify-between px-4 my-6">
-            {['All', 'Accommodation', 'Foods', 'Transportation', 'Activities'].map((tab, index) => (
-              <TouchableOpacity
-                key={tab}
-                className={`py-2 px-3 rounded-full ${
-                  index === 0 ? 'bg-teal-600' : 'bg-white'
-                }`}
-              >
-                <Text
-                  className={`text-lg font-medium ${
-                    index === 0 ? 'text-white' : 'text-gray-600'
-                  }`}
+          {/* Public Places */}
+          <View className="mb-6 px-4">
+            <Text className="text-3xl font-bold text-primary mt-4 mb-4">Public Places</Text>
+            {placesLoading ? (
+              <ActivityIndicator size="small" />
+            ) : (
+              <>
+                {groupedPlaces.map(({ group, places }) => (
+                  <View key={group} style={{ marginBottom: 20 }}>
+                    <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#757575', marginBottom: 10 }}>
+                      {group} ({places.length})
+                    </Text>
+                    {places.length > 0 ? (
+                      <FlatList
+                        data={places}
+                        keyExtractor={(item) => item.place_id}
+                        renderItem={({ item }) => (
+                          <Card
+                            item={{
+                              id: Number(item.place_id),
+                              title: item.name,
+                              subtitle: item.vicinity,
+                              rating: typeof item.rating === 'number'
+                                ? item.rating
+                                : typeof item.rating === 'string'
+                                ? Number(item.rating)
+                                : 0,
+                              image: item.photos?.[0]
+                                ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${item.photos[0].photo_reference}&key=${GOOGLE_PLACES_API_KEY}`
+                                : '',
+                            }}
+                            onPress={() => router.push('/explore/ServiceView')}
+                            width={180}
+                          />
+                        )}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                      />
+                    ) : (
+                      <Text style={{ color: '#666' }}>No public places found in this category.</Text>
+                    )}
+                  </View>
+                ))}
+              </>
+            )}
+          </View>
+
+          {/* Tabs */}
+          <AnimatedCard delay={200}>
+            <View className="flex-row justify-between px-4 my-6">
+              {['All', 'Accommodation', 'Foods', 'Transport', 'Activities'].map((tab) => (
+                <TouchableOpacity
+                  key={tab}
+                  className={`py-2 px-3 rounded-full ${selectedTab === tab ? 'bg-teal-600' : 'bg-white'}`}
+                  onPress={() => setSelectedTab(tab)}
                 >
-                  {tab}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </AnimatedCard>
-
-        {/* Accommodation Section */}
-        <View className="mb-6">
-          <AnimatedCard delay={300}>
-            <View className="flex-row items-center justify-between px-4 mb-4">
-              <Text className="text-xl font-bold text-gray-800">Accommodation</Text>
-            <TouchableOpacity onPress={() => router.push({ pathname: '/explore/accommodation-foods-transport', params: { tab: 'accommodation' } })}>
-              <Text className="text-primary font-medium">See more →</Text>
-            </TouchableOpacity>
+                  <Text className={`text-lg font-medium ${selectedTab === tab ? 'text-white' : 'text-gray-600'}`}>
+                    {tab}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </AnimatedCard>
-          
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="pl-4">
-            <RestaurantCard 
-              name="New sigiri restaurant" 
-              rating="4.9" 
-              location="Near to sigiri rock"
-              delay={400}
-            />
-            <RestaurantCard 
-              name="New sigiri restaurant" 
-              rating="4.5" 
-              location="Near to sigiri rock"
-              delay={500}
-            />
-            <RestaurantCard 
-              name="New sigiri restaurant" 
-              rating="4.7" 
-              location="Near to sigiri rock"
-              delay={600}
-            />
-          </ScrollView>
-        </View>
 
-        {/* Foods Section */}
-        <View className="mb-6">
-          <AnimatedCard delay={700}>
-            <View className="flex-row items-center justify-between px-4 mb-4">
-              <Text className="text-xl font-bold text-gray-800">Foods</Text>
-              <TouchableOpacity  onPress={() => router.push({ pathname: '/explore/accommodation-foods-transport', params: { tab: 'foods' } })}>
-                <Text className="text-teal-600 font-medium">See more →</Text>
-              </TouchableOpacity>
-            </View>
-          </AnimatedCard>
-          
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="pl-4">
-            <RestaurantCard 
-              name="New sigiri restaurant" 
-              rating="4.4" 
-              location="Near to sigiri rock"
-              delay={800}
-            />
-            <RestaurantCard 
-              name="New sigiri restaurant" 
-              rating="4.9" 
-              location="Near to sigiri rock"
-              delay={900}
-            />
-            <RestaurantCard 
-              name="New sigiri restaurant" 
-              rating="4.6" 
-              location="Near to sigiri rock"
-              delay={1000}
-            />
-          </ScrollView>
-        </View>
+          {/* Sections */}
+          {(() => {
+            type SectionItem = {
+              id: number;
+              title: string;
+              subtitle?: string;
+              rating?: number;
+              image?: string;
+            };
 
-        {/* Transport Section */}
-        <View className="mb-6">
-          <AnimatedCard delay={1100}>
-            <View className="flex-row items-center justify-between px-4 mb-4">
-              <Text className="text-lg font-bold text-gray-800">Transport</Text>
-              <TouchableOpacity  onPress={() => router.push({ pathname: '/explore/accommodation-foods-transport', params: { tab: 'transport' } })}>
-                <Text className="text-teal-600 font-medium">See more →</Text>
-              </TouchableOpacity>
-            </View>
-          </AnimatedCard>
-          
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="pl-4">
-            <RestaurantCard 
-              name="New sigiri restaurant" 
-              rating="4.9" 
-              location="Near to sigiri rock"
-              delay={1200}
-            />
-            <RestaurantCard 
-              name="New sigiri restaurant" 
-              rating="4.3" 
-              location="Near to sigiri rock"
-              delay={1300}
-            />
-          </ScrollView>
-        </View>
+           const sections: {
+  title: string;
+  delay: number;
+  tab: string;
+  items: SectionItem[];
+}[] = [
+  {
+    title: 'Accommodation',
+    delay: 300,
+    tab: 'Accommodation',
+    items: [
+      {
+        id: 1,
+        title: 'New Sigiri Hotel',
+        subtitle: 'Near Sigiriya Rock',
+        rating: 4.9,
+        image: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg',
+      },
+      {
+        id: 2,
+        title: 'Palm Resort',
+        subtitle: 'Galle Town',
+        rating: 4.6,
+        image: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg',
+      },
+    ],
+  },
+  {
+    title: 'Foods',
+    delay: 700,
+    tab: 'Foods',
+    items: [
+      {
+        id: 3,
+        title: 'Sea Breeze Cafe',
+        subtitle: 'Unawatuna Beach',
+        rating: 4.8,
+        image: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg',
+      },
+      {
+        id: 4,
+        title: 'Tropical Restaurant',
+        subtitle: 'Fort Area',
+        rating: 4.5,
+        image: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg',
+      },
+    ],
+  },
+  {
+    title: 'Transport',
+    delay: 1100,
+    tab: 'Transport',
+    items: [
+      {
+        id: 5,
+        title: 'Tuk Tuk Service',
+        subtitle: 'All Over Galle',
+        rating: 4.3,
+        image: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg',
+      },
+      {
+        id: 6,
+        title: 'Galle Rent-A-Car',
+        subtitle: 'Near Bus Station',
+        rating: 4.4,
+        image: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg',
+      },
+    ],
+  },
+];
 
-        {/* Reviews Section */}
-        <View className="mb-6">
-          <AnimatedCard delay={1400}>
-            <View className="px-4 mb-4">
-              <Text className="text-xl font-bold text-gray-800">Reviews</Text>
-            </View>
-          </AnimatedCard>
-          
-          <View className="px-4">
-            <ReviewCard
-              name="Meera"
-              location="Singapore"
-              review="Well-preserved fort, lots of boutique shops, and great ocean views. It can get a bit crowded during peak season, but it's still worth the visit."
-              delay={1500}
-            />
-            <ReviewCard
-              name="Meera"
-              location="Singapore"
-              review="Well-preserved fort, lots of boutique shops, and great ocean views. It can get a bit crowded during peak season, but it's still worth the visit."
-              delay={1600}
-            />
-          </View>
-
-          <AnimatedCard delay={1700}>
-            <TouchableOpacity className="mx-4 mt-4 bg-primary py-4 rounded-xl">
-              <Text className="text-white text-center font-semibold">View all</Text>
-            </TouchableOpacity>
-          </AnimatedCard>
-        </View>
-
-        <View className="h-20" />
-      </ScrollView>
-
-      
+            const filtered = selectedTab === 'All' ? sections : sections.filter(s => s.tab === selectedTab);
+            return filtered.map(section => (
+              <View key={section.title} className="mb-6 px-4">
+                <AnimatedCard delay={section.delay}>
+                  <View className="flex-row items-center justify-between mb-4">
+                    <Text className="text-2xl font-bold text-gray-800/70">{section.title}</Text>
+                    <TouchableOpacity
+                      onPress={() =>
+                        router.push({
+                          pathname: '/explore/accommodation-foods-transport',
+                          params: { tab: section.tab.toLowerCase() },
+                        })
+                      }
+                    >
+                      <Text className="text-primary font-medium">See more →</Text>
+                    </TouchableOpacity>
+                  </View>
+                </AnimatedCard>
+                <FlatList
+                  data={section.items}
+                  keyExtractor={item => item.id.toString()}
+                  numColumns={2}
+                  columnWrapperStyle={{ justifyContent: 'space-between' }}
+                  renderItem={({ item }) => (
+                    <Card
+                      item={{
+                        ...item,
+                        subtitle: item.subtitle ?? '',
+                        rating: item.rating ?? 0,
+                      }}
+                      width={(width - 48) / 2}
+                      onPress={() => router.push('/explore/ServiceView')}
+                    />
+                  )}
+                  contentContainerStyle={{ paddingBottom: 16 }}
+                  scrollEnabled={false}
+                />
+              </View>
+            ));
+          })()}
+          <View className="h-20" />
+        </ScrollView>
+      </Animated.View>
     </View>
   );
 };
 
 export default GalleApp;
-
-
-// import { PageTransition, StaggeredListItem, LoadingSkeleton } from '@/components/transitions/animations';
-// import React, { useState } from 'react';
-// import { Text, SafeAreaView } from 'react-native';
-
-// export default function AnotherScreen() {
-//   const [visible, setVisible] = useState(true);
-
-//   return (
-//     <SafeAreaView className="flex-1 bg-white">
-//       <PageTransition animationType="scaleIn" isVisible={visible}>
-//         <StaggeredListItem index={0} delay={100}>
-//           <Text className="text-xl mt-60 font-bold px-4">Hello World</Text>
-//         </StaggeredListItem>
-//       </PageTransition>
-//     </SafeAreaView>
-//   );
-// }
