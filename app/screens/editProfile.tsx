@@ -11,20 +11,39 @@ import {
 import { Stack, router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import InputField from '../../components/InputField';
+import { useAuth }  from "@/hooks/useAuth"; 
+import { updateUserProfile } from "@/services/userService";
 
 
 export default function Profile() {
+  const { user, checkAuth } = useAuth();
   const [fieldValues, setFieldValues] = useState({
-    Name: "Eran Wijesekara",
-    Email: "eran@email.com",
-    // Phone: "+94 712 345 678",
+    FName: user?.firstName || "",
+    LName: user?.lastName || "",
+    // Phone: user?.phone || "",
+    Country: user?.country || "",
   });
   const [tempValues, setTempValues] = useState({ ...fieldValues });
   const [imageUri, setImageUri] = useState<string | null>(null);
 
   const handleSave = () => {
-    setFieldValues(tempValues);
-    router.back();
+    // Update the user profile with the new values
+    updateUserProfile(
+      tempValues.FName,
+      tempValues.LName,
+      tempValues.Country,
+      user?.role || "ROLE_TOURIST",
+      // fieldValues.Phone,
+    )
+      .then(() => {
+        // Update the field values with the temporary values
+        setFieldValues({ ...tempValues });   
+        checkAuth();
+        router.back();
+      })
+      .catch((error) => {
+        console.error("Error updating profile:", error);
+      });
   };
 
   const hasChanges = JSON.stringify(fieldValues) !== JSON.stringify(tempValues);
@@ -41,9 +60,15 @@ export default function Profile() {
     }
   };
   const iconName = {
-    Name: "person-outline",
-    Email: "mail-outline",
-    Phone: "call-outline",
+    FName: "person-outline",
+    LName: "person-outline",
+    Country: "earth-outline",
+  };
+
+  const labelMap = {
+    FName: "First Name",
+    LName: "Last Name",
+    Country: "Country",
   };
 
   return (
@@ -83,15 +108,15 @@ export default function Profile() {
         {/* Editable Fields */}
         <View style={styles.section}>
           {Object.entries(tempValues).map(([key, value]) => (
-          <InputField
-          key={key}
-          label={key}
-          value={value}
-          placeholder={`Enter your ${key.toLowerCase()}`}
-          onChange={(text) => setTempValues((prev) => ({ ...prev, [key]: text }))}
-          icon={iconName[key as keyof typeof iconName]}
-  />
-))}
+            <InputField
+              key={key}
+              label={labelMap[key as keyof typeof labelMap]}
+              value={value}
+              placeholder={`Enter your ${labelMap[key as keyof typeof labelMap]?.toLowerCase()}`}
+              onChange={(text) => setTempValues((prev) => ({ ...prev, [key]: text }))}
+              icon={iconName[key as keyof typeof iconName]}
+            />
+          ))}
         </View>
       </ScrollView>
     </>

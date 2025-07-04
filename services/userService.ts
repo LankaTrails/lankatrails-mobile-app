@@ -1,3 +1,4 @@
+import { Update } from '@reduxjs/toolkit';
 import api from '../api/axiosInstance';
 
 // Types for API responses
@@ -12,6 +13,16 @@ interface SignUpResponse {
     emailVerified: boolean;
   };
 }
+
+interface UpdateUserProfileResponse {
+  success: boolean;
+  message: string;
+  data: {
+    firstName: string;
+    lastName: string;
+    country: string;
+  };
+} 
 
 interface ApiError {
   message: string;
@@ -72,6 +83,54 @@ export async function signUp(
       throw error;
     } else {
       // Unknown error
+      throw new Error('An unexpected error occurred. Please try again');
+    }
+  }
+}
+
+//update user profile
+export async function updateUserProfile(
+  firstName: string,
+  lastName: string,
+  country: string,
+  role: string,
+): Promise<UpdateUserProfileResponse> {
+  try {
+    console.log('Updating user profile:', { firstName, lastName, country, role });
+    const response = await api.put<UpdateUserProfileResponse>(`/tourist/update-profile`, {
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      country: country.trim(),
+      role: role.trim(),
+    });
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Update failed');
+    }
+    return response.data;
+  } catch (error: any) {
+    if (error.response) {
+      const apiError: ApiError = {
+        message: error.response.data?.message || 'Server error occurred',
+        status: error.response.status,
+        data: error.response.data,
+      };
+      switch (error.response.status) {
+        case 400:
+          throw new Error(apiError.message || 'Invalid input data');
+        case 404:
+          throw new Error('User not found');
+        case 422:
+          throw new Error('Invalid data provided. Please check your inputs');
+        case 500:
+          throw new Error('Server error. Please try again later');
+        default:
+          throw new Error(apiError.message || 'An unexpected error occurred');
+      }
+    } else if (error.request) {
+      throw new Error('Network error. Please check your internet connection');
+    } else if (error.message) {
+      throw error;
+    } else {
       throw new Error('An unexpected error occurred. Please try again');
     }
   }
