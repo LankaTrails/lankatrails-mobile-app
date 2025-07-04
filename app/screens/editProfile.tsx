@@ -37,9 +37,10 @@ export default function Profile() {
     )
       .then(() => {
         // Update the field values with the temporary values
-        setFieldValues({ ...tempValues });   
+        // setFieldValues({ ...tempValues });   
         checkAuth();
-        router.back();
+        // refresh the profile page
+        router.push("../profile");
       })
       .catch((error) => {
         console.error("Error updating profile:", error);
