@@ -54,7 +54,7 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images }) => {
           key={idx}
           source={{ uri: img }}
           style={{
-            width: 380, // Adjust width to fit the screen with some margin
+            width: width - 30, // Adjust width to fit the screen with some margin
             height: 200,
             borderRadius: 30,
             marginBottom: 20,

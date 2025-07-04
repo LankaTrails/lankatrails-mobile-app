@@ -6,12 +6,15 @@
       "@/*": [
         "./*"
       ]
-    }
+    },
+    "types": []
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
     "nativewind-env.d.ts",
-    "app/screens/MapScreen.tsx"
+    "app/screens/MapScreen.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
   ]
 }
