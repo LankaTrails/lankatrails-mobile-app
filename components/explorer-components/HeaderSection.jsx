@@ -31,7 +31,7 @@ const HeaderSection = ({
 
       {/* Title */}
       <Text
-        className="text-primary text-2xl font-bold mx-2 flex-1 text-center"
+        className="text-primary text-3xl font-bold mx-2 flex-1 text-center"
         numberOfLines={1}
       >
         {title}
