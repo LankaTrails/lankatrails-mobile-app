@@ -20,7 +20,7 @@ interface UpdateUserProfileResponse {
   data: {
     firstName: string;
     lastName: string;
-    country: string;
+    phone: string;
   };
 } 
 
@@ -92,15 +92,15 @@ export async function signUp(
 export async function updateUserProfile(
   firstName: string,
   lastName: string,
-  country: string,
+  phone: string,
   role: string,
 ): Promise<UpdateUserProfileResponse> {
   try {
-    console.log('Updating user profile:', { firstName, lastName, country, role });
+    console.log('Updating user profile:', { firstName, lastName, phone, role });
     const response = await api.put<UpdateUserProfileResponse>(`/tourist/update-profile`, {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
-      country: country.trim(),
+      phone: phone.trim(),
       role: role.trim(),
     });
     if (!response.data.success) {

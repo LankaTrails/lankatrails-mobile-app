@@ -13,6 +13,7 @@ import * as ImagePicker from "expo-image-picker";
 import InputField from '../../components/InputField';
 import { useAuth }  from "@/hooks/useAuth"; 
 import { updateUserProfile } from "@/services/userService";
+import PhoneInput from "../../components/PhoneInput";
 
 
 export default function Profile() {
@@ -21,7 +22,7 @@ export default function Profile() {
     FName: user?.firstName || "",
     LName: user?.lastName || "",
     // Phone: user?.phone || "",
-    Country: user?.country || "",
+    Phone: user?.phone || "",
   });
   const [tempValues, setTempValues] = useState({ ...fieldValues });
   const [imageUri, setImageUri] = useState<string | null>(null);
@@ -31,7 +32,7 @@ export default function Profile() {
     updateUserProfile(
       tempValues.FName,
       tempValues.LName,
-      tempValues.Country,
+      tempValues.Phone,
       user?.role || "ROLE_TOURIST",
       // fieldValues.Phone,
     )
@@ -63,13 +64,15 @@ export default function Profile() {
   const iconName = {
     FName: "person-outline",
     LName: "person-outline",
-    Country: "earth-outline",
+    Phone: "call-outline",
+
   };
 
   const labelMap = {
     FName: "First Name",
     LName: "Last Name",
-    Country: "Country",
+    Phone: "Phone",
+
   };
 
   return (
@@ -107,18 +110,44 @@ export default function Profile() {
         </View>
 
         {/* Editable Fields */}
-        <View style={styles.section}>
-          {Object.entries(tempValues).map(([key, value]) => (
-            <InputField
-              key={key}
-              label={labelMap[key as keyof typeof labelMap]}
-              value={value}
-              placeholder={`Enter your ${labelMap[key as keyof typeof labelMap]?.toLowerCase()}`}
-              onChange={(text) => setTempValues((prev) => ({ ...prev, [key]: text }))}
-              icon={iconName[key as keyof typeof iconName]}
-            />
-          ))}
-        </View>
+       <View style={styles.section}>
+  {Object.entries(tempValues).map(([key, value]) => {
+    const label = labelMap[key as keyof typeof labelMap];
+    const icon = iconName[key as keyof typeof iconName];
+    
+    // Add safety check
+    if (!label) {
+      console.warn(`Missing label for key: ${key}`);
+      return null;
+    }
+    
+    if (key === "Phone") {
+      return (
+        <PhoneInput
+          key={key}
+          label={label}
+          value={value}
+          onChange={(text) =>
+            setTempValues((prev) => ({ ...prev, [key]: text }))
+          }
+        />
+      );
+    }
+    
+    return (
+      <InputField
+        key={key}
+        label={label}
+        value={value}
+        placeholder={`Enter your ${label.toLowerCase()}`}
+        onChange={(text) =>
+          setTempValues((prev) => ({ ...prev, [key]: text }))
+        }
+        icon={icon}
+      />
+    );
+  })}
+</View>
       </ScrollView>
     </>
   );

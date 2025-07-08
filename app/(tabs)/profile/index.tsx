@@ -31,8 +31,9 @@ export default function Profile() {
     setFieldValues({
       Name: user?.firstName
         ? user.firstName + " " + user.lastName
-        : "Eren Yeager",
-      Email: user?.email ? user.email : "eren@email.com",
+        : "Your Name",
+      Email: user?.email ? user.email : "your@email.com",
+      Phone: user?.id ? user.id : "+94 712 345 678",
     });
   }, [user]);
   const [tempValues, setTempValues] = useState({ ...fieldValues });
@@ -164,12 +165,26 @@ export default function Profile() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
+          <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/screens/CancelRequests")}>
+            <View style={styles.actionButtonContent}>
+              <Icon name="close-circle" size={20} color="#008080" />
+              <Text style={styles.actionButtonText}>Cancel Requests</Text>
+            </View>
+            <Icon name="chevron-forward" size={20} color="#008080" />
+          </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton}>
             <View style={styles.actionButtonContent}>
-              <Icon name="notifications" size={20} color="#008080" />
-              <Text style={styles.actionButtonText}>Notification Settings</Text>
+              <Icon name="heart" size={20} color="#008080" />
+              <Text style={styles.actionButtonText}>Favourites</Text>
             </View>
-            <Icon name="chevron-forward" size={20} color="#4ECDC4" />
+            <Icon name="chevron-forward" size={20} color="#008080" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton}>
+            <View style={styles.actionButtonContent}>
+              <Icon name="settings" size={20} color="#008080" />
+              <Text style={styles.actionButtonText}>Settings</Text>
+            </View>
+            <Icon name="chevron-forward" size={20} color="#008080" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton}>
             <View style={styles.actionButtonContent}>
@@ -265,7 +280,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "rgba(255,255,255,0.1)",
-    padding: 16,
+    padding: 12,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.2)",
