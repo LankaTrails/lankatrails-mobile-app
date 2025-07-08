@@ -40,8 +40,8 @@ export default function BackButton() {
 
 const styles = StyleSheet.create({
   backButton: {
-    width: 40,
-    height: 40,
+    width: 30,
+    height: 30,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',

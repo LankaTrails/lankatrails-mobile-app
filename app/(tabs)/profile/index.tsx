@@ -114,9 +114,6 @@ export default function Profile() {
       <ScrollView style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.heading}>Profile</Text>
-          <TouchableOpacity onPress={() => router.push("/screens/editProfile")}>
-            <Icon name="pencil" size={20} color="#008080" />
-          </TouchableOpacity>
         </View>
 
         {/* Profile Photo */}
@@ -135,20 +132,37 @@ export default function Profile() {
             <Text style={styles.greetingText}>
               Hello, {fieldValues.Name.split(" ")[0]}!
             </Text>
+            <Text style={styles.subtitleText}>
+              {fieldValues.Email}
+            </Text>
           </View>
         </View>
 
-        {/* User Info */}
+              {/* Account Section */}
         <View style={styles.section}>
-          <View style={styles.infoHeader}>
-            <Text style={styles.sectionTitle}>User Info</Text>
-          </View>
-
-          {Object.entries(fieldValues).map(([key, value]) => (
-            <ProfileInfoItem key={key} label={key} value={String(value)} />
-          ))}
+          <Text style={styles.sectionTitle}>Account</Text>
+          <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/screens/EditProfile")}>
+            <View style={styles.actionButtonContent}>
+              <Icon name="pencil" size={20} color="#008080" />
+              <Text style={styles.actionButtonText}>Edit Profile</Text>
+            </View>
+            <Icon name="chevron-forward" size={20} color="#008080" />
+          </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/screens/Favourites")}>
+            <View style={styles.actionButtonContent}>
+              <Icon name="heart" size={20} color="#008080" />
+              <Text style={styles.actionButtonText}>Favourites</Text>
+            </View>
+            <Icon name="chevron-forward" size={20} color="#008080" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/screens/CancelRequests")}>
+            <View style={styles.actionButtonContent}>
+              <Icon name="close-circle" size={20} color="#008080" />
+              <Text style={styles.actionButtonText}>Cancel Requests</Text>
+            </View>
+            <Icon name="chevron-forward" size={20} color="#008080" />
+          </TouchableOpacity>
         </View>
-
         {/* Change Password Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Security</Text>
@@ -163,30 +177,27 @@ export default function Profile() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/screens/CancelRequests")}>
-            <View style={styles.actionButtonContent}>
-              <Icon name="close-circle" size={20} color="#008080" />
-              <Text style={styles.actionButtonText}>Cancel Requests</Text>
-            </View>
-            <Icon name="chevron-forward" size={20} color="#008080" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <View style={styles.actionButtonContent}>
-              <Icon name="heart" size={20} color="#008080" />
-              <Text style={styles.actionButtonText}>Favourites</Text>
-            </View>
-            <Icon name="chevron-forward" size={20} color="#008080" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
+        {/* settings */}
+          <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Settings</Text>
+          <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/screens/NotificationSettings")}>
             <View style={styles.actionButtonContent}>
               <Icon name="settings" size={20} color="#008080" />
-              <Text style={styles.actionButtonText}>Settings</Text>
+              <Text style={styles.actionButtonText}>Notifications</Text>
             </View>
             <Icon name="chevron-forward" size={20} color="#008080" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => Alert.alert("Redirect", "App Settings on the device")}
+          >
+            <View style={styles.actionButtonContent}>
+              <Icon name="shield" size={20} color="#008080" />
+              <Text style={styles.actionButtonText}>Permissions</Text>
+            </View>
+            <Icon name="chevron-forward" size={20} color="#008080" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/screens/HelpAndSupport")}>
             <View style={styles.actionButtonContent}>
               <Icon name="help-circle" size={20} color="#008080" />
               <Text style={styles.actionButtonText}>Help & Support</Text>
@@ -208,6 +219,7 @@ export default function Profile() {
             </View>
           </TouchableOpacity>
         </View>
+        
       </ScrollView>
     </>
   );

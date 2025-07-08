@@ -5,28 +5,58 @@ import {
   TextInput,
   StyleSheet,
   TouchableOpacity,
+  ScrollView,
 } from "react-native";
-import CountryPicker, {
-  Country,
-  CountryCode,
-} from "react-native-country-picker-modal";
-import Icon from "react-native-vector-icons/Ionicons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { countries } from "countries-list";
+
+type CountryData = {
+  code: string;
+  name: string;
+  emoji: string;
+  callingCode: string;
+};
 
 type Props = {
   label: string;
   value: string;
   onChange: (phone: string) => void;
+  onCountryChange?: (country: CountryData) => void;
 };
 
-const PhoneInput: React.FC<Props> = ({ label, value, onChange }) => {
-  const [countryCode, setCountryCode] = useState<CountryCode>("LK");
-  const [country, setCountry] = useState<Country | null>(null);
+// Country code to emoji mapping
+const getCountryEmoji = (countryCode: string): string => {
+  const codePoints = countryCode
+    .toUpperCase()
+    .split("")
+    .map((char) => 127397 + char.charCodeAt(0));
+  return String.fromCodePoint(...codePoints);
+};
+
+// Convert countries-list data to our format
+const getCountryList = (): CountryData[] => {
+  return Object.entries(countries)
+    .map(([code, country]) => ({
+      code,
+      name: country.name,
+      emoji: getCountryEmoji(code),
+      callingCode: country.phone[0] || "", // Get first phone code
+    }))
+    .filter(country => country.callingCode) // Filter out countries without calling codes
+    .sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically
+};
+
+const PhoneInput: React.FC<Props> = ({ label, value, onChange, onCountryChange }) => {
+  const countryList = getCountryList();
+  const [selectedCountry, setSelectedCountry] = useState<CountryData>(
+    countryList.find(c => c.code === "LK") || countryList[0] // Default to Sri Lanka or first country
+  );
   const [showCountryPicker, setShowCountryPicker] = useState(false);
 
-  const handleSelect = (country: Country) => {
-    setCountryCode(country.cca2);
-    setCountry(country);
+  const handleCountrySelect = (country: CountryData) => {
+    setSelectedCountry(country);
     setShowCountryPicker(false);
+    onCountryChange?.(country);
   };
 
   const openCountryPicker = () => {
@@ -40,7 +70,7 @@ const PhoneInput: React.FC<Props> = ({ label, value, onChange }) => {
   return (
     <View style={styles.container}>
       <View style={styles.label}>
-        <Icon name="call-outline" size={18} color="#008080" style={styles.icon} />
+        <Ionicons name="call-outline" size={18} color="#008080" style={styles.icon} />
         <Text style={styles.labelText}>{label}</Text>
       </View>
       
@@ -50,10 +80,15 @@ const PhoneInput: React.FC<Props> = ({ label, value, onChange }) => {
           onPress={openCountryPicker}
           activeOpacity={0.7}
         >
+          <Text style={styles.flag}>{selectedCountry.emoji}</Text>
           <Text style={styles.callingCode}>
-            +{country?.callingCode?.[0] ?? "94"}
+            +{selectedCountry.callingCode}
           </Text>
-          <Icon name="chevron-down" size={12} color="#666" />
+          <MaterialIcons 
+            name={showCountryPicker ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
+            size={16} 
+            color="#666" 
+          />
         </TouchableOpacity>
         
         <View style={styles.separator} />
@@ -69,16 +104,38 @@ const PhoneInput: React.FC<Props> = ({ label, value, onChange }) => {
       </View>
 
       {showCountryPicker && (
-        <CountryPicker
-          countryCode={countryCode}
-          withCallingCode
-          withFlag
-          withEmoji
-          withFilter
-          visible={showCountryPicker}
-          onSelect={handleSelect}
-          onClose={closeCountryPicker}
-        />
+        <>
+          <TouchableOpacity 
+            style={styles.backdrop} 
+            onPress={closeCountryPicker}
+            activeOpacity={1}
+          />
+          <View style={styles.dropdownList}>
+            <ScrollView
+              style={styles.scrollView}
+              nestedScrollEnabled={true}
+              showsVerticalScrollIndicator={true}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: 10 }}
+            >
+              {countryList.map((country) => (
+                <TouchableOpacity
+                  key={country.code}
+                  style={[
+                    styles.dropdownItem,
+                    selectedCountry.code === country.code && styles.selectedItem
+                  ]}
+                  onPress={() => handleCountrySelect(country)}
+                  activeOpacity={0.6}
+                >
+                  <Text style={styles.flag}>{country.emoji}</Text>
+                  <Text style={styles.countryName}>{country.name}</Text>
+                  <Text style={styles.countryCode}>+{country.callingCode}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </>
       )}
     </View>
   );
@@ -87,6 +144,8 @@ const PhoneInput: React.FC<Props> = ({ label, value, onChange }) => {
 const styles = StyleSheet.create({
   container: {
     marginBottom: 14,
+    position: "relative",
+    zIndex: 1,
   },
   label: {
     flexDirection: "row",
@@ -117,6 +176,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 128, 128, 0.03)",
     borderTopLeftRadius: 12,
     borderBottomLeftRadius: 12,
+    minWidth: 90,
   },
   flag: {
     fontSize: 16,
@@ -140,6 +200,56 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
     paddingRight: 12,
     height: "100%",
+  },
+  backdrop: {
+    position: "absolute",
+    top: 0,
+    left: -1000,
+    right: -1000,
+    bottom: -1000,
+    zIndex: 999,
+  },
+  dropdownList: {
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: "rgba(0, 0, 0, 0.07)",
+    borderRadius: 12,
+    maxHeight: 200,
+    backgroundColor: "white",
+    position: "absolute",
+    top: 75,
+    left: 0,
+    right: 0,
+    zIndex: 1001,
+    elevation: 10, // For Android shadow
+    shadowColor: "#000", // For iOS shadow
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  scrollView: {
+    maxHeight: 200,
+    flex: 1,
+  },
+  dropdownItem: {
+    padding: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0, 0, 0, 0.05)",
+  },
+  selectedItem: {
+    backgroundColor: "rgba(0, 128, 128, 0.05)",
+  },
+  countryName: {
+    flex: 1,
+    fontSize: 16,
+    marginLeft: 8,
+  },
+  countryCode: {
+    fontSize: 14,
+    color: "#666",
+    fontWeight: "500",
   },
 });
 

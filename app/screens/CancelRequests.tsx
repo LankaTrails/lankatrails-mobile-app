@@ -6,7 +6,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-    SafeAreaView,
+  SafeAreaView,
+  TextInput,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 
@@ -99,7 +100,13 @@ const mockCancelRequests: CancelRequest[] = [
 ];
 
 export default function CancelRequestsPage() {
-  const filteredRequests = mockCancelRequests;
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Filter requests based on search query
+  const filteredRequests = mockCancelRequests.filter((request) =>
+    request.bookingId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    request.hotelName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
 
   const getStatusColor = (status: string) => {
@@ -201,15 +208,43 @@ export default function CancelRequestsPage() {
         <Text style={styles.heading}>Cancel Requests</Text>
       </View>
 
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBar}>
+          <Icon name="search-outline" size={20} color="#008080" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by booking ID or Hotel Name..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholderTextColor="#9CA3AF"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery("")} style={styles.clearButton}>
+              <Icon name="close-circle" size={20} color="#6B7280" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
       <ScrollView style={styles.scrollContainer}>
-        <FlatList
-          data={mockCancelRequests}
-          renderItem={renderCancelRequest}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          style={styles.list}
-          contentContainerStyle={styles.listContent}
-        />
+        {filteredRequests.length === 0 ? (
+          <View style={styles.noResults}>
+            <Icon name="search-outline" size={48} color="#D1D5DB" />
+            <Text style={styles.noResultsText}>
+              {searchQuery ? "No cancel requests found matching your search" : "No cancel requests yet"}
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={filteredRequests}
+            renderItem={renderCancelRequest}
+            keyExtractor={(item) => item.id}
+            showsVerticalScrollIndicator={false}
+            style={styles.list}
+            contentContainerStyle={styles.listContent}
+          />
+        )}
       </ScrollView>
     </View>
   );
@@ -226,8 +261,8 @@ const styles = StyleSheet.create({
     paddingBottom: 60,
     marginBottom: 80,
   },
-   header: {
-    marginTop: 80,
+  header: {
+    marginTop: 75,
     paddingLeft: 24,
     paddingRight: 14,
     marginBottom: 16,
@@ -237,17 +272,64 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   heading: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "700",
     color: "#1f2937",
   },
-
+  searchContainer: {
+    paddingHorizontal: 24,
+    marginBottom: 16,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.07)',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  searchIcon: {
+    marginRight: 12,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#1F2937',
+    paddingVertical: 0,
+  },
+  clearButton: {
+    marginLeft: 8,
+    padding: 4,
+  },
   list: {
     flex: 1,
     backgroundColor: "#F9FAFB",
   },
   listContent: {
     padding: 2,
+  },
+  noResults: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 64,
+  },
+  noResultsText: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 16,
+    paddingHorizontal: 32,
   },
   requestCard: {
     backgroundColor: "#FFFFFF",
