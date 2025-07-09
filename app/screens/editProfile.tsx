@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   },
   header: {
     marginTop: 60,
-    marginBottom: 16,
+    marginBottom: 20,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",

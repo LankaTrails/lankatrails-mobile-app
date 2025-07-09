@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import Card from "../../components/Card";
+import BackButton from "@/components/BackButton";
 
 const { width } = Dimensions.get('window');
 
@@ -59,9 +60,14 @@ export default function FavouritesPage() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.heading}>Favourites</Text>
-      </View>
+                {/* Header */}
+                <View style={styles.header}>
+                  <View style={styles.headerLeft}>
+                    <BackButton />
+                  </View>
+                  <Text style={styles.heading}>Favourites</Text>
+                  <View style={styles.headerRight} />
+                </View>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
@@ -128,19 +134,35 @@ const styles = StyleSheet.create({
     marginBottom: 80,
   },
   header: {
-    marginTop: 75,
-    paddingLeft: 24,
-    paddingRight: 14,
-    marginBottom: 16,
+    marginTop: 60,
+    marginBottom: 20,
+    paddingHorizontal: 16,
     flexDirection: "row",
-    justifyContent: "space-between",
-    backgroundColor: '#f9fafb',
-    paddingBottom: 10,
+    alignItems: "center",
+    position: "relative",
   },
   heading: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: "700",
     color: "#1f2937",
+    position: "absolute",
+    left: 0,
+    right: 0,
+    textAlign: "center",
+    zIndex: 1,
+  },
+  headerLeft: {
+    flex: 1,
+    alignItems: "flex-start",
+    zIndex: 2,
+  },
+  headerCenter: {
+    flex: 2,
+    alignItems: "center",
+  },
+  headerRight: {
+    flex: 1,
+    alignItems: "flex-end",
   },
   searchContainer: {
     paddingHorizontal: 24,

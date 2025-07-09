@@ -89,9 +89,11 @@ export default function NotificationSettings() {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.header}>
-            <Text style={styles.heading}>Notification Settings</Text>
+          <View style={styles.headerLeft}>
+            <BackButton />
           </View>
+          <Text style={styles.heading}>Notification Settings</Text>
+          <View style={styles.headerRight} />
         </View>
 
         <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
@@ -100,7 +102,7 @@ export default function NotificationSettings() {
             <View style={styles.mainToggleContent}>
               <Ionicons name="notifications-outline" size={24} color="#008080" />
               <View style={styles.mainToggleText}>
-                <Text style={styles.mainToggleTitle}>Push Notifications</Text>
+                <Text style={styles.settingTitle}>Push Notifications</Text>
                 <Text style={styles.mainToggleDescription}>
                   Allow LankaTrails to send you notifications
                 </Text>
@@ -159,18 +161,31 @@ const styles = StyleSheet.create({
     backgroundColor: "#f9fafb",
   },
   header: {
-    marginTop: 40,
-    paddingLeft: 10,
-    marginBottom: 16,
+    marginTop: 60,
+    marginBottom: 20,
+    paddingHorizontal: 16,
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    position: "relative",
   },
-
+  headerLeft: {
+    flex: 1,
+    alignItems: "flex-start",
+    zIndex: 2,
+  },
+  headerRight: {
+    flex: 1,
+    alignItems: "flex-end",
+  },
   heading: {
-    fontSize: 26,
+    fontSize: 20,
     fontWeight: "700",
     color: "#1f2937",
+    position: "absolute",
+    left: 0,
+    right: 0,
+    textAlign: "center",
+    zIndex: 1,
   },
   scrollContainer: {
     flex: 1,
