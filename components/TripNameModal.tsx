@@ -108,7 +108,7 @@ export default function TripNameModal({
 
           <View style={styles.buttonContainer}>
             <LongButton
-              label="Create Trip"
+              label="Next"
               onPress={handleCreateTrip}
               disabled={!tripName.trim()}
             />

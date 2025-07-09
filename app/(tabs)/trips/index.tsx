@@ -7,7 +7,6 @@ import {
   ScrollView,
   Animated,
 } from "react-native";
-import { useRouter } from "expo-router";
 import TripCard from "../../../components/TripCard";
 import NewTripButton from "../../../components/FAB";
 import FilterButton from "../../../components/FilterButton";
@@ -15,6 +14,7 @@ import EmptyState from "../../../components/EmptyState";
 import StatsHeader from "../../../components/StatsHeader";
 import DestinationModal from "../../../components/DestinationModal";
 import TripNameModal from "../../../components/TripNameModal";
+import TripDetailsModal, { TripDetails } from "../../../components/TripDetailsModal";
 import { BlurView } from "expo-blur";
 
 const dummyTrips = [
@@ -43,9 +43,10 @@ export default function TripsScreen() {
   const [showTripNameModal, setShowTripNameModal] = useState(false);
   const [selectedDestination, setSelectedDestination] = useState("");
   const [suggestedTripName, setSuggestedTripName] = useState("");
+  const [showTripDetailsModal, setShowTripDetailsModal] = useState(false);
+  const [tripName, setTripName] = useState("");
 
   const filters = ["All", "Upcoming", "Completed"];
-  const router = useRouter();
 
   const filteredTrips =
     selectedFilter === "All"
@@ -56,7 +57,7 @@ export default function TripsScreen() {
     setShowDestinationModal(true);
   };
 
-  const handleDestinationSelect = (destination) => {
+  const handleDestinationSelect = (destination: string) => {
     setSelectedDestination(destination);
     setShowDestinationModal(false);
     // Generate suggested trip name based on destination
@@ -70,34 +71,46 @@ export default function TripsScreen() {
     setSuggestedTripName(suggestions[Math.floor(Math.random() * suggestions.length)]);
     setShowTripNameModal(true);
   };
+  const handleTripNameConfirm = (name: string) => {
+    setTripName(name);
+    setShowTripNameModal(false);
+    setShowTripDetailsModal(true);
+  };
 
-  const handleTripCreate = (tripName) => {
+  const handleTripDetailsConfirm = (details: TripDetails) => {
     const newTrip = {
       id: (trips.length + 1).toString(),
       title: tripName,
-      details: `${selectedDestination} | Planning`,
-      budget: "Rs. 0",
-      duration: "TBD",
+      details: `${selectedDestination} | ${details.members} member${details.members > 1 ? 's' : ''}`,
+      budget: `${details.currency === 'LKR' ? 'Rs.' : details.currency === 'USD' ? '$' : details.currency === 'EUR' ? '€' : '£'} ${details.budget}`,
+      duration: `${calculateDuration(details.startDate, details.endDate)} Days`,
       status: "Upcoming",
     };
     
     setTrips([newTrip, ...trips]);
-    setShowTripNameModal(false);
-    setSelectedDestination("");
-    setSuggestedTripName("");
+    setShowTripDetailsModal(false);
+    handleModalClose();
+  };
+
+  const calculateDuration = (start: Date, end: Date) => {
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
   };
 
   const handleModalClose = () => {
     setShowDestinationModal(false);
     setShowTripNameModal(false);
+    setShowTripDetailsModal(false);
     setSelectedDestination("");
     setSuggestedTripName("");
-  };
+    setTripName("");
+  }
 
   const blurOpacity = useRef(new Animated.Value(0)).current;
   
   useEffect(() => {
-    const isAnyModalVisible = showDestinationModal || showTripNameModal;
+    const isAnyModalVisible = showDestinationModal || showTripNameModal || showTripDetailsModal;
     if (isAnyModalVisible) {
       Animated.timing(blurOpacity, {
         toValue: 1,
@@ -111,7 +124,7 @@ export default function TripsScreen() {
         useNativeDriver: true,
       }).start();
     }
-  }, [showDestinationModal, showTripNameModal]);
+  }, [showDestinationModal, showTripNameModal, showTripDetailsModal, blurOpacity]);
 
   return (
     <View style={styles.container}>
@@ -120,12 +133,11 @@ export default function TripsScreen() {
           <Text style={styles.heading}>Your Trips</Text>
           <StatsHeader trips={trips} />
           {/* Filter Bar */}
-          <View style={styles.filtersContainer}>
+          <View>
             <FlatList
               data={filters}
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.filtersList}
               renderItem={({ item }) => (
                 <FilterButton
                   filter={item}
@@ -153,7 +165,7 @@ export default function TripsScreen() {
       <NewTripButton onPress={handleNewTripPress} />
       
       {/* Blur Overlay */}
-      {(showDestinationModal || showTripNameModal) && (
+      {(showDestinationModal || showTripNameModal || showTripDetailsModal) && (
         <Animated.View
           style={[
             styles.blurContainer,
@@ -178,7 +190,13 @@ export default function TripsScreen() {
         destination={selectedDestination}
         suggestedName={suggestedTripName}
         onClose={handleModalClose}
-        onCreateTrip={handleTripCreate}
+        onCreateTrip={handleTripNameConfirm}
+      />
+
+      <TripDetailsModal
+        visible={showTripDetailsModal}
+        onClose={handleModalClose}
+        onConfirm={handleTripDetailsConfirm}
       />
     </View>
   );
@@ -192,13 +210,16 @@ const styles = StyleSheet.create({
   },
   header: {
     marginTop: 60,
-
     marginBottom: 16,
   },
   heading: {
     fontSize: 32,
+    paddingLeft: 10,
     fontWeight: "700",
     color: "#1f2937",
+  },
+  tripList: {
+    paddingHorizontal: 0,
   },
   blurContainer: {
     position: "absolute",

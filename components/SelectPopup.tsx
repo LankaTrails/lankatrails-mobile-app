@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
     padding: 20,
-    maxHeight: '70%',
+    height: '60%',
   },
   modalTitle: {
     fontSize: 18,
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   categoryList: {
-    maxHeight: 300,
+    maxHeight: 380,
   },
   categoryOption: {
     flexDirection: 'row',

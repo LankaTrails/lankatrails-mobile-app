@@ -11,6 +11,7 @@ import FilterButton from '../../../../components/FilterButton';
 import BackButton from '../../../../components/BackButton';
 import ChatButton from '../../../../components/ShareButton';
 import SummaryCard from '../../../../components/SummaryCard';
+import { TripDetails as TripDetailsType } from '../../../../components/TripDetailsModal';
 import ScheduleView from './ScheduleView';
 import BookingsView from './BookingsView';
 import FloatingActionButton from '../../../../components/OptionsButton';
@@ -37,6 +38,17 @@ const TripDetails = () => {
   const tripID = useLocalSearchParams().id as string;
   const [viewMode, setViewMode] = useState<'schedule' | 'bookings'>('schedule');
 
+  // Trip details state for the SummaryCard
+  const [tripDetails, setTripDetails] = useState<TripDetailsType>({
+    budget: '45000',
+    members: 3,
+    startDate: new Date('2024-06-22'),
+    endDate: new Date('2024-06-26'),
+    currency: 'LKR',
+    distance: '120km', // Placeholder - will be calculated via Google APIs
+    title: 'Galle Adventure', // Add trip title for editing
+  });
+
   // Sample trip data
   const tripData = {
     title: "Galle Adventure",
@@ -45,6 +57,10 @@ const TripDetails = () => {
     distance: "180 km",
     duration: "6 days",
     members: 4
+  };
+
+  const handleUpdateTrip = (updatedDetails: TripDetailsType) => {
+    setTripDetails(updatedDetails);
   };
 
   const tripDays: TripDay[] = [
@@ -188,13 +204,8 @@ const TripDetails = () => {
 
         <ScrollView style={styles.content}>
           <SummaryCard
-            tripData={{
-              dateRange: 'June 22 - June 26',
-              totalCost: '45,000',
-              distance: '120km',
-              duration: '4 Days',
-              members: 3,
-            }}
+            tripDetails={tripDetails}
+            onEditTrip={handleUpdateTrip}
           />
 
           <TabNavigation />
