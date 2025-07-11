@@ -9,9 +9,9 @@ import {
 import { Stack, useLocalSearchParams } from 'expo-router';
 import FilterButton from '../../../../components/FilterButton'; 
 import BackButton from '../../../../components/BackButton';
-import ChatButton from '../../../../components/ShareButton';
+import HeaderButton from '../../../../components/HeaderButton';
 import SummaryCard from '../../../../components/SummaryCard';
-import { TripDetails as TripDetailsType } from '../../../../components/TripDetailsModal';
+import TripDetailsModal, { TripDetails as TripDetailsType } from '../../../../components/TripDetailsModal';
 import ScheduleView from './ScheduleView';
 import BookingsView from './BookingsView';
 import FloatingActionButton from '../../../../components/OptionsButton';
@@ -37,6 +37,7 @@ interface TripDay {
 const TripDetails = () => {
   const tripID = useLocalSearchParams().id as string;
   const [viewMode, setViewMode] = useState<'schedule' | 'bookings'>('schedule');
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Trip details state for the SummaryCard
   const [tripDetails, setTripDetails] = useState<TripDetailsType>({
@@ -49,18 +50,36 @@ const TripDetails = () => {
     title: 'Galle Adventure', // Add trip title for editing
   });
 
-  // Sample trip data
+  // Trip data - using title from tripDetails
   const tripData = {
-    title: "Galle Adventure",
-    dateRange: "Dec 15-20, 2024",
-    totalCost: 2450,
-    distance: "180 km",
-    duration: "6 days",
-    members: 4
+    title: tripDetails.title || 'Galle Adventure',
   };
 
-  const handleUpdateTrip = (updatedDetails: TripDetailsType) => {
+  // Handle edit from header button
+  const handleEdit = () => {
+    setShowEditModal(true);
+  };
+
+  // Handle share from header button
+  const handleShare = () => {
+    // Implement share functionality
+    console.log('Sharing trip:', tripDetails.title);
+  };
+
+  // Handle delete from header button
+  const handleDelete = () => {
+    // Implement delete functionality
+    console.log('Deleting trip:', tripDetails.title);
+  };
+
+  // Handle edit modal close and update
+  const handleEditModalClose = () => {
+    setShowEditModal(false);
+  };
+
+  const handleEditModalConfirm = (updatedDetails: TripDetailsType) => {
     setTripDetails(updatedDetails);
+    setShowEditModal(false);
   };
 
   const tripDays: TripDay[] = [
@@ -199,13 +218,18 @@ const TripDetails = () => {
           <View style={styles.headerText}>
             <Text style={styles.headerTitle}>{tripData.title}</Text>
           </View>
-          <ChatButton/>
+          <HeaderButton
+            tripId={tripID}
+            tripTitle={tripData.title}
+            onEdit={handleEdit}
+            onShare={handleShare}
+            onDelete={handleDelete}
+          />
         </View>
 
         <ScrollView style={styles.content}>
           <SummaryCard
             tripDetails={tripDetails}
-            onEditTrip={handleUpdateTrip}
           />
 
           <TabNavigation />
@@ -221,6 +245,14 @@ const TripDetails = () => {
       <View style={styles.fabContainer}>
           <FloatingActionButton />
         </View>
+
+      <TripDetailsModal
+        visible={showEditModal}
+        onClose={handleEditModalClose}
+        onConfirm={handleEditModalConfirm}
+        initialDetails={tripDetails}
+        isEditing={true}
+      />
     </>
   );
 };

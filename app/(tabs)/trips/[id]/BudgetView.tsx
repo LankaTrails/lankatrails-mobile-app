@@ -14,7 +14,6 @@ import FAB from '../../../../components/FAB';
 import EditPopup from '../../../../components/EditPopup';
 import { theme } from '../../../theme';
 import SelectPopup from '../../../../components/SelectPopup';
-import ChatButton from '../../../../components/ShareButton';
 import BackButton from '../../../../components/BackButton';
 import FilterButton from '../../../../components/FilterButton';
 import Svg, { Circle } from 'react-native-svg';
@@ -371,7 +370,7 @@ const BudgetView = () => {
         <View style={styles.headerText}>
           <Text style={styles.headerTitle}>Budget Overview</Text>
           </View>
-          <ChatButton />
+          <View style={styles.headerSpacer} />
         </View>
 
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 150 }}>
@@ -596,6 +595,9 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#111827',
+  },
+  headerSpacer: {
+    width: 30, // Same width as BackButton to balance the layout
   },
   // Enhanced Overview Card Styles
   overviewCard: {

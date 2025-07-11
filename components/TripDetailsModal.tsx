@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   TouchableWithoutFeedback,
   Platform,
   Animated,
+  Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
@@ -21,7 +22,9 @@ interface TripDetailsModalProps {
   onClose: () => void;
   onConfirm: (details: TripDetails) => void;
   initialDetails?: TripDetails;
+  tripTitle?: string; // New prop to receive trip title from TripNameModal
   isEditing?: boolean; // New prop to indicate editing mode
+  startFromIntermediate?: boolean; // For seamless transition from TripNameModal
 }
 
 export interface TripDetails {
@@ -39,7 +42,9 @@ export default function TripDetailsModal({
   onClose,
   onConfirm,
   initialDetails,
+  tripTitle,
   isEditing = false,
+  startFromIntermediate = false,
 }: TripDetailsModalProps) {
   const [budget, setBudget] = useState(initialDetails?.budget || "");
   const [members, setMembers] = useState(initialDetails?.members || 1);
@@ -48,20 +53,21 @@ export default function TripDetailsModal({
     initialDetails?.endDate || new Date(Date.now() + 24 * 60 * 60 * 1000)
   );
   const [currency, setCurrency] = useState(initialDetails?.currency || "USD");
-  const [title, setTitle] = useState(initialDetails?.title || "");
+  const [title, setTitle] = useState(initialDetails?.title || tripTitle || "");
   const [showCurrencySelector, setShowCurrencySelector] = useState(false);
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
   // Animation for slide up effect
-  const slideAnim = useState(new Animated.Value(0))[0];
+  const slideAnim = useRef(new Animated.Value(startFromIntermediate ? 0.3 : 0)).current;
+  const screenHeight = Dimensions.get('window').height;
 
   useEffect(() => {
     if (visible) {
       // Slide up animation
       Animated.timing(slideAnim, {
         toValue: 1,
-        duration: 250,
+        duration: startFromIntermediate ? 200 : 250,
         useNativeDriver: true,
       }).start();
     } else {
@@ -72,7 +78,14 @@ export default function TripDetailsModal({
         useNativeDriver: true,
       }).start();
     }
-  }, [visible, slideAnim]);
+  }, [visible, slideAnim, startFromIntermediate]);
+
+  // Update title when tripTitle prop changes (for new trip creation flow)
+  useEffect(() => {
+    if (tripTitle && !isEditing) {
+      setTitle(tripTitle);
+    }
+  }, [tripTitle, isEditing]);
 
   const currencies = [
     { code: "USD", symbol: "$", name: "US Dollar" },
@@ -145,7 +158,7 @@ export default function TripDetailsModal({
       return;
     }
 
-    if (isEditing && !title.trim()) {
+    if (!title.trim()) {
       Alert.alert("Missing Information", "Please enter a trip title");
       return;
     }
@@ -156,7 +169,7 @@ export default function TripDetailsModal({
       startDate,
       endDate,
       currency,
-      ...(isEditing && { title: title.trim() }),
+      title: title.trim(),
     };
 
     onConfirm(tripDetails);
@@ -179,7 +192,7 @@ export default function TripDetailsModal({
                 {
                   translateY: slideAnim.interpolate({
                     inputRange: [0, 1],
-                    outputRange: [500, 0], // Slide up from 500px below
+                    outputRange: [screenHeight * 0.3, 0], // Start at intermediate position (30% from bottom) or from bottom
                   }),
                 },
               ],
@@ -187,19 +200,17 @@ export default function TripDetailsModal({
           ]}
         >
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {/* Trip Title Section - Only visible when editing */}
-            {isEditing && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Trip Title</Text>
-                <TextInput
-                  style={styles.titleInput}
-                  value={title}
-                  onChangeText={setTitle}
-                  placeholder="Enter trip title"
-                  placeholderTextColor="#9CA3AF"
-                />
-              </View>
-            )}
+            {/* Trip Title Section - Always visible now */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Trip Title</Text>
+              <TextInput
+                style={styles.titleInput}
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Enter trip title"
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
 
             {/* Budget Section */}
             <View style={styles.section}>
@@ -407,7 +418,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
     padding: 12,
-    height: "70%",
+    height: "80%",
   },
   header: {
     flexDirection: "row",
@@ -445,7 +456,7 @@ const styles = StyleSheet.create({
   currencySelector: {
     backgroundColor: "#F9FAFB",
     paddingHorizontal: 12,
-    paddingVertical: 16,
+    paddingVertical: 14,
     borderRightWidth: 1,
     borderRightColor: "#D1D5DB",
   },
@@ -465,6 +476,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     fontSize: 16,
     color: "#1F2937",
+    height: 45,
   },
   titleInput: {
     borderWidth: 1,
@@ -475,6 +487,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#1F2937",
     backgroundColor: "#F9FAFB",
+    height: 45,
   },
   membersContainer: {
     flexDirection: "row",
@@ -586,7 +599,6 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: "row",
     padding: 20,
-    borderTopWidth: 1,
     borderTopColor: "#F3F4F6",
   },
   cancelButton: {

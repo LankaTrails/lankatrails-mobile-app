@@ -57,24 +57,57 @@ export default function TripsScreen() {
     setShowDestinationModal(true);
   };
 
-  const handleDestinationSelect = (destination: string) => {
-    setSelectedDestination(destination);
-    setShowDestinationModal(false);
-    // Generate suggested trip name based on destination
+  const handleDestinationSelect = (destinations: string[], selectedVibes?: string[]) => {
+    // Use the first destination for the trip name suggestion, or combine multiple
+    const primaryDestination = destinations[0];
+    
+    // Format destination text with proper truncation for many destinations
+    let destinationText;
+    if (destinations.length === 1) {
+      destinationText = primaryDestination;
+    } else if (destinations.length <= 5) {
+      // Show all destinations normally
+      destinationText = destinations.length === 2 
+        ? `${destinations[0]} & ${destinations[1]}`
+        : `${destinations.slice(0, -1).join(', ')} & ${destinations[destinations.length - 1]}`;
+    } else {
+      // Show first 5 destinations with "..." for more than 5
+      const first5 = destinations.slice(0, 5);
+      destinationText = `${first5.join(', ')}...`;
+    }
+    
+    setSelectedDestination(destinationText);
+    
+    // Generate suggested trip name based on primary destination
     const suggestions = [
-      `${destination} Adventure`,
-      `${destination} Explorer`,
-      `${destination} Journey`,
-      `${destination} Experience`,
-      `Discover ${destination}`,
+      `${primaryDestination} Adventure`,
+      `${primaryDestination} Explorer`,
+      `${primaryDestination} Journey`,
+      `${primaryDestination} Experience`,
+      `Discover ${primaryDestination}`,
     ];
     setSuggestedTripName(suggestions[Math.floor(Math.random() * suggestions.length)]);
-    setShowTripNameModal(true);
+    
+    // TODO: Use selectedVibes to influence trip suggestions and services in later steps
+    if (selectedVibes && selectedVibes.length > 0) {
+      console.log('Selected vibes for trip:', selectedVibes);
+    }
+    
+    console.log('Selected destinations:', destinations);
+    
+    // Close destination modal with animation to TripName height, then show TripName modal
+    setTimeout(() => {
+      setShowDestinationModal(false);
+      setShowTripNameModal(true);
+    }, 250); // Match the animation duration
   };
   const handleTripNameConfirm = (name: string) => {
     setTripName(name);
-    setShowTripNameModal(false);
-    setShowTripDetailsModal(true);
+    // Close TripName modal with animation to TripDetails height, then show TripDetails modal
+    setTimeout(() => {
+      setShowTripNameModal(false);
+      setShowTripDetailsModal(true);
+    }, 250); // Match the animation duration
   };
 
   const handleTripDetailsConfirm = (details: TripDetails) => {
@@ -183,6 +216,7 @@ export default function TripsScreen() {
         visible={showDestinationModal}
         onClose={handleModalClose}
         onDestinationSelect={handleDestinationSelect}
+        animateToTripNameHeight={!!selectedDestination}
       />
       
       <TripNameModal
@@ -191,12 +225,16 @@ export default function TripsScreen() {
         suggestedName={suggestedTripName}
         onClose={handleModalClose}
         onCreateTrip={handleTripNameConfirm}
+        startFromIntermediate={!!selectedDestination}
+        animateToTripDetailsHeight={!!tripName}
       />
 
       <TripDetailsModal
         visible={showTripDetailsModal}
         onClose={handleModalClose}
         onConfirm={handleTripDetailsConfirm}
+        tripTitle={tripName}
+        startFromIntermediate={!!tripName}
       />
     </View>
   );

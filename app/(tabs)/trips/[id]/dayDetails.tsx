@@ -9,8 +9,6 @@ import {
 } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import BackButton from '../../../../components/BackButton';
-import ChatButton from '../../../../components/ShareButton';
-import LongButton from '../../../../components/LongButton';
 import { theme } from '../../../theme';
 
 interface Service {
@@ -43,11 +41,6 @@ const DayDetails = () => {
     }
   };
 
-  const handleAddNewService = () => {
-    // Navigate to add service page or show modal
-    console.log('Add new service');
-  };
-
   const handleViewServiceDetails = (serviceId: string) => {
     // Navigate to service details page
     console.log('View service details:', serviceId);
@@ -62,7 +55,7 @@ const DayDetails = () => {
         <View style={styles.headerText}>
           <Text style={styles.headerTitle}>{tripTitle}</Text>
         </View>
-        <ChatButton />
+        <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -153,6 +146,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
  
   },
+  headerSpacer: {
+    width: 30, // Same width as BackButton to balance the layout
+  },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -160,6 +156,7 @@ const styles = StyleSheet.create({
   },
   
   headerText: {
+    flex: 1,
     alignItems: 'center',
   },
   content: {

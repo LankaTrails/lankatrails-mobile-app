@@ -1,22 +1,20 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   ImageBackground,
   StyleSheet,
-  TouchableOpacity,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
-import TripDetailsModal, { TripDetails } from './TripDetailsModal';
+import { TripDetails } from './TripDetailsModal';
 
 interface SummaryCardProps {
   tripDetails: TripDetails;
-  onEditTrip?: (updatedDetails: TripDetails) => void;
 }
 
-export default function SummaryCard({ tripDetails, onEditTrip }: SummaryCardProps) {
-  const [modalVisible, setModalVisible] = useState(false);
+export default function SummaryCard({ tripDetails }: SummaryCardProps) {
+  // Remove modal state since editing is now handled by HeaderButton
 
   const formatDateRange = (startDate: Date, endDate: Date) => {
     const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
@@ -42,18 +40,10 @@ export default function SummaryCard({ tripDetails, onEditTrip }: SummaryCardProp
     return symbols[currency] || currency;
   };
 
-  const handleEditTrip = (updatedDetails: TripDetails) => {
-    setModalVisible(false);
-    if (onEditTrip) {
-      onEditTrip(updatedDetails);
-    }
-  };
   return (
     <>
-      <TouchableOpacity
+      <View
         style={styles.card}
-        onLongPress={() => onEditTrip && setModalVisible(true)}
-        activeOpacity={0.8}
       >
         <ImageBackground
           source={{ uri: "https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg" }}
@@ -92,16 +82,7 @@ export default function SummaryCard({ tripDetails, onEditTrip }: SummaryCardProp
           </BlurView>
         </View>
       </ImageBackground>
-    </TouchableOpacity>
-
-    {/* Trip Details Modal */}
-    <TripDetailsModal
-      visible={modalVisible}
-      onClose={() => setModalVisible(false)}
-      onConfirm={handleEditTrip}
-      initialDetails={tripDetails}
-      isEditing={true}
-    />
+    </View>
   </>
 );
 }

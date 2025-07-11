@@ -97,7 +97,6 @@ const PhoneInput: React.FC<Props> = ({ label, value, onChange, onCountryChange }
           style={styles.input}
           value={value}
           onChangeText={onChange}
-          placeholder="Enter phone number"
           keyboardType="phone-pad"
           maxLength={15}
         />
@@ -164,7 +163,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: "rgba(0, 0, 0, 0.07)",
-    borderRadius: 12,
+    borderRadius: 20,
     backgroundColor: "transparent",
     height: 45,
   },
@@ -213,7 +212,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     borderWidth: 1,
     borderColor: "rgba(0, 0, 0, 0.07)",
-    borderRadius: 12,
+    borderRadius: 20,
     maxHeight: 200,
     backgroundColor: "white",
     position: "absolute",
