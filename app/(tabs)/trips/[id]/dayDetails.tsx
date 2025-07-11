@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Animated,
 } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import BackButton from '../../../../components/BackButton';
@@ -32,6 +33,51 @@ const DayDetails = () => {
   const tripTitle = params.tripTitle as string;
   const services: Service[] = JSON.parse(params.services as string);
 
+  // Animation for header hide/show
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const headerTranslateY = useRef(new Animated.Value(0)).current;
+  const lastScrollY = useRef(0);
+
+  // Header animation based on scroll direction
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    {
+      useNativeDriver: false,
+      listener: (event: any) => {
+        const currentScrollY = event.nativeEvent.contentOffset.y;
+        const scrollDelta = currentScrollY - lastScrollY.current;
+        
+        // Only start hiding header after scrolling past the day header (around 100px)
+        if (currentScrollY > 100) {
+          if (scrollDelta > 5 && currentScrollY > lastScrollY.current) {
+            // Scrolling down - hide header
+            Animated.timing(headerTranslateY, {
+              toValue: -100,
+              duration: 200,
+              useNativeDriver: true,
+            }).start();
+          } else if (scrollDelta < -5 && currentScrollY < lastScrollY.current) {
+            // Scrolling up - show header
+            Animated.timing(headerTranslateY, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: true,
+            }).start();
+          }
+        } else {
+          // Always show header when at the top
+          Animated.timing(headerTranslateY, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+        }
+        
+        lastScrollY.current = currentScrollY;
+      },
+    }
+  );
+
   const getWeatherIcon = (weather: string) => {
     switch (weather) {
       case 'sunny': return '☀️';
@@ -50,15 +96,27 @@ const DayDetails = () => {
     <>
     <Stack.Screen options={{ headerShown: false }} />
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+      <Animated.View 
+        style={[
+          styles.header,
+          {
+            transform: [{ translateY: headerTranslateY }],
+          }
+        ]}
+      >
        <BackButton/>
         <View style={styles.headerText}>
           <Text style={styles.headerTitle}>{tripTitle}</Text>
         </View>
         <View style={styles.headerSpacer} />
-      </View>
+      </Animated.View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
         <View style={styles.dayHeader}>
           <View style={styles.dayHeaderLeft}>
             <Text style={styles.dayDate}>{date}</Text>
@@ -137,14 +195,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
   },
   header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 15,
     paddingVertical: 16,
+    paddingTop: 50, // Add extra padding for status bar
     flexDirection: 'row',
     borderRadius: 30,
     justifyContent: 'space-between',
     alignItems: 'center',
- 
+    zIndex: 1000,
   },
   headerSpacer: {
     width: 30, // Same width as BackButton to balance the layout
@@ -162,6 +225,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 14,
+    paddingTop: 40, // Add padding to account for fixed header
   },
   dayHeader: {
     flexDirection: 'row',
