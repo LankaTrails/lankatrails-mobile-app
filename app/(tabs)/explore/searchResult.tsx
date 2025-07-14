@@ -332,6 +332,7 @@ const [favourites, setFavourites] = useState<Place[]>([]);
                         ...item,
                         subtitle: item.subtitle ?? '',
                         rating: item.rating ?? 0,
+                        image: item.image ?? '',
                       }}
                       width={(width - 48) / 2}
                       onPress={() => router.push('/explore/ServiceView')}

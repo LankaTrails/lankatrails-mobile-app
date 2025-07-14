@@ -56,8 +56,7 @@ export default function EditPopup({
     </TouchableWithoutFeedback>
 
     <View style={styles.modal}>
-      
-        {isPassword ? <Text style={styles.modalTitle}>Change Password</Text> : ""}
+      {isPassword ? <Text style={styles.modalTitle}>Change Password</Text> : ""}
       
 
       {Object.entries(values).map(([key, value]) => (
@@ -68,6 +67,7 @@ export default function EditPopup({
     onChange={(text) => onChange(key, text)}
     placeholder={formatLabel(key)}
     secureTextEntry={isPassword}
+    icon="key"
   />
 ))}
 
