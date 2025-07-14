@@ -299,10 +299,10 @@ const LocationSearchScreen = () => {
       >
         <View className="flex-row items-center flex-1">
           <Text className="text-2xl mr-3">{item.icon}</Text>
-          <Text className="text-gray-800 text-lg">{item.name}</Text>
+          <Text className="text-gray-800 text-l font-medium">{item.name}</Text>
         </View>
         <TouchableOpacity 
-          className="p-2 hover:bg-gray-200 rounded-full"
+          className="p-2 hover:bg-gray-200 rounded-full "
           activeOpacity={0.6}
         >
           <Text className="text-gray-400 text-lg">×</Text>
@@ -321,8 +321,7 @@ const LocationSearchScreen = () => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
+    <SafeAreaView className="flex-1 bg-white " >
       
       <PageTransition animationType="slideUp" isVisible={pageVisible}>
         {/* Header */}
@@ -332,7 +331,7 @@ const LocationSearchScreen = () => {
             
             {/* Search Bar */}
             {/* <SearchBar onPress={() => router.push('/testing')} /> */}
-            <View className="relative">
+            <View className="relative mt-5">
               <SearchBar onPress={() => router.push({ pathname: '/explore/searchResult' })} />
             </View>
           </View>
@@ -367,7 +366,7 @@ const LocationSearchScreen = () => {
         {/* Recent Searches */}
         <View className="flex-1 px-4">
           <StaggeredListItem index={2} delay={150}>
-            <Text className="text-gray-600 font-medium text-base mb-4">Recent searches</Text>
+            <Text className="text-gray-600 font-bold text-xl mb-4">Recent searches</Text>
           </StaggeredListItem>
           
           <ScrollView showsVerticalScrollIndicator={false}>

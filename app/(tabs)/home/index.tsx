@@ -281,7 +281,7 @@ const TravelApp = () => {
           </View>
 
           <View className="bg-red-50 rounded-xl p-4 mb-4">
-            <Text className="text-black font-semibold mb-1">
+            <Text className="text-black/200 font-semibold mb-1">
               📵 Stay Connected
             </Text>
             <Text className="text-gray-600 text-sm">
@@ -294,7 +294,7 @@ const TravelApp = () => {
         {/* Branding */}
         <View className="mx-4 mb-80 items-center">
           <View className="flex-row items-center">
-            <View className="w-8 h-8 bg-teal-500 rounded-full items-center justify-center mr-2">
+            <View className="w-8 h-8 bg-primary rounded-full items-center justify-center mr-2">
               <Text className="text-white font-bold text-sm">L</Text>
             </View>
             <Text className="text-teal-600 text-lg font-bold">LankaTrails</Text>

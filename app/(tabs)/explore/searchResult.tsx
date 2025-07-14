@@ -44,6 +44,7 @@ const GalleApp = () => {
   const fadeInValue = useRef(new Animated.Value(0)).current;
   const mainFadeAnim = useRef(new Animated.Value(0)).current;
   const mainSlideAnim = useRef(new Animated.Value(40)).current;
+const [favourites, setFavourites] = useState<Place[]>([]);
 
   useEffect(() => {
     setTimeout(() => {
@@ -87,16 +88,21 @@ const GalleApp = () => {
     }
   }, [loading]);
 
-  const handleFavourite = () => {
-    setIsFavourite((prev) => {
-      const newState = !prev;
-      const message = newState ? 'Added to favourites' : 'Removed from favourites';
-      Platform.OS === 'android'
-        ? ToastAndroid.show(message, ToastAndroid.SHORT)
-        : Alert.alert(message);
-      return newState;
-    });
-  };
+  const handleFavourite = (place: Place) => {
+  setFavourites((prev) => {
+    const exists = prev.find((p) => p.place_id === place.place_id);
+    const updated = exists
+      ? prev.filter((p) => p.place_id !== place.place_id)
+      : [...prev, place];
+
+    const message = exists ? 'Removed from favourites' : 'Added to favourites';
+    Platform.OS === 'android'
+      ? ToastAndroid.show(message, ToastAndroid.SHORT)
+      : Alert.alert(message);
+    return updated;
+  });
+};
+
 
   const handleShare = () => {
     Platform.OS === 'android'
@@ -198,57 +204,11 @@ const GalleApp = () => {
             </View>
           </View>
 
-          {/* Public Places */}
-          <View className="mb-6 px-4">
-            <Text className="text-3xl font-bold text-primary mt-4 mb-4">Public Places</Text>
-            {placesLoading ? (
-              <ActivityIndicator size="small" />
-            ) : (
-              <>
-                {groupedPlaces.map(({ group, places }) => (
-                  <View key={group} style={{ marginBottom: 20 }}>
-                    <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#757575', marginBottom: 10 }}>
-                      {group} ({places.length})
-                    </Text>
-                    {places.length > 0 ? (
-                      <FlatList
-                        data={places}
-                        keyExtractor={(item) => item.place_id}
-                        renderItem={({ item }) => (
-                          <Card
-                            item={{
-                              id: Number(item.place_id),
-                              title: item.name,
-                              subtitle: item.vicinity,
-                              rating: typeof item.rating === 'number'
-                                ? item.rating
-                                : typeof item.rating === 'string'
-                                ? Number(item.rating)
-                                : 0,
-                              image: item.photos?.[0]
-                                ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${item.photos[0].photo_reference}&key=${GOOGLE_PLACES_API_KEY}`
-                                : '',
-                            }}
-                            onPress={() => router.push('/explore/ServiceView')}
-                            width={180}
-                          />
-                        )}
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                      />
-                    ) : (
-                      <Text style={{ color: '#666' }}>No public places found in this category.</Text>
-                    )}
-                  </View>
-                ))}
-              </>
-            )}
-          </View>
-
+          
           {/* Tabs */}
           <AnimatedCard delay={200}>
             <View className="flex-row justify-between px-4 my-6">
-              {['All', 'Accommodation', 'Foods', 'Transport', 'Activities'].map((tab) => (
+              {['All', 'Accommodation', 'Foods', 'Transport', 'Activities','Public Places'].map((tab) => (
                 <TouchableOpacity
                   key={tab}
                   className={`py-2 px-3 rounded-full ${selectedTab === tab ? 'bg-teal-600' : 'bg-white'}`}
@@ -384,7 +344,55 @@ const GalleApp = () => {
               </View>
             ));
           })()}
+
+          {/* Public Places Tab - FlatList, flattened, only when selected */}
+          {selectedTab === 'Public Places' && (
+            <View className="mb-6 px-4">
+              <Text className="text-3xl font-bold text-primary mt-4 mb-4">Public Places</Text>
+              {placesLoading ? (
+                <ActivityIndicator size="small" />
+              ) : (
+                (() => {
+                  // Flatten all places from all groups
+                  const allPlaces = groupedPlaces.flatMap(g => g.places);
+                  if (allPlaces.length === 0) {
+                    return <Text style={{ color: '#666' }}>No public places found.</Text>;
+                  }
+                  return (
+                    <FlatList
+                      data={allPlaces}
+                      keyExtractor={item => item.place_id}
+                      numColumns={2}
+                      columnWrapperStyle={{ justifyContent: 'space-between' }}
+                      renderItem={({ item }) => (
+                        <Card
+                          item={{
+                            id: Number(item.place_id),
+                            title: item.name,
+                            subtitle: item.vicinity,
+                            rating: typeof item.rating === 'number'
+                              ? item.rating
+                              : typeof item.rating === 'string'
+                              ? Number(item.rating)
+                              : 0,
+                            image: item.photos?.[0]
+                              ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${item.photos[0].photo_reference}&key=${GOOGLE_PLACES_API_KEY}`
+                              : '',
+                          }}
+                          onPress={() => router.push('/explore/ServiceView')}
+                          width={(width - 48) / 2}
+                        />
+                      )}
+                      contentContainerStyle={{ paddingBottom: 16 }}
+                      scrollEnabled={false}
+                    />
+                  );
+                })()
+              )}
+            </View>
+          )}
           <View className="h-20" />
+
         </ScrollView>
       </Animated.View>
     </View>
