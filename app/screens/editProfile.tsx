@@ -7,24 +7,48 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Stack, router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import InputField from '../../components/InputField';
+import { useAuth }  from "@/hooks/useAuth"; 
+import { updateUserProfile } from "@/services/userService";
+import PhoneInput from "../../components/PhoneInput";
+import BackButton from "@/components/BackButton";
 
 
 export default function Profile() {
+  const { user, checkAuth } = useAuth();
   const [fieldValues, setFieldValues] = useState({
-    Name: "Eran Wijesekara",
-    Email: "eran@email.com",
-    // Phone: "+94 712 345 678",
+    FName: user?.firstName || "",
+    LName: user?.lastName || "",
+    // Phone: user?.phone || "",
+    Phone: user?.phone || "",
   });
   const [tempValues, setTempValues] = useState({ ...fieldValues });
   const [imageUri, setImageUri] = useState<string | null>(null);
 
   const handleSave = () => {
-    setFieldValues(tempValues);
-    router.back();
+    // Update the user profile with the new values
+    updateUserProfile(
+      tempValues.FName,
+      tempValues.LName,
+      tempValues.Phone,
+      user?.role || "ROLE_TOURIST",
+      // fieldValues.Phone,
+    )
+      .then(() => {
+        // Update the field values with the temporary values
+        // setFieldValues({ ...tempValues });   
+        checkAuth();
+        // refresh the profile page
+        router.push("../profile");
+      })
+      .catch((error) => {
+        console.error("Error updating profile:", error);
+      });
   };
 
   const hasChanges = JSON.stringify(fieldValues) !== JSON.stringify(tempValues);
@@ -41,28 +65,52 @@ export default function Profile() {
     }
   };
   const iconName = {
-    Name: "person-outline",
-    Email: "mail-outline",
+    FName: "person-outline",
+    LName: "person-outline",
     Phone: "call-outline",
+
+  };
+
+  const labelMap = {
+    FName: "First Name",
+    LName: "Last Name",
+    Phone: "Phone",
+
   };
 
   return (
     <>
-    <Stack.Screen options={{ headerShown: false }} />
-      <ScrollView style={styles.container}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        <ScrollView 
+          style={styles.container}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
         <View style={styles.header}>
-          <Text style={styles.heading}>Edit Profile</Text>
-          <TouchableOpacity
-            onPress={() => {
-              if (hasChanges) {
-                handleSave();
-              } else {
-                router.push("../profile");
-              }
-            }}
-          >
-            <Text style={styles.editButton}>{hasChanges ? "Done" : "Cancel"}</Text>
-          </TouchableOpacity>
+          <View style={styles.headerLeft}>
+            <BackButton />
+          </View>
+          <View style={styles.headerCenter}>
+            <Text style={styles.heading}>Edit Profile</Text>
+          </View>
+          <View style={styles.headerRight}>
+            <TouchableOpacity
+              onPress={() => {
+                if (hasChanges) {
+                  handleSave();
+                } else {
+                  router.push("../profile");
+                }
+              }}
+            >
+              <Text style={styles.editButton}>{hasChanges ? "Done" : ""}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Profile Photo */}
@@ -81,38 +129,82 @@ export default function Profile() {
         </View>
 
         {/* Editable Fields */}
-        <View style={styles.section}>
-          {Object.entries(tempValues).map(([key, value]) => (
-          <InputField
+       <View style={styles.section}>
+  {Object.entries(tempValues).map(([key, value]) => {
+    const label = labelMap[key as keyof typeof labelMap];
+    const icon = iconName[key as keyof typeof iconName];
+    
+    // Add safety check
+    if (!label) {
+      console.warn(`Missing label for key: ${key}`);
+      return null;
+    }
+    
+    if (key === "Phone") {
+      return (
+        <PhoneInput
           key={key}
-          label={key}
+          label={label}
           value={value}
-          placeholder={`Enter your ${key.toLowerCase()}`}
-          onChange={(text) => setTempValues((prev) => ({ ...prev, [key]: text }))}
-          icon={iconName[key as keyof typeof iconName]}
-  />
-))}
-        </View>
-      </ScrollView>
+          onChange={(text) =>
+            setTempValues((prev) => ({ ...prev, [key]: text }))
+          }
+        />
+      );
+    }
+    
+    return (
+      <InputField
+        key={key}
+        label={label}
+        value={value}
+        placeholder={`Enter your ${label.toLowerCase()}`}
+        onChange={(text) =>
+          setTempValues((prev) => ({ ...prev, [key]: text }))
+        }
+        icon={icon}
+      />
+    );
+  })}        </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoidingView: {
+    flex: 1,
+    backgroundColor: "#f9fafb",
+  },
   container: {
+    flex: 1,
+  },
+  scrollContent: {
     padding: 14,
     paddingBottom: 60,
-    backgroundColor: "#f9fafb",
   },
   header: {
     marginTop: 60,
-    paddingLeft: 10,
-    marginBottom: 16,
+    marginBottom: 20,
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+  },
+  headerLeft: {
+    flex: 1,
+    alignItems: "flex-start",
+  },
+  headerCenter: {
+    flex: 2,
+    alignItems: "center",
+  },
+  headerRight: {
+    flex: 1,
+    alignItems: "flex-end",
   },
   heading: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: "700",
     color: "#1f2937",
   },
@@ -136,6 +228,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 26,
     marginTop: 16,
+    flex: 2,
   },
   image: {
     width: 110,

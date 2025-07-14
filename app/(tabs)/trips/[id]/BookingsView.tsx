@@ -242,7 +242,6 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
       <ScrollView showsVerticalScrollIndicator={false}>
         {availableCount > 0 && (
           <TouchableOpacity style={styles.bookAllButton} onPress={handleBookAll}>
-            <Text style={styles.bookAllIcon}>📋</Text>
             <Text style={styles.bookAllText}>Book All Available ({availableCount})</Text>
           </TouchableOpacity>
         )}
@@ -361,16 +360,12 @@ const styles = StyleSheet.create({
   },
   bookAllButton: {
     backgroundColor: '#008080',
-    borderRadius: 12,
+    borderRadius: 26,
     padding: 16,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
-  },
-  bookAllIcon: {
-    fontSize: 18,
-    marginRight: 8,
   },
   bookAllText: {
     fontSize: 16,
@@ -463,7 +458,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#008080',
     paddingHorizontal: 20,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 26,
   },
   bookButtonText: {
     fontSize: 14,

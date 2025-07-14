@@ -14,7 +14,6 @@ import FAB from '../../../../components/FAB';
 import EditPopup from '../../../../components/EditPopup';
 import { theme } from '../../../theme';
 import SelectPopup from '../../../../components/SelectPopup';
-import ChatButton from '../../../../components/ShareButton';
 import BackButton from '../../../../components/BackButton';
 import FilterButton from '../../../../components/FilterButton';
 import Svg, { Circle } from 'react-native-svg';
@@ -371,7 +370,7 @@ const BudgetView = () => {
         <View style={styles.headerText}>
           <Text style={styles.headerTitle}>Budget Overview</Text>
           </View>
-          <ChatButton />
+          <View style={styles.headerSpacer} />
         </View>
 
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 150 }}>
@@ -597,6 +596,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#111827',
   },
+  headerSpacer: {
+    width: 30, // Same width as BackButton to balance the layout
+  },
   // Enhanced Overview Card Styles
   overviewCard: {
     backgroundColor: '#FFFFFF',
@@ -604,10 +606,6 @@ const styles = StyleSheet.create({
     padding: 16,
     margin: 16,
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
     elevation: 5,
     borderWidth: 1,
     borderColor: '#F1F5F9',
@@ -697,10 +695,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: theme.colors.primary,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
     elevation: 2,
   },
   editButtonText: {
@@ -722,10 +716,6 @@ const styles = StyleSheet.create({
     width: '47%',
     marginBottom: 16,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
     elevation: 4,
     borderWidth: 1,
     borderColor: '#F1F5F9',
@@ -804,10 +794,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
+
     elevation: 2,
     borderWidth: 1,
     borderColor: '#F1F5F9',

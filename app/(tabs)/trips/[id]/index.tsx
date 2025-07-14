@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   SafeAreaView,
+  Animated,
 } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import FilterButton from '../../../../components/FilterButton'; 
 import BackButton from '../../../../components/BackButton';
-import ChatButton from '../../../../components/ShareButton';
+import HeaderButton from '../../../../components/HeaderButton';
 import SummaryCard from '../../../../components/SummaryCard';
+import TripDetailsModal, { TripDetails as TripDetailsType } from '../../../../components/TripDetailsModal';
 import ScheduleView from './ScheduleView';
 import BookingsView from './BookingsView';
 import FloatingActionButton from '../../../../components/OptionsButton';
@@ -36,15 +38,94 @@ interface TripDay {
 const TripDetails = () => {
   const tripID = useLocalSearchParams().id as string;
   const [viewMode, setViewMode] = useState<'schedule' | 'bookings'>('schedule');
+  const [showEditModal, setShowEditModal] = useState(false);
 
-  // Sample trip data
+  // Animation for header hide/show
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const headerTranslateY = useRef(new Animated.Value(0)).current;
+  const lastScrollY = useRef(0);
+
+  // Header animation based on scroll direction
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    {
+      useNativeDriver: false,
+      listener: (event: any) => {
+        const currentScrollY = event.nativeEvent.contentOffset.y;
+        const scrollDelta = currentScrollY - lastScrollY.current;
+        
+        // Only start hiding header after scrolling past the summary card (around 150px)
+        if (currentScrollY > 150) {
+          if (scrollDelta > 5 && currentScrollY > lastScrollY.current) {
+            // Scrolling down - hide header
+            Animated.timing(headerTranslateY, {
+              toValue: -100,
+              duration: 200,
+              useNativeDriver: true,
+            }).start();
+          } else if (scrollDelta < -5 && currentScrollY < lastScrollY.current) {
+            // Scrolling up - show header
+            Animated.timing(headerTranslateY, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: true,
+            }).start();
+          }
+        } else {
+          // Always show header when at the top
+          Animated.timing(headerTranslateY, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+        }
+        
+        lastScrollY.current = currentScrollY;
+      },
+    }
+  );
+
+  // Trip details state for the SummaryCard
+  const [tripDetails, setTripDetails] = useState<TripDetailsType>({
+    budget: '45000',
+    members: 3,
+    startDate: new Date('2024-06-22'),
+    endDate: new Date('2024-06-26'),
+    currency: 'LKR',
+    distance: '120km', // Placeholder - will be calculated via Google APIs
+    title: 'Galle Adventure', // Add trip title for editing
+  });
+
+  // Trip data - using title from tripDetails
   const tripData = {
-    title: "Galle Adventure",
-    dateRange: "Dec 15-20, 2024",
-    totalCost: 2450,
-    distance: "180 km",
-    duration: "6 days",
-    members: 4
+    title: tripDetails.title || 'Galle Adventure',
+  };
+
+  // Handle edit from header button
+  const handleEdit = () => {
+    setShowEditModal(true);
+  };
+
+  // Handle share from header button
+  const handleShare = () => {
+    // Implement share functionality
+    console.log('Sharing trip:', tripDetails.title);
+  };
+
+  // Handle delete from header button
+  const handleDelete = () => {
+    // Implement delete functionality
+    console.log('Deleting trip:', tripDetails.title);
+  };
+
+  // Handle edit modal close and update
+  const handleEditModalClose = () => {
+    setShowEditModal(false);
+  };
+
+  const handleEditModalConfirm = (updatedDetails: TripDetailsType) => {
+    setTripDetails(updatedDetails);
+    setShowEditModal(false);
   };
 
   const tripDays: TripDay[] = [
@@ -178,23 +259,35 @@ const TripDetails = () => {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+        <Animated.View 
+          style={[
+            styles.header,
+            {
+              transform: [{ translateY: headerTranslateY }],
+            }
+          ]}
+        >
           <BackButton />
           <View style={styles.headerText}>
             <Text style={styles.headerTitle}>{tripData.title}</Text>
           </View>
-          <ChatButton/>
-        </View>
+          <HeaderButton
+            tripId={tripID}
+            tripTitle={tripData.title}
+            onEdit={handleEdit}
+            onShare={handleShare}
+            onDelete={handleDelete}
+          />
+        </Animated.View>
 
-        <ScrollView style={styles.content}>
+        <ScrollView 
+          style={styles.content}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}
+        >
           <SummaryCard
-            tripData={{
-              dateRange: 'June 22 - June 26',
-              totalCost: '45,000',
-              distance: '120km',
-              duration: '4 Days',
-              members: 3,
-            }}
+            tripDetails={tripDetails}
           />
 
           <TabNavigation />
@@ -210,6 +303,14 @@ const TripDetails = () => {
       <View style={styles.fabContainer}>
           <FloatingActionButton />
         </View>
+
+      <TripDetailsModal
+        visible={showEditModal}
+        onClose={handleEditModalClose}
+        onConfirm={handleEditModalConfirm}
+        initialDetails={tripDetails}
+        isEditing={true}
+      />
     </>
   );
 };
@@ -220,13 +321,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb',
   },
   header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 15,
     paddingVertical: 16,
+    paddingTop: 50, // Add extra padding for status bar
     flexDirection: 'row',
     borderRadius: 30,
     justifyContent: 'space-between',
     alignItems: 'center',
+    zIndex: 1000,
   },
   headerText: {
     flex: 1,
@@ -244,6 +351,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 14,
+    paddingTop: 50, // Add padding to account for fixed header
   },
   tabContainer: {
     flexDirection: "row", 

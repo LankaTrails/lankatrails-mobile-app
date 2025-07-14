@@ -21,10 +21,21 @@ export default function Profile() {
   const [modalVisible, setModalVisible] = useState(false);
   const { signIn, logout, user, isLoading } = useAuth();
   const [fieldValues, setFieldValues] = useState({
-    Name: user?.firstName ? user.firstName + " " + user.lastName : "Eren Yeager",
+    Name: user?.firstName
+      ? user.firstName + " " + user.lastName
+      : "Eren Yeager",
     Email: user?.email ? user.email : "eren@email.com",
     // Phone: user?.id ? user.id : "+94 712 345 678",
   });
+  useEffect(() => {
+    setFieldValues({
+      Name: user?.firstName
+        ? user.firstName + " " + user.lastName
+        : "Your Name",
+      Email: user?.email ? user.email : "your@email.com",
+      Phone: user?.id ? user.id : "+94 712 345 678",
+    });
+  }, [user]);
   const [tempValues, setTempValues] = useState({ ...fieldValues });
   const [imageUri, setImageUri] = useState<string | null>(null);
 
@@ -81,59 +92,77 @@ export default function Profile() {
       {/* Combined Blur Overlay */}
       {(modalVisible || passwordModalVisible) && (
         <Animated.View style={[styles.overlay, { opacity: blurOpacity }]}>
-          <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
+          <BlurView
+            intensity={50}
+            tint="dark"
+            style={StyleSheet.absoluteFill}
+          />
         </Animated.View>
       )}
 
-
-<EditPopup
-  visible={passwordModalVisible}
-  type="password"
-  values={passwords}
-  onChange={(key, value) =>
-    setPasswords((prev) => ({ ...prev, [key]: value }))
-  }
-  onSubmit={handleChangePassword}
-  onClose={() => setPasswordModalVisible(false)}
-/>
-
+      <EditPopup
+        visible={passwordModalVisible}
+        type="password"
+        values={passwords}
+        onChange={(key, value) =>
+          setPasswords((prev) => ({ ...prev, [key]: value }))
+        }
+        onSubmit={handleChangePassword}
+        onClose={() => setPasswordModalVisible(false)}
+      />
 
       <ScrollView style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.heading}>Profile</Text>
-          <TouchableOpacity onPress={() => router.push("/screens/editProfile")}>
-                        <Icon name="pencil" size={20} color="#008080" />
-                      </TouchableOpacity>
         </View>
 
         {/* Profile Photo */}
         <View style={styles.profileHeader}>
-  <TouchableOpacity>
-    <Image
-      source={
-        imageUri
-          ? { uri: imageUri }
-          : require("../../../assets/images/profile.png")
-      }
-      style={styles.profileImage}
-    />
-  </TouchableOpacity>
-  <View>
-    <Text style={styles.greetingText}>Hello, {fieldValues.Name.split(" ")[0]}!</Text>
-  </View>
-</View>
-
-        {/* User Info */}
-        <View style={styles.section}>
-          <View style={styles.infoHeader}>
-            <Text style={styles.sectionTitle}>User Info</Text>
+          <TouchableOpacity>
+            <Image
+              source={
+                imageUri
+                  ? { uri: imageUri }
+                  : require("../../../assets/images/profile.png")
+              }
+              style={styles.profileImage}
+            />
+          </TouchableOpacity>
+          <View>
+            <Text style={styles.greetingText}>
+              Hello, {fieldValues.Name.split(" ")[0]}!
+            </Text>
+            <Text style={styles.subtitleText}>
+              {fieldValues.Email}
+            </Text>
           </View>
-
-          {Object.entries(fieldValues).map(([key, value]) => (
-            <ProfileInfoItem key={key} label={key} value={String(value)} />
-          ))}
         </View>
 
+              {/* Account Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Account</Text>
+          <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/screens/EditProfile")}>
+            <View style={styles.actionButtonContent}>
+              <Icon name="pencil" size={20} color="#008080" />
+              <Text style={styles.actionButtonText}>Edit Profile</Text>
+            </View>
+            <Icon name="chevron-forward" size={20} color="#008080" />
+          </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/screens/Favourites")}>
+            <View style={styles.actionButtonContent}>
+              <Icon name="heart" size={20} color="#008080" />
+              <Text style={styles.actionButtonText}>Favourites</Text>
+            </View>
+            <Icon name="chevron-forward" size={20} color="#008080" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/screens/CancelRequests")}>
+            <View style={styles.actionButtonContent}>
+              <Icon name="close-circle" size={20} color="#008080" />
+              <Text style={styles.actionButtonText}>Cancel Requests</Text>
+            </View>
+            <Icon name="chevron-forward" size={20} color="#008080" />
+          </TouchableOpacity>
+        </View>
         {/* Change Password Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Security</Text>
@@ -143,38 +172,54 @@ export default function Profile() {
           >
             <View style={styles.actionButtonContent}>
               <Icon name="key" size={20} color="#008080" />
-            <Text style={styles.actionButtonText}>Change Password</Text>
+              <Text style={styles.actionButtonText}>Change Password</Text>
             </View>
           </TouchableOpacity>
         </View>
 
+        {/* settings */}
+          <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Settings</Text>
+          <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/screens/NotificationSettings")}>
+            <View style={styles.actionButtonContent}>
+              <Icon name="settings" size={20} color="#008080" />
+              <Text style={styles.actionButtonText}>Notifications</Text>
+            </View>
+            <Icon name="chevron-forward" size={20} color="#008080" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => Alert.alert("Redirect", "App Settings on the device")}
+          >
+            <View style={styles.actionButtonContent}>
+              <Icon name="shield" size={20} color="#008080" />
+              <Text style={styles.actionButtonText}>Permissions</Text>
+            </View>
+            <Icon name="chevron-forward" size={20} color="#008080" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/screens/HelpAndSupport")}>
+            <View style={styles.actionButtonContent}>
+              <Icon name="help-circle" size={20} color="#008080" />
+              <Text style={styles.actionButtonText}>Help & Support</Text>
+            </View>
+            <Icon name="chevron-forward" size={20} color="#008080" />
+          </TouchableOpacity>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          <TouchableOpacity style={styles.actionButton}>
-              <View style={styles.actionButtonContent}>
-                <Icon name="notifications" size={20} color="#008080" />
-                <Text style={styles.actionButtonText}>Notification Settings</Text>
-              </View>
-              <Icon name="chevron-forward" size={20} color="#4ECDC4" />
-            </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-              <View style={styles.actionButtonContent}>
-                <Icon name="help-circle" size={20} color="#008080" />
-                <Text style={styles.actionButtonText}>Help & Support</Text>
-              </View>
-              <Icon name="chevron-forward" size={20} color="#008080" />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.actionButton, styles.logoutButton]}
-              onPress={() => {handleLogout()}}
-            >
-              <View style={styles.actionButtonContent}>
-                <Icon name="log-out" size={20} color="#FF6B6B" />
-                <Text style={[styles.actionButtonText, styles.logoutText]}>Sign Out</Text>
-              </View>
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.logoutButton]}
+            onPress={() => {
+              handleLogout();
+            }}
+          >
+            <View style={styles.actionButtonContent}>
+              <Icon name="log-out" size={20} color="#FF6B6B" />
+              <Text style={[styles.actionButtonText, styles.logoutText]}>
+                Sign Out
+              </Text>
+            </View>
+          </TouchableOpacity>
         </View>
+        
       </ScrollView>
     </>
   );
@@ -204,7 +249,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: 20,
     padding: 15,
-
   },
   infoHeader: {
     flexDirection: "row",
@@ -218,59 +262,57 @@ const styles = StyleSheet.create({
     color: "#4b5563",
   },
   profileHeader: {
-  flexDirection: "row",
-  alignItems: "center",
-  marginBottom: 24,
-  gap: 16,
-  paddingLeft: 10,
-},
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 24,
+    gap: 16,
+    paddingLeft: 10,
+  },
 
-profileImage: {
-  width: 80,
-  height: 80,
-  borderRadius: 40,
-  borderWidth: 2,
-  borderColor: "#008080",
-},
+  profileImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: "#008080",
+  },
 
-greetingText: {
-  fontSize: 22,
-  fontWeight: "700",
-  color: "#1f2937",
-},
+  greetingText: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#1f2937",
+  },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 1,
   },
 
-
   actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "rgba(255,255,255,0.1)",
+    padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: "rgba(255,255,255,0.2)",
     marginTop: 8,
   },
   actionButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   actionButtonText: {
-    color: '#008080',
+    color: "#008080",
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
     marginLeft: 12,
   },
-   logoutButton: {
-    backgroundColor: 'rgba(255, 107, 107, 0.1)',
-    borderColor: 'rgba(255, 107, 107, 0.3)',
+  logoutButton: {
+    backgroundColor: "rgba(255, 107, 107, 0.1)",
+    borderColor: "rgba(255, 107, 107, 0.3)",
   },
   logoutText: {
-    color: '#FF6B6B',
+    color: "#FF6B6B",
   },
-  
 });

@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     width: "100%",
     borderColor: "rgba(0, 0, 0, 0.07)",
-    borderRadius: 12,
+    borderRadius: 20,
     height: 45,
     padding: 12,
     fontSize: 16,
