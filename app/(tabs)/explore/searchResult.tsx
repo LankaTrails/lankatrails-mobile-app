@@ -44,6 +44,7 @@ const GalleApp = () => {
   const fadeInValue = useRef(new Animated.Value(0)).current;
   const mainFadeAnim = useRef(new Animated.Value(0)).current;
   const mainSlideAnim = useRef(new Animated.Value(40)).current;
+const [favourites, setFavourites] = useState<Place[]>([]);
 
   useEffect(() => {
     setTimeout(() => {
@@ -87,16 +88,21 @@ const GalleApp = () => {
     }
   }, [loading]);
 
-  const handleFavourite = () => {
-    setIsFavourite((prev) => {
-      const newState = !prev;
-      const message = newState ? 'Added to favourites' : 'Removed from favourites';
-      Platform.OS === 'android'
-        ? ToastAndroid.show(message, ToastAndroid.SHORT)
-        : Alert.alert(message);
-      return newState;
-    });
-  };
+  const handleFavourite = (place: Place) => {
+  setFavourites((prev) => {
+    const exists = prev.find((p) => p.place_id === place.place_id);
+    const updated = exists
+      ? prev.filter((p) => p.place_id !== place.place_id)
+      : [...prev, place];
+
+    const message = exists ? 'Removed from favourites' : 'Added to favourites';
+    Platform.OS === 'android'
+      ? ToastAndroid.show(message, ToastAndroid.SHORT)
+      : Alert.alert(message);
+    return updated;
+  });
+};
+
 
   const handleShare = () => {
     Platform.OS === 'android'

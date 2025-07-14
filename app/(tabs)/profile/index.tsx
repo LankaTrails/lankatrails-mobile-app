@@ -148,6 +148,7 @@ export default function Profile() {
           </TouchableOpacity>
         </View>
 
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
           <TouchableOpacity style={styles.actionButton}>
