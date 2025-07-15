@@ -42,7 +42,7 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({ tripDays, tripTitle }) => {
 
   const handleDayClick = (day: TripDay) => {
     router.push({
-      pathname: './{id}/dayDetails',
+      pathname: './{id}/DayDetails',
       params: {
         date: day.date,
         dayName: day.dayName,

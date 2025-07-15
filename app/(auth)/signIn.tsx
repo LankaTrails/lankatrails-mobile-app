@@ -208,7 +208,7 @@ const SignIn = () => {
               </View>
 
               <View style={styles.signUpContainer}>
-                <Text style={styles.signUpText}>Don't have an account? </Text>
+                <Text style={styles.signUpText}>Don&#39;t have an account? </Text>
                 <TouchableOpacity onPress={() => router.replace('/signUp')}>
                   <Text style={styles.signUpLink}>Sign Up</Text>
                 </TouchableOpacity>

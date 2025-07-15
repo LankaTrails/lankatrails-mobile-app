@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -7,10 +7,13 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   TouchableOpacity,
+  Animated,
+  Dimensions,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import LongButton from "./LongButton";
-import InputField from "./InputField";
-import {theme} from "../app/theme";
 
 interface TripNameModalProps {
   visible: boolean;
@@ -18,6 +21,8 @@ interface TripNameModalProps {
   suggestedName: string;
   onClose: () => void;
   onCreateTrip: (tripName: string) => void;
+  startFromIntermediate?: boolean;
+  animateToTripDetailsHeight?: boolean;
 }
 
 export default function TripNameModal({
@@ -26,25 +31,93 @@ export default function TripNameModal({
   suggestedName,
   onClose,
   onCreateTrip,
+  startFromIntermediate = false,
+  animateToTripDetailsHeight = false,
 }: TripNameModalProps) {
   const [tripName, setTripName] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const hasSetInitialSelection = useRef(false);
+  const slideAnim = useRef(new Animated.Value(startFromIntermediate ? 0.3 : 0)).current;
+  const screenHeight = Dimensions.get('window').height;
 
   useEffect(() => {
     if (destination) {
-      const tripSuggestions = [
-        `${destination} Adventure`,
-        `${destination} Explorer`,
-        `${destination} Journey`,
-        `${destination} Experience`,
-        `Discover ${destination}`,
-        `${destination} Getaway`,
-        `${destination} Expedition`,
-      ];
+      // Parse destinations - they come as "Dest1, Dest2 & Dest3" or "Dest1, Dest2, Dest3..." format
+      const destinationParts = destination.split(/,|\s&\s/).map(d => d.trim());
+      const hasEllipsis = destination.includes('...');
+      const destinationCount = hasEllipsis ? destinationParts.length + 1 : destinationParts.length; // +1 for truncated destinations
+      
+      // Get the primary destination for naming
+      const primaryDestination = destinationParts[0];
+      
+      let tripSuggestions;
+      if (destinationCount === 1) {
+        // Single destination suggestions
+        tripSuggestions = [
+          `${destination} Explorer`,
+          `${destination} Journey`,
+          `${destination} Experience`,
+          `Discover ${destination}`,
+          `${destination} Getaway`,
+          `${destination} Expedition`,
+        ];
+      } else {
+        // Multi-destination suggestions
+        const displayText = hasEllipsis || destinationCount > 3 ? primaryDestination : destination;
+        tripSuggestions = [
+          `${displayText} Multi-City Trip`,
+          `${primaryDestination} & Beyond`,
+          `${displayText} Adventure`,
+          `Explore ${displayText}`,
+          `${primaryDestination} Journey`,
+          `${destinationCount > 5 ? 'Grand' : 'Multi'}-Destination Tour`,
+        ];
+      }
+      
       setSuggestions(tripSuggestions);
+    }
+  }, [destination]);
+
+  // Separate effect to handle default selection when modal becomes visible
+  useEffect(() => {
+    if (visible && suggestions.length > 0 && !hasSetInitialSelection.current) {
+      // Set default selection only once per modal session
+      setTripName(suggestedName || suggestions[0]);
+      hasSetInitialSelection.current = true;
+    } else if (visible && suggestedName) {
+      // Update if a specific suggested name is provided
       setTripName(suggestedName);
     }
-  }, [destination, suggestedName]);
+  }, [visible, suggestions, suggestedName]);
+
+  useEffect(() => {
+    if (visible) {
+      Animated.timing(slideAnim, {
+        toValue: 1,
+        duration: startFromIntermediate ? 200 : 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      if (animateToTripDetailsHeight) {
+        // Animate to TripDetails modal height position - smoother transition
+        Animated.timing(slideAnim, {
+          toValue: 0.3, // Partial slide down to where TripDetails modal will appear
+          duration: 250,
+          useNativeDriver: true,
+        }).start(() => {
+          // Reset animation value for next time
+          slideAnim.setValue(startFromIntermediate ? 0.3 : 0);
+        });
+      } else {
+        // Normal close - slide down completely
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      }
+    }
+  }, [visible, slideAnim, startFromIntermediate, animateToTripDetailsHeight]);
 
   const handleCreateTrip = () => {
     if (tripName.trim()) {
@@ -58,13 +131,32 @@ export default function TripNameModal({
   };
 
   const handleClose = () => {
-    setTripName("");
     onClose();
   };
 
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!visible) {
+      // Reset tripName when modal is closed to ensure fresh state on next open
+      setTimeout(() => {
+        setTripName("");
+        hasSetInitialSelection.current = false; // Reset the flag for next session
+      }, 300);
+    }
+  }, [visible]);
+
+  const modalTranslateY = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [screenHeight * 0.3, 0], // Start at intermediate position (30% from bottom) or slide from bottom
+  });
+
   return (
-    <Modal visible={visible} transparent animationType="slide">
-      <View style={styles.overlay}>
+    <Modal visible={visible} transparent animationType="none">
+      <KeyboardAvoidingView 
+        style={styles.overlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
         <TouchableWithoutFeedback
           onPress={() => {
             Keyboard.dismiss();
@@ -73,13 +165,22 @@ export default function TripNameModal({
         >
           <View style={styles.backdrop} />
         </TouchableWithoutFeedback>
-        <View style={styles.modal}>
+        <Animated.View 
+          style={[
+            styles.modal,
+            {
+              transform: [{ translateY: modalTranslateY }],
+            }
+          ]}
+        >
           <Text style={styles.modalTitle}>Name your trip</Text>
 
-          <InputField
+          <TextInput
+            style={styles.inputField}
             value={tripName}
-            onChange={setTripName}
+            onChangeText={setTripName}
             placeholder="Enter trip name..."
+            placeholderTextColor="#9CA3AF"
           />
 
           <Text style={styles.sectionTitle}>Suggested Names</Text>
@@ -108,13 +209,12 @@ export default function TripNameModal({
 
           <View style={styles.buttonContainer}>
             <LongButton
-              label="Create Trip"
+              label="Next"
               onPress={handleCreateTrip}
-              disabled={!tripName.trim()}
             />
           </View>
-        </View>
-      </View>
+        </Animated.View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -133,13 +233,25 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
     padding: 20,
-    maxHeight: "70%",
+    maxHeight: "100%",
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: "600",
     textAlign: "center",
     color: "#111827",
+    marginBottom: 20,
+  },
+  inputField: {
+    backgroundColor: "#F9FAFB",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: "#374151",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 16,

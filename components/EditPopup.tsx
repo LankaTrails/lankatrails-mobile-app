@@ -6,6 +6,8 @@ import {
   StyleSheet,
   TouchableWithoutFeedback,
   Keyboard,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import LongButton from "./LongButton";
 import InputField from "./InputField";
@@ -45,7 +47,11 @@ export default function EditPopup({
 
   return (
 <Modal visible={visible} transparent animationType="slide">
-  <View style={styles.overlay}>
+  <KeyboardAvoidingView 
+    style={styles.overlay}
+    behavior={Platform.OS === "ios" ? "padding" : "height"}
+    keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+  >
     <TouchableWithoutFeedback
       onPress={() => {
         Keyboard.dismiss();
@@ -63,7 +69,7 @@ export default function EditPopup({
   <InputField
     key={key}
     label={formatLabel(key)}
-    value={value}
+    value={value as string}
     onChange={(text) => onChange(key, text)}
     placeholder={formatLabel(key)}
     secureTextEntry={isPassword}
@@ -73,7 +79,7 @@ export default function EditPopup({
 
       <LongButton label={isPassword ? "Change" : "Save"} onPress={onSubmit} />
     </View>
-  </View>
+  </KeyboardAvoidingView>
 </Modal>
 
   );

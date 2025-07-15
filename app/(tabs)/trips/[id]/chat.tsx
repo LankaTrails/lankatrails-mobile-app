@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import BackButton from "../../../../components/BackButton";
-import ChatButton from "../../../../components/ShareButton";
 
 interface Message {
   id: string;
@@ -77,7 +76,6 @@ export default function Chat() {
         <View style={styles.headerText}>
           <Text style={styles.headerTitle}>Chat</Text>
         </View>
-        <ChatButton />
       </View>
 
       <View style={styles.chatBox}>
