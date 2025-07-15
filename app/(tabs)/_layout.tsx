@@ -35,7 +35,7 @@ export default function TabsLayout() {
           let iconName: keyof typeof Ionicons.glyphMap = "home";
           if (name === "home") iconName = "home";
           else if (name === "explore") iconName = "search";
-          else if (name === "trips") iconName = "restaurant";
+          else if (name === "trips") iconName = "footsteps";
           else if (name === "profile") iconName = "person";
 
           return (
@@ -60,7 +60,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="explore" />
       <Tabs.Screen name="trips" />
       <Tabs.Screen name="profile" />
-      <Tabs.Screen name="testing/index" />
+      {/* <Tabs.Screen name="testing/index" /> */}
     </Tabs>
   );
 }

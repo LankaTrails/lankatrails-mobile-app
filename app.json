@@ -20,6 +20,46 @@
         "ITSAppUsesNonExemptEncryption": false
       }
     },
+    "android": {
+      "package": "com.pkmst.lankatrails",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/logo.png",
+        "backgroundColor": "#ffffff"
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyA47Q-I515EK0DU4pvk5jgUcatYcdnf8cY"
+        }
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/logo.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/logo.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d75fdd3e-e9d5-4ef7-a67b-7dac7117dd25"
+      }
+    },
     "build": {
       "development": {
         "developmentClient": true,
@@ -28,50 +68,6 @@
           "simulator": true
         }
       }
-    },
-    "extra": {
-      "eas": {
-        "projectId": "d75fdd3e-e9d5-4ef7-a67b-7dac7117dd25"
-      }
-    },
-    "android": {
-      "package": "com.pkmst.lankatrails"
-    }
-  },
-  "android": {
-    "adaptiveIcon": {
-      "foregroundImage": "./assets/images/logo.png",
-      "backgroundColor": "#ffffff"
-    },
-    "edgeToEdgeEnabled": true,
-    "package": "com.pkmst.lankatrails",
-    "versionCode": 1
-  },
-  "web": {
-    "bundler": "metro",
-    "output": "static",
-    "favicon": "./assets/images/logo.png"
-  },
-  "plugins": [
-    "expo-router",
-    [
-      "expo-splash-screen",
-      {
-        "image": "./assets/images/logo.png",
-        "imageWidth": 200,
-        "resizeMode": "contain",
-        "backgroundColor": "#ffffff"
-      }
-    ],
-    "expo-web-browser"
-  ],
-  "experiments": {
-    "typedRoutes": true
-  },
-  "extra": {
-    "router": {},
-    "eas": {
-      "projectId": "d75fdd3e-e9d5-4ef7-a67b-7dac7117dd25"
     }
   }
 }

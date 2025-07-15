@@ -19,7 +19,7 @@ const styles = {
   filterButton: {
     paddingHorizontal: 15,
     paddingVertical: 8,
-    marginRight: 12,
+    marginRight: 10,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: 'rgba(175, 175, 175, 0.13)',
