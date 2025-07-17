@@ -32,7 +32,6 @@ const ServiceView = () => {
 
   const [userRating, setUserRating] = useState(0);
 const [userReview, setUserReview] = useState('');
-const [userComplaint, setUserComplaint] = useState('');
 
 const handleSubmitReview = () => {
   if (userRating === 0 || userReview.trim() === '') {
@@ -46,7 +45,6 @@ const handleSubmitReview = () => {
   // Reset inputs
   setUserRating(0);
   setUserReview('');
-  setUserComplaint('');
 };
   const { name } = useLocalSearchParams<{ name: string }>();
   const [isFavourite, setIsFavourite] = useState(false);
@@ -196,7 +194,7 @@ const handleSubmitReview = () => {
           style={{
             height: 16,
             borderRadius: 10,
-            backgroundColor: '#14b8a6',
+            backgroundColor: '#008080',
             width: animatedValue.interpolate({
               inputRange: [0, 100],
               outputRange: ['0%', '100%'],
@@ -236,9 +234,17 @@ const handleSubmitReview = () => {
       item.name,
       `${item.description}\n\nPrice: ${item.price}\nRating: ${item.rating}⭐`,
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Add to Cart', style: 'default' },
-      ]
+        {
+          text: 'Cancel',
+          style: 'destructive',
+        },
+        {
+          text: 'Add to Trip',
+          style: 'default',
+          onPress: () => router.push('/explorer/trips'),
+        },
+      ],
+      { cancelable: true }
     );
   };
 
@@ -285,6 +291,7 @@ const handleSubmitReview = () => {
                 <MenuCard 
                   item={item} 
                   onPress={handleMenuItemPress}
+                  
                 />
               </View>
             ))}
@@ -430,6 +437,13 @@ const handleSubmitReview = () => {
       className="bg-primary py-3 rounded-lg items-center"
     >
       <Text className="text-white text-lg font-medium">Submit Feedback</Text>
+    </TouchableOpacity>
+
+     <TouchableOpacity
+      onPress={() => router.push('/explore/ComplainPage')}
+      className="border-4 border-primary mt-5 bg-white py-3  items-center rounded-full"
+    >
+      <Text className="text-primary text-lg font-bold">If you have any complaints</Text>
     </TouchableOpacity>
   </View>
 </View>
