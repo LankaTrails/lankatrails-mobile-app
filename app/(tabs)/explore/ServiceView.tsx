@@ -32,6 +32,8 @@ const ServiceView = () => {
 
   const [userRating, setUserRating] = useState(0);
 const [userReview, setUserReview] = useState('');
+const [userComplaint, setUserComplaint] = useState('');
+
 
 const handleSubmitReview = () => {
   if (userRating === 0 || userReview.trim() === '') {
@@ -418,7 +420,7 @@ const handleSubmitReview = () => {
       />
     </View>
 
-    {/* Complaint Input */}
+    {/* Complaint Input
     <Text className="text-gray-500 font-medium mb-1 text-lg">Complaint (if any)</Text>
     <View className="bg-gray-100 rounded-lg px-3 py-2 mb-4">
       <TextInput
@@ -429,7 +431,7 @@ const handleSubmitReview = () => {
         className="text-lg text-primary"
         style={{ minHeight: 60 }}
       />
-    </View>
+    </View> */}
 
     {/* Submit Button */}
     <TouchableOpacity

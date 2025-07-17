@@ -129,10 +129,36 @@ const TravelApp = () => {
             ]}
           />
         </View>
+         {/* Popular Services */}
+        <View className="px-4 mb-6">
+          <Text className="text-black text-3xl font-bold mb-4">
+            Popular Services
+          </Text>
+          <View className="flex-row flex-wrap justify-between -mx-1">
+            {popularPlaces.map((place, index) => (
+              <StaggeredListItem key={place.id} delay={index * 100}>
+                <Card
+                  item={{
+                    id: place.id,
+                    title: place.name,
+                    subtitle: place.location,
+                    rating: place.rating || 0,
+                    image: place.image,
+                  }}
+                  width={width * 0.5 - 16} // Adjust width for two columns
+                  onPress={(selectedPlace) => {
+                    console.log("Pressed:", selectedPlace.title);
+                  }}
+                />
+              </StaggeredListItem>
+            ))}
+          </View>
+        </View>
+
 
         {/* Popular Places */}
         <View className="px-4 mb-6">
-          <Text className="text-black text-2xl font-bold mb-4">
+          <Text className="text-black text-3xl font-bold mb-4">
             Popular Places
           </Text>
           <View className="flex-row flex-wrap justify-between -mx-1">
@@ -192,7 +218,7 @@ const TravelApp = () => {
         </View>
 
         {/* Travel News Section (Sri Lanka only) */}
-        <View className="px-4 mb-6">
+        {/* <View className="px-4 mb-6">
           <Text className="text-black text-2xl font-bold mb-4">
             Travel News (Sri Lanka)
           </Text>
@@ -244,7 +270,36 @@ const TravelApp = () => {
               </TouchableOpacity>
             ))}
           </ScrollView>
-        </View>
+        </View> */}
+
+<View className="px-3 mb-3">
+  <Text className="text-black text-3xl font-bold mb-4">
+    Popular Pics at YALA forest
+  </Text>
+
+  <View className="flex-row gap-1">
+    {/* Large Image on the Left */}
+    <Image
+      source={require('../../../assets/images/Home/deer.jpg')}
+      className="w-56 h-96 rounded-lg"
+      resizeMode="cover"
+    />
+
+    {/* Two Small Stacked Images on the Right */}
+    <View className="mb-2">
+      <Image
+        source={require('../../../assets/images/Home/leopard.jpg')}
+        className="w-56 h-48 rounded-lg mb-1"
+        resizeMode="cover"
+      />
+      <Image
+        source={require('../../../assets/images/Home/elephants.jpg')}
+        className="w-56 h-48 rounded-lg"
+        resizeMode="cover"
+      />
+    </View>
+  </View>
+</View>
 
         {/* Travel Tips (Local Only) */}
         <View className="px-4 mb-6">
