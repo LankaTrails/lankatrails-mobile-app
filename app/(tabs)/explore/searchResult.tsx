@@ -229,7 +229,7 @@ const GalleApp = () => {
                                 ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${item.photos[0].photo_reference}&key=${GOOGLE_PLACES_API_KEY}`
                                 : '',
                             }}
-                            onPress={() => router.push('/explore/ServiceView')}
+                            onPress={() => router.push('../explore/ServiceView')}
                             width={180}
                           />
                         )}
@@ -352,7 +352,7 @@ const GalleApp = () => {
                     <TouchableOpacity
                       onPress={() =>
                         router.push({
-                          pathname: '/explore/accommodation-foods-transport',
+                          pathname: '../explore/accommodation-foods-transport',
                           params: { tab: section.tab.toLowerCase() },
                         })
                       }
@@ -375,7 +375,7 @@ const GalleApp = () => {
                         image: item.image ?? '',
                       }}
                       width={(width - 48) / 2}
-                      onPress={() => router.push('/explore/ServiceView')}
+                      onPress={() => router.push('../explore/ServiceView')}
                     />
                   )}
                   contentContainerStyle={{ paddingBottom: 16 }}

@@ -332,7 +332,7 @@ const LocationSearchScreen = () => {
             {/* Search Bar */}
             {/* <SearchBar onPress={() => router.push('/testing')} /> */}
             <View className="relative mt-5">
-              <SearchBar onPress={() => router.push({ pathname: '/explore/searchResult' })} />
+              <SearchBar onPress={() => router.push({ pathname: '../explore/searchResult' })} />
             </View>
           </View>
         </StaggeredListItem>
@@ -343,7 +343,7 @@ const LocationSearchScreen = () => {
             <TouchableOpacity 
               className="flex-row items-center hover:bg-gray-50 active:bg-gray-100 p-3 rounded-lg"
               activeOpacity={0.8}
-              onPress={() => router.push({ pathname: '/explore/searchResult' })}
+              onPress={() => router.push({ pathname: '../explore/searchResult' })}
 
             >
               <TouchableOpacity

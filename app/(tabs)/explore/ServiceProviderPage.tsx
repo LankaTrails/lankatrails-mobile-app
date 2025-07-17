@@ -88,22 +88,7 @@ const [showFullDescription, setShowFullDescription] = useState(false);
             <Ionicons name="star" size={20} color="#facc15" />
             <Text className="ml-1 text-gray-700 text-xl">{mockProvider.rating.toFixed(1)}</Text>
           </View>
-          {/* Description */}
-{/* Description with Show More */}
-<View className=" pb-4">
-  <Text
-    className="text-base leading-6 text-gray-500 font-semibold"
-    numberOfLines={showFullDescription ? undefined : 3}
-  >
-    Sunset Food Cafe is a serene beachside retreat nestled in the heart of Unawatuna, known for its breathtaking sunset views and fresh seafood delicacies. The ambiance is laid-back yet inviting, perfect for romantic dinners, family gatherings, or casual hangouts with friends. Guests can enjoy expertly prepared dishes using local ingredients while soaking in the golden hues of the ocean horizon.
-  </Text>
-
-  <TouchableOpacity onPress={() => setShowFullDescription(!showFullDescription)}>
-    <Text className="text-teal-600 mt-2 font-medium">
-      {showFullDescription ? 'Show less' : 'Show more'}
-    </Text>
-  </TouchableOpacity>
-</View>
+          
         </View>
 
         {/* Contact Section */}
@@ -143,6 +128,7 @@ const [showFullDescription, setShowFullDescription] = useState(false);
             resizeMode="cover"
           />
         </View>
+        
 
         {/* Suggested Providers */}
         <View className="px-4 mt-9 mb-12">
@@ -155,7 +141,7 @@ const [showFullDescription, setShowFullDescription] = useState(false);
                 width={width * 0.45}
                 onPress={() =>
                   router.push({
-                    pathname: '/explore/ServiceView',
+                    pathname: '../explore/ServiceView',
                     params: { id: item.id.toString() },
                   })
                 }
