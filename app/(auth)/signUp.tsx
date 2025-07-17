@@ -30,7 +30,7 @@ const SignUp = () => {
     confirmPassword: "",
     firstName: "",
     lastName: "",
-    country: "Sri Lanka", // Set default to match PhoneInput's default country LK
+    country: "LK", // Set default to match PhoneInput's default country LK
     phone: "",
   });
 
@@ -56,7 +56,7 @@ const SignUp = () => {
   React.useEffect(() => {
     // Set default country if not already set
     if (!form.country) {
-      setForm((prev) => ({ ...prev, country: "Sri Lanka" }));
+      setForm((prev) => ({ ...prev, country: "LK" }));
     }
 
     Animated.parallel([
@@ -350,7 +350,7 @@ const SignUp = () => {
                       defaultCountry="LK" // Default to Sri Lanka
                       onChange={(text) => handleChange("phone", text)}
                       onCountryChange={(country) =>
-                        handleChange("country", country.name)
+                        handleChange("country", country.code)
                       }
                     />
                     <ErrorMessage error={errors.phone} />
