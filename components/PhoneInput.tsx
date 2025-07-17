@@ -20,6 +20,7 @@ type CountryData = {
 type Props = {
   label: string;
   value: string;
+  defaultCountry?: string; // Optional default country
   onChange: (phone: string) => void;
   onCountryChange?: (country: CountryData) => void;
 };
@@ -40,21 +41,22 @@ const getCountryList = (): CountryData[] => {
       code,
       name: country.name,
       emoji: getCountryEmoji(code),
-      callingCode: country.phone[0] || "", // Get first phone code
+      callingCode: country.phone[0] ? String(country.phone[0]) : "", // Ensure callingCode is a string
     }))
     .filter(country => country.callingCode) // Filter out countries without calling codes
     .sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically
 };
 
-const PhoneInput: React.FC<Props> = ({ label, value, onChange, onCountryChange }) => {
+const PhoneInput: React.FC<Props> = ({ label, value, defaultCountry, onChange, onCountryChange }) => {
   const countryList = getCountryList();
   const [selectedCountry, setSelectedCountry] = useState<CountryData>(
-    countryList.find(c => c.code === "LK") || countryList[0] // Default to Sri Lanka or first country
+    countryList.find(c => c.code === defaultCountry) || countryList[0] // Default to provided country or first country
   );
   const [showCountryPicker, setShowCountryPicker] = useState(false);
 
   const handleCountrySelect = (country: CountryData) => {
     setSelectedCountry(country);
+
     setShowCountryPicker(false);
     onCountryChange?.(country);
   };
