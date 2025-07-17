@@ -1,39 +1,67 @@
-import React, { useState, useRef, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Image,
-  TouchableOpacity,
-  Animated,
-  Alert,
-} from "react-native";
-import { BlurView } from "expo-blur";
-import Icon from "react-native-vector-icons/Ionicons";
-import ProfileInfoItem from "../../../components/ProfileInfoItem";
-import EditPopup from "../../../components/EditPopup";
-import { router } from "expo-router";
-import { theme } from "../../theme";
 import { useAuth } from "@/hooks/useAuth";
+import { useFocusEffect } from "@react-navigation/native";
+import { BlurView } from "expo-blur";
+import { router } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  Animated,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Icon from "react-native-vector-icons/Ionicons";
+import EditPopup from "../../../components/EditPopup";
+
+// Helper function to construct full image URL
+const getImageUrl = (profilePicUrl: string | undefined) => {
+  if (!profilePicUrl) return null;
+
+  // If the URL already includes the protocol, return as is
+  if (
+    profilePicUrl.startsWith("http://") ||
+    profilePicUrl.startsWith("https://")
+  ) {
+    return profilePicUrl;
+  }
+
+  // Use the same base URL as the API
+  const baseUrl = "http://localhost:8080";
+  return `${baseUrl}${profilePicUrl}`;
+};
 
 export default function Profile() {
   const [modalVisible, setModalVisible] = useState(false);
-  const { signIn, logout, user, isLoading } = useAuth();
-  const [fieldValues, setFieldValues] = useState({
+  const { signIn, logout, user, isLoading, checkAuth } = useAuth();
+  const [fieldValues, setFieldValues] = useState<{
+    Name: string;
+    Email: string;
+    Phone: string;
+  }>({
     Name: user?.firstName
       ? user.firstName + " " + user.lastName
       : "Eren Yeager",
     Email: user?.email ? user.email : "eren@email.com",
-    // Phone: user?.id ? user.id : "+94 712 345 678",
+    Phone: user?.phone ? user.phone : "+94 712 345 678",
   });
+
+  // Refresh user data when the screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      checkAuth(); // This will refresh the user data
+    }, [checkAuth])
+  );
+
   useEffect(() => {
     setFieldValues({
       Name: user?.firstName
         ? user.firstName + " " + user.lastName
         : "Your Name",
       Email: user?.email ? user.email : "your@email.com",
-      Phone: user?.id ? user.id : "+94 712 345 678",
+      Phone: user?.phone ? user.phone : "+94 712 345 678",
     });
   }, [user]);
   const [tempValues, setTempValues] = useState({ ...fieldValues });
@@ -121,7 +149,9 @@ export default function Profile() {
           <TouchableOpacity>
             <Image
               source={
-                imageUri
+                getImageUrl(user?.profilePicUrl)
+                  ? { uri: getImageUrl(user?.profilePicUrl) }
+                  : imageUri
                   ? { uri: imageUri }
                   : require("../../../assets/images/profile.png")
               }
@@ -132,30 +162,37 @@ export default function Profile() {
             <Text style={styles.greetingText}>
               Hello, {fieldValues.Name.split(" ")[0]}!
             </Text>
-            <Text style={styles.subtitleText}>
-              {fieldValues.Email}
-            </Text>
+            <Text style={styles.subtitleText}>{fieldValues.Email}</Text>
           </View>
         </View>
 
-              {/* Account Section */}
+        {/* Account Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
-          <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/screens/EditProfile")}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => router.push("/screens/EditProfile")}
+          >
             <View style={styles.actionButtonContent}>
               <Icon name="pencil" size={20} color="#008080" />
               <Text style={styles.actionButtonText}>Edit Profile</Text>
             </View>
             <Icon name="chevron-forward" size={20} color="#008080" />
           </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/screens/Favourites")}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => router.push("/screens/Favourites")}
+          >
             <View style={styles.actionButtonContent}>
               <Icon name="heart" size={20} color="#008080" />
               <Text style={styles.actionButtonText}>Favourites</Text>
             </View>
             <Icon name="chevron-forward" size={20} color="#008080" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/screens/CancelRequests")}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => router.push("/screens/CancelRequests")}
+          >
             <View style={styles.actionButtonContent}>
               <Icon name="close-circle" size={20} color="#008080" />
               <Text style={styles.actionButtonText}>Cancel Requests</Text>
@@ -178,9 +215,12 @@ export default function Profile() {
         </View>
 
         {/* settings */}
-          <View style={styles.section}>
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Settings</Text>
-          <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/screens/NotificationSettings")}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => router.push("/screens/NotificationSettings")}
+          >
             <View style={styles.actionButtonContent}>
               <Icon name="settings" size={20} color="#008080" />
               <Text style={styles.actionButtonText}>Notifications</Text>
@@ -189,7 +229,9 @@ export default function Profile() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => Alert.alert("Redirect", "App Settings on the device")}
+            onPress={() =>
+              Alert.alert("Redirect", "App Settings on the device")
+            }
           >
             <View style={styles.actionButtonContent}>
               <Icon name="shield" size={20} color="#008080" />
@@ -197,7 +239,10 @@ export default function Profile() {
             </View>
             <Icon name="chevron-forward" size={20} color="#008080" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/screens/HelpAndSupport")}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => router.push("/screens/HelpAndSupport")}
+          >
             <View style={styles.actionButtonContent}>
               <Icon name="help-circle" size={20} color="#008080" />
               <Text style={styles.actionButtonText}>Help & Support</Text>
@@ -219,7 +264,6 @@ export default function Profile() {
             </View>
           </TouchableOpacity>
         </View>
-        
       </ScrollView>
     </>
   );
@@ -281,6 +325,11 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "700",
     color: "#1f2937",
+  },
+  subtitleText: {
+    fontSize: 14,
+    color: "#6b7280",
+    marginTop: 2,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,

@@ -1,6 +1,6 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import api from '@/api/axiosInstance';
-import { saveToken, getToken, clearAllTokens } from '@/utils/secureStore';
+import { clearAllTokens, getToken, saveToken } from '@/utils/secureStore';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { router } from 'expo-router';
 
 export interface TouristUser {
@@ -11,6 +11,8 @@ export interface TouristUser {
     firstName: string;
     lastName: string;
     country: string;
+    phone: string;
+    profilePicUrl?: string;
 }
 
 export interface AuthState {
@@ -59,6 +61,8 @@ export const login = createAsyncThunk<
                 firstName: profileData.firstName,
                 lastName: profileData.lastName,
                 country: profileData.country,
+                phone: profileData.phoneNumber,
+                profilePicUrl: profileData.profilePictureUrl
             };
         } catch (error: any) {
             return rejectWithValue(
@@ -87,6 +91,8 @@ export const googleLogin = createAsyncThunk<
             firstName: res.data.firstName,
             lastName: res.data.lastName,
             country: res.data.country,
+            phone: res.data.phoneNumber,
+            profilePicUrl: res.data.profilePictureUrl
         };
     } catch (error: any) {
         await clearAllTokens();
@@ -103,6 +109,7 @@ export const checkAuth = createAsyncThunk<TouristUser, void, { rejectValue: stri
 
             const response = await api.get('/auth/logged-user');
             const data = response.data.data;
+            console.log('[AUTH] User profile fetched successfully:', data);
 
             return {
                 id: data.id,
@@ -112,6 +119,8 @@ export const checkAuth = createAsyncThunk<TouristUser, void, { rejectValue: stri
                 firstName: data.firstName,
                 lastName: data.lastName,
                 country: data.country,
+                phone: data.phoneNumber,
+                profilePicUrl: data.profilePictureUrl
             };
         } catch (error: any) {
             await clearAllTokens();

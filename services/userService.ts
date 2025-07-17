@@ -1,6 +1,4 @@
-import { Update } from '@reduxjs/toolkit';
 import api from '../api/axiosInstance';
-import { Phone } from 'lucide-react-native';
 
 // Types for API responses
 interface SignUpResponse {
@@ -23,12 +21,20 @@ interface UpdateUserProfileResponse {
     lastName: string;
     phone: string;
   };
-} 
+}
 
 interface ApiError {
   message: string;
   status?: number;
   data?: any;
+}
+
+interface AddProfilePictureResponse {
+  success: boolean;
+  message: string;
+  data: {
+    profilePicUrl: string;
+  };
 }
 
 export async function signUp(
@@ -96,14 +102,16 @@ export async function updateUserProfile(
   firstName: string,
   lastName: string,
   phone: string,
-  role: string,
+  country: string,
+  role: string = "ROLE_TOURIST",
 ): Promise<UpdateUserProfileResponse> {
   try {
-    console.log('Updating user profile:', { firstName, lastName, phone, role });
+    console.log('Updating user profile:', { firstName, lastName, phone, country, role });
     const response = await api.put<UpdateUserProfileResponse>(`/tourist/update-profile`, {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
-      phone: phone.trim(),
+      phoneNumber: phone.trim(),
+      country: country.trim(),
       role: role.trim(),
     });
     if (!response.data.success) {
@@ -124,6 +132,77 @@ export async function updateUserProfile(
           throw new Error('User not found');
         case 422:
           throw new Error('Invalid data provided. Please check your inputs');
+        case 500:
+          throw new Error('Server error. Please try again later');
+        default:
+          throw new Error(apiError.message || 'An unexpected error occurred');
+      }
+    } else if (error.request) {
+      throw new Error('Network error. Please check your internet connection');
+    } else if (error.message) {
+      throw error;
+    } else {
+      throw new Error('An unexpected error occurred. Please try again');
+    }
+  }
+}
+
+// Add profile picture
+export async function addProfilePicture(
+  userId: number,
+  imageUri: string,
+  fileName?: string
+): Promise<AddProfilePictureResponse> {
+  try {
+    console.log('Uploading profile picture for user:', userId);
+
+    // Create FormData for multipart file upload
+    const formData = new FormData();
+
+    // Extract file extension from URI or use default
+    const fileExtension = imageUri.split('.').pop() || 'jpg';
+    const defaultFileName = `profile_${userId}.${fileExtension}`;
+
+    formData.append('profilePicture', {
+      uri: imageUri,
+      type: `image/${fileExtension}`,
+      name: fileName || defaultFileName,
+    } as any);
+
+    const response = await api.post<AddProfilePictureResponse>(
+      `user/${userId}/add-profile-picture`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Profile picture upload failed');
+    }
+
+    return response.data;
+  } catch (error: any) {
+    if (error.response) {
+      const apiError: ApiError = {
+        message: error.response.data?.message || 'Server error occurred',
+        status: error.response.status,
+        data: error.response.data,
+      };
+
+      switch (error.response.status) {
+        case 400:
+          throw new Error(apiError.message || 'Invalid image file');
+        case 404:
+          throw new Error('User not found');
+        case 413:
+          throw new Error('Image file is too large');
+        case 415:
+          throw new Error('Unsupported image format');
+        case 422:
+          throw new Error('Invalid image data. Please try another image');
         case 500:
           throw new Error('Server error. Please try again later');
         default:
