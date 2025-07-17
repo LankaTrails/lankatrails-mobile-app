@@ -25,7 +25,6 @@ import ServiceProviderCard from '@/components/explorer-components/ServiceProvide
 import { Ionicons } from '@expo/vector-icons';
 
 
-
 import { TextInput } from 'react-native';
 
 
@@ -293,18 +292,21 @@ const handleSubmitReview = () => {
                   </ScrollView>
                 </View>
 
-         <View className="bg-white rounded-xl ">
-            {/* Overall Rating */}
-            <View className="flex-row p-4">
-              <View className="bg-primary rounded-full w-16 h-16 items-center justify-center mr-4">
-                <Text className="text-white text-2xl font-bold">4.9</Text>
-              </View>
-              <View className="flex-1 ">
-                <Text className="text-lg font-semibold text-gray-800 mb-1">Customer Reviews</Text>
-                <Text className="text-sm text-gray-600">Based on 284 reviews</Text>
-              </View>
-            </View>
-            </View>
+        {/* Restaurant Description */}
+        <View className=" p-5">
+          <Text
+            className="text-lg leading-6 text-gray-500 font-semibold"
+            numberOfLines={showFullDescription ? undefined : 3}
+          >
+            Sunset Food Cafe is a serene beachside retreat nestled in the heart of Unawatuna, known for its breathtaking sunset views and fresh seafood delicacies. The ambiance is laid-back yet inviting, perfect for romantic dinners, family gatherings, or casual hangouts with friends. Guests can enjoy expertly prepared dishes using local ingredients while soaking in the golden hues of the ocean horizon.
+          </Text>
+        
+          <TouchableOpacity onPress={() => setShowFullDescription(!showFullDescription)}>
+            <Text className="text-teal-600 mt-2 font-medium">
+              {showFullDescription ? 'Show less' : 'Show more'}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         <View className="px-4 py-3 border-t border-b border-gray-100">
           <Text className="text-2xl font-semibold text-gray-500 mb-3">Contact</Text>
@@ -340,22 +342,7 @@ const handleSubmitReview = () => {
                     resizeMode="cover"
                   />
                 </View>
-        {/* Restaurant Description */}
-        <View className=" p-5">
-          <Text className="text-3xl font-bold text-primary mb-4">About Us</Text>
-          <Text
-            className="text-lg leading-6 text-gray-500 font-semibold"
-            numberOfLines={showFullDescription ? undefined : 3}
-          >
-            Sunset Food Cafe is a serene beachside retreat nestled in the heart of Unawatuna, known for its breathtaking sunset views and fresh seafood delicacies. The ambiance is laid-back yet inviting, perfect for romantic dinners, family gatherings, or casual hangouts with friends. Guests can enjoy expertly prepared dishes using local ingredients while soaking in the golden hues of the ocean horizon.
-          </Text>
         
-          <TouchableOpacity onPress={() => setShowFullDescription(!showFullDescription)}>
-            <Text className="text-teal-600 mt-2 font-medium">
-              {showFullDescription ? 'Show less' : 'Show more'}
-            </Text>
-          </TouchableOpacity>
-        </View>
 
         {/* Menu Highlights */}
         <View className="px-4 mb-6">
@@ -365,24 +352,23 @@ const handleSubmitReview = () => {
               <View key={item.id} className="w-[48%]">
                 <MenuCard 
                   item={item} 
-                  // onPress={handleMenuItemPress}
-                  onPress={() => router.push('../explore/ServiceItemView')}
+                  onPress={handleMenuItemPress}
                   
                 />
               </View>
             ))}
           </View>
         </View>
-            {/* <ServiceProviderCard
+            <ServiceProviderCard
           id={1}
           name="Sunset Food Cafe"
           subtitle="Unawatuna Beach"
           rating={4.9}
           image="https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg"
           onPress={() => router.push('../explore/ServiceProviderPage')}
-        /> */}
+        />
         {/* Service Ratings */}
-        {/* <View className="px-4 mb-6">
+        <View className="px-4 mb-6">
           <Text className="text-3xl font-semibold text-gray-500 mb-4">Service Ratings</Text>
           <View className="bg-white rounded-xl p-4 shadow-sm">
             {renderServiceProgressBar('Food Quality', serviceReviews.food, animatedWidths.food)}
@@ -390,14 +376,14 @@ const handleSubmitReview = () => {
             {renderServiceProgressBar('Ambiance', serviceReviews.ambiance, animatedWidths.ambiance)}
             {renderServiceProgressBar('Value for Money', serviceReviews.value, animatedWidths.value)}
           </View>
-        </View> */}
+        </View>
         
 
         {/* Overall Reviews Section */}
-        {/* <View className="px-4 mb-6">
-          <View className="bg-white rounded-xl p-6 shadow-sm"> */}
+        <View className="px-4 mb-6">
+          <View className="bg-white rounded-xl p-6 shadow-sm">
             {/* Overall Rating */}
-            {/* <View className="flex-row items-center mb-6">
+            <View className="flex-row items-center mb-6">
               <View className="bg-primary rounded-full w-16 h-16 items-center justify-center mr-4">
                 <Text className="text-white text-xl font-bold">4.9</Text>
               </View>
@@ -405,10 +391,10 @@ const handleSubmitReview = () => {
                 <Text className="text-lg font-semibold text-gray-800 mb-1">Customer Reviews</Text>
                 <Text className="text-sm text-gray-600">Based on 284 reviews</Text>
               </View>
-            </View> */}
+            </View>
 
             {/* Review Progress Bars */}
-            {/* <ProgressBar 
+            <ProgressBar 
               label="Excellent" 
               animatedValue={progressAnimations.excellent}
               color="#10b981"
@@ -434,10 +420,10 @@ const handleSubmitReview = () => {
               color="#ef4444"
             />
           </View>
-        </View> */}
+        </View>
 
         {/* Individual Customer Reviews */}
-        {/* <View className="px-4 mb-6">
+        <View className="px-4 mb-6">
           <Text className="text-3xl font-semibold text-gray-500 mb-4">Recent Reviews</Text>
           {['Nimal', 'Sophie', 'Kasun', 'Emma'].map((reviewer, i) => (
             <View key={i} className="bg-white rounded-lg p-4 mb-3 shadow-sm border border-gray-100">
@@ -460,7 +446,7 @@ const handleSubmitReview = () => {
               </View>
             </View>
           ))}
-        </View> */}
+        </View>
               {/* Leave a Review or Complaint Section */}
 <View className="px-4 mb-20">
   <Text className="text-3xl font-semibold text-gray-500 mb-4">Leave a Review or Complaint</Text>
@@ -526,7 +512,7 @@ const handleSubmitReview = () => {
  
         {/* Related Restaurants */}
       
-       {/* <View className="px-4 mb-20">
+       <View className="px-4 mb-20">
   <Text className="text-3xl font-semibold text-gray-500 mb-4">You may also like</Text>
   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
     {[
@@ -561,12 +547,12 @@ const handleSubmitReview = () => {
       </View>
     ))}
   </ScrollView>
-</View> */}
+</View>
 
  
 
         {/* You May Also Like */}
-        {/* <View className="px-4 mb-20">
+        <View className="px-4 mb-20">
           <Text className="text-xl font-semibold text-gray-800 mb-4">Other Restaurents</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {['Beach Bar', 'Seafood Grill', 'Sunset Lounge'].map((suggestion, i) => (
@@ -579,7 +565,7 @@ const handleSubmitReview = () => {
               </TouchableOpacity>
             ))}
           </ScrollView>
-        </View> */}
+        </View>
       </ScrollView>
     </>
   );

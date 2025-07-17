@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 
 function ComplainPage() {
   const [complaintHeading, setComplaintHeading] = useState('');
@@ -25,8 +27,6 @@ function ComplainPage() {
       Alert.alert('Incomplete Complaint', 'Please enter both a heading and a detailed complaint.');
       return;
     }
-
-    // Send complaintHeading, userComplaint, selectedImages to backend
 
     if (Platform.OS === 'android') {
       ToastAndroid.show('Complaint submitted successfully.', ToastAndroid.SHORT);
@@ -59,9 +59,11 @@ function ComplainPage() {
     if (!result.canceled && result.assets?.length > 0) {
       const newImageUri = result.assets[0].uri;
 
-      // Check image size
       const fileInfo = await FileSystem.getInfoAsync(newImageUri);
-      const sizeInMB = fileInfo.size ? fileInfo.size / (1024 * 1024) : 0;
+      let sizeInMB = 0;
+      if (fileInfo.exists && typeof fileInfo.size === 'number') {
+        sizeInMB = fileInfo.size / (1024 * 1024);
+      }
 
       if (sizeInMB > MAX_IMAGE_SIZE_MB) {
         Alert.alert(
@@ -80,8 +82,13 @@ function ComplainPage() {
   };
 
   return (
-    <ScrollView className="px-8 mt-36">
-      <Text className="text-gray-500 font-medium mb-8 text-2xl">Submit a Complaint</Text>
+    <>
+    <TouchableOpacity onPress={() => router.back()} className="absolute top-12 left-4 z-10">
+        <Ionicons name="arrow-back" size={36} color="#008080" />
+      </TouchableOpacity>
+    <ScrollView className="px-8 pt-12">
+     
+      <Text className="text-gray-500 font-medium mb-8 text-2xl mt-12">Submit a Complaint</Text>
 
       {/* Heading Input */}
       <View className="bg-gray-100 rounded-lg px-3 py-2 mb-4">
@@ -127,7 +134,7 @@ function ComplainPage() {
         </Text>
       </TouchableOpacity>
 
-      {/* Show selected image previews */}
+      {/* Image Previews */}
       {selectedImages.length > 0 && (
         <View className="mb-4">
           <Text className="text-gray-500 mb-2">Attached Images:</Text>
@@ -156,7 +163,9 @@ function ComplainPage() {
                     zIndex: 1,
                   }}
                 >
-                  <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 12, padding:4 }}>X</Text>
+                  <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 12, padding: 4 }}>
+                    X
+                  </Text>
                 </TouchableOpacity>
               </View>
             ))}
@@ -172,6 +181,7 @@ function ComplainPage() {
         <Text className="text-white text-lg font-semibold">Submit Complaint</Text>
       </TouchableOpacity>
     </ScrollView>
+    </>
   );
 }
 

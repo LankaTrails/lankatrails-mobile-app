@@ -47,7 +47,7 @@ export default function NearbyPlacesScreen() {
 
   return (
     <>
-    <TouchableHighlight onPress={() => router.push("/screens/MapScreen")} style={{ padding: 20, backgroundColor: '#f0f0f0', borderRadius: 10, margin: 10 }}>
+    <TouchableHighlight onPress={() => router.push("../screens/MapScreen")} style={{ padding: 20, backgroundColor: '#f0f0f0', borderRadius: 10, margin: 10 }}>
         <Text>Map Screen</Text> 
       </TouchableHighlight>
 
