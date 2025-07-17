@@ -36,6 +36,7 @@ export async function signUp(
   lastName: string,
   country: string,
   email: string,
+  phone: string,
   password: string,
 ): Promise<SignUpResponse> {
   try {
@@ -44,6 +45,7 @@ export async function signUp(
       lastName: lastName.trim(),
       email: email.trim().toLowerCase(),
       password,
+      phoneNumber: phone.trim(),
       country: country.trim(),
     });
 
