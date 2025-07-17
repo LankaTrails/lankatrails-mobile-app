@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
+import { changePassword } from "@/services/userService";
 import { useFocusEffect } from "@react-navigation/native";
 import { BlurView } from "expo-blur";
 import { router } from "expo-router";
@@ -99,20 +100,140 @@ export default function Profile() {
     router.replace("/signIn");
   };
 
-  const handleChangePassword = () => {
-    if (!passwords.current || !passwords.new || !passwords.confirm) {
-      Alert.alert("Error", "All fields are required.");
-      return;
-    }
-    if (passwords.new !== passwords.confirm) {
-      Alert.alert("Error", "New passwords do not match.");
+  const handleChangePassword = async () => {
+    // Enhanced validation
+    if (
+      !passwords.current?.trim() ||
+      !passwords.new?.trim() ||
+      !passwords.confirm?.trim()
+    ) {
+      Alert.alert("Validation Error", "All password fields are required.");
       return;
     }
 
-    // Replace this with actual backend password update logic
-    Alert.alert("Success", "Password changed successfully.");
-    setPasswords({ current: "", new: "", confirm: "" });
-    setPasswordModalVisible(false);
+    if (passwords.current.trim().length < 6) {
+      Alert.alert(
+        "Validation Error",
+        "Current password must be at least 6 characters."
+      );
+      return;
+    }
+
+    if (passwords.new.trim().length < 6) {
+      Alert.alert(
+        "Validation Error",
+        "New password must be at least 6 characters."
+      );
+      return;
+    }
+
+    if (passwords.new !== passwords.confirm) {
+      Alert.alert(
+        "Validation Error",
+        "New password and confirm password do not match."
+      );
+      return;
+    }
+
+    if (passwords.current === passwords.new) {
+      Alert.alert(
+        "Validation Error",
+        "New password must be different from current password."
+      );
+      return;
+    }
+
+    // Add basic password strength validation
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{6,}$/;
+    if (!passwordRegex.test(passwords.new)) {
+      Alert.alert(
+        "Validation Error",
+        "New password must contain at least one uppercase letter, one lowercase letter, and one number."
+      );
+      return;
+    }
+
+    try {
+      await changePassword(passwords.current.trim(), passwords.new.trim());
+
+      // Clear password fields immediately
+      setPasswords({
+        current: "",
+        new: "",
+        confirm: "",
+      });
+
+      // Close the modal immediately
+      setPasswordModalVisible(false);
+
+      // Show success message with forced logout
+      Alert.alert(
+        "Password Changed Successfully",
+        "Your password has been changed successfully. You will be signed out and need to sign in with your new password.",
+        [
+          {
+            text: "Continue",
+            onPress: () => {
+              // Force logout and redirect
+              logout();
+              setTimeout(() => {
+                router.replace("/signIn");
+              }, 100);
+            },
+          },
+        ],
+        {
+          cancelable: false,
+          onDismiss: () => {
+            // Fallback in case alert is dismissed
+            logout();
+            router.replace("/signIn");
+          },
+        }
+      );
+    } catch (error: any) {
+      console.error("Password change error:", error);
+
+      // Enhanced error handling with specific messages
+      let errorTitle = "Password Change Failed";
+      let errorMessage = "An unexpected error occurred. Please try again.";
+
+      if (error.message) {
+        if (error.message.includes("Current password is incorrect")) {
+          errorTitle = "Authentication Error";
+          errorMessage =
+            "The current password you entered is incorrect. Please try again.";
+        } else if (
+          error.message.includes("Password does not meet requirements")
+        ) {
+          errorTitle = "Password Requirements";
+          errorMessage =
+            "The new password does not meet the security requirements. Please ensure it contains at least one uppercase letter, one lowercase letter, and one number.";
+        } else if (error.message.includes("Network error")) {
+          errorTitle = "Connection Error";
+          errorMessage =
+            "Unable to connect to the server. Please check your internet connection and try again.";
+        } else if (error.message.includes("Server error")) {
+          errorTitle = "Server Error";
+          errorMessage =
+            "The server is currently unavailable. Please try again in a few moments.";
+        } else if (error.message.includes("Too many")) {
+          errorTitle = "Rate Limit";
+          errorMessage =
+            "Too many password change attempts. Please wait a few minutes before trying again.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      Alert.alert(errorTitle, errorMessage, [
+        {
+          text: "OK",
+          style: "default",
+        },
+      ]);
+    }
   };
 
   return (
