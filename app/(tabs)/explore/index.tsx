@@ -346,6 +346,7 @@ const LocationSearchScreen = () => {
               onPress={() => router.push({ pathname: '../explore/searchResult' })}
 
             >
+              
               <TouchableOpacity
                 className="bg-teal-100  p-5 rounded-lg mr-3"
                 activeOpacity={0.8}   
@@ -373,7 +374,15 @@ const LocationSearchScreen = () => {
             {recentSearches.map((item, index) => (
               <SearchItem key={item.id} item={item} index={index + 3} />
             ))}
+            <TouchableOpacity
+onPress={() => router.push('../explore/MapSelectorComponent')}
+            >
+              <Text>
+            hiii
+          </Text>
+            </TouchableOpacity>
           </ScrollView>
+          
         </View>
 
         {/* Bottom Navigation */}
