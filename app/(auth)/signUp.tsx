@@ -1,3 +1,6 @@
+import InputField from "@/components/InputField";
+import LongButton from "@/components/LongButton";
+import PhoneInput from "@/components/PhoneInput";
 import { signUp } from "@/services/userService";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
@@ -17,9 +20,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import InputField from "@/components/InputField";
-import LongButton from "@/components/LongButton";
-import CountryDropdown from "@/components/CountryDropdown";
 
 const { width, height } = Dimensions.get("window");
 
@@ -30,13 +30,15 @@ const SignUp = () => {
     confirmPassword: "",
     firstName: "",
     lastName: "",
-    country: "",
+    country: "LK", // Set default to match PhoneInput's default country LK
+    phone: "",
   });
 
   const [errors, setErrors] = useState({
     firstName: "",
     lastName: "",
     country: "",
+    phone: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -52,6 +54,11 @@ const SignUp = () => {
   const blurFadeAnim = useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
+    // Set default country if not already set
+    if (!form.country) {
+      setForm((prev) => ({ ...prev, country: "LK" }));
+    }
+
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -78,6 +85,7 @@ const SignUp = () => {
     firstName: string;
     lastName: string;
     country: string;
+    phone: string;
   }
 
   type FormKey = keyof SignUpForm;
@@ -106,6 +114,14 @@ const SignUp = () => {
 
     if (!form.country.trim()) {
       newErrors.country = "Country is required";
+      hasErrors = true;
+    }
+
+    if (!form.phone.trim()) {
+      newErrors.phone = "Phone number is required";
+      hasErrors = true;
+    } else if (form.phone.length < 7) {
+      newErrors.phone = "Please enter a valid phone number";
       hasErrors = true;
     }
 
@@ -187,6 +203,7 @@ const SignUp = () => {
         form.lastName,
         form.country,
         form.email,
+        form.phone,
         form.password
       );
 
@@ -315,7 +332,7 @@ const SignUp = () => {
                     <ErrorMessage error={errors.lastName} />
                   </View>
 
-                  <View style={styles.inputWrapper}>
+                  {/* <View style={styles.inputWrapper}>
                     <CountryDropdown
                       label="Country"
                       placeholder="Select your country"
@@ -324,6 +341,19 @@ const SignUp = () => {
                       icon="earth"
                     />
                     <ErrorMessage error={errors.country} />
+                  </View> */}
+
+                  <View style={styles.inputWrapper}>
+                    <PhoneInput
+                      label="Phone Number"
+                      value={form.phone}
+                      defaultCountry="LK" // Default to Sri Lanka
+                      onChange={(text) => handleChange("phone", text)}
+                      onCountryChange={(country) =>
+                        handleChange("country", country.code)
+                      }
+                    />
+                    <ErrorMessage error={errors.phone} />
                   </View>
 
                   <LongButton label="Next" onPress={handleNext} />
