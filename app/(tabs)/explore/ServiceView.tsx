@@ -366,7 +366,7 @@ const handleSubmitReview = () => {
                 <MenuCard 
                   item={item} 
                   // onPress={handleMenuItemPress}
-                  onPress={() => router.push('../explore/ServiceItemView')}
+                  onPress={() => router.push('../explore/FoodItemView')}
                   
                 />
               </View>
