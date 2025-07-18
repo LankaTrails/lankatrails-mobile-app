@@ -1,36 +1,38 @@
-import React, { useState, useEffect, useRef } from 'react';
+import SearchBar from "@/components/SearchBar";
+import LocationService from "@/utils/locationService";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  StatusBar,
-  SafeAreaView,
+  getLocationIcon,
+  getRecentSearches,
+  removeRecentSearch,
+  saveRecentSearch,
+  type RecentSearch,
+} from "@/utils/recentSearchStorage";
+import * as Location from "expo-location";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Alert,
   Animated,
   Dimensions,
-} from 'react-native';
-import { 
-  MagnifyingGlassIcon, 
-  MapPinIcon, 
-  HomeIcon,
-  UserGroupIcon,
-  MapIcon,
-  UserIcon 
-} from 'react-native-heroicons/outline';
-import SearchBar from '@/components/SearchBar';
-import { useRouter } from 'expo-router';
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { MapPinIcon } from "react-native-heroicons/outline";
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
 // Page Transition Component with multiple animation types
 const PageTransition = ({
   children,
-  animationType = 'fadeIn',
+  animationType = "fadeIn",
   isVisible = true,
 }: {
   children: React.ReactNode;
-  animationType?: 'fadeIn' | 'slideUp' | 'scaleIn' | 'bounceIn';
+  animationType?: "fadeIn" | "slideUp" | "scaleIn" | "bounceIn";
   isVisible?: boolean;
 }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -48,7 +50,7 @@ const PageTransition = ({
 
       // Choose animation based on type
       switch (animationType) {
-        case 'fadeIn':
+        case "fadeIn":
           Animated.timing(fadeAnim, {
             toValue: 1,
             duration: 600,
@@ -56,7 +58,7 @@ const PageTransition = ({
           }).start();
           break;
 
-        case 'slideUp':
+        case "slideUp":
           Animated.parallel([
             Animated.timing(fadeAnim, {
               toValue: 1,
@@ -72,7 +74,7 @@ const PageTransition = ({
           ]).start();
           break;
 
-        case 'scaleIn':
+        case "scaleIn":
           Animated.parallel([
             Animated.timing(fadeAnim, {
               toValue: 1,
@@ -88,7 +90,7 @@ const PageTransition = ({
           ]).start();
           break;
 
-        case 'bounceIn':
+        case "bounceIn":
           fadeAnim.setValue(1);
           Animated.sequence([
             Animated.spring(scaleAnim, {
@@ -111,27 +113,27 @@ const PageTransition = ({
 
   const getAnimatedStyle = () => {
     switch (animationType) {
-      case 'fadeIn':
+      case "fadeIn":
         return { opacity: fadeAnim };
-      
-      case 'slideUp':
+
+      case "slideUp":
         return {
           opacity: fadeAnim,
           transform: [{ translateY: slideAnim }],
         };
-      
-      case 'scaleIn':
+
+      case "scaleIn":
         return {
           opacity: fadeAnim,
           transform: [{ scale: scaleAnim }],
         };
-      
-      case 'bounceIn':
+
+      case "bounceIn":
         return {
           opacity: fadeAnim,
           transform: [{ scale: scaleAnim }],
         };
-      
+
       default:
         return { opacity: fadeAnim };
     }
@@ -158,8 +160,8 @@ const StaggeredListItem = ({
   const slideAnim = useRef(new Animated.Value(30)).current;
 
   useEffect(() => {
-    const animationDelay = delay + (index * 100); // 100ms stagger between items
-    
+    const animationDelay = delay + index * 100; // 100ms stagger between items
+
     setTimeout(() => {
       Animated.parallel([
         Animated.timing(fadeAnim, {
@@ -213,16 +215,16 @@ const LoadingSkeleton = () => {
 
   return (
     <View className="px-4 py-4">
-      <Animated.View 
+      <Animated.View
         style={{ opacity: pulseAnim }}
         className="bg-gray-200 h-12 rounded-full mb-4"
       />
-      <Animated.View 
+      <Animated.View
         style={{ opacity: pulseAnim }}
         className="bg-gray-200 h-16 rounded-lg mb-4"
       />
       {[1, 2, 3].map((item) => (
-        <Animated.View 
+        <Animated.View
           key={item}
           style={{ opacity: pulseAnim }}
           className="bg-gray-200 h-12 rounded-lg mb-3"
@@ -233,10 +235,21 @@ const LoadingSkeleton = () => {
 };
 
 const LocationSearchScreen = () => {
-  const [searchText, setSearchText] = useState('');
-  const [activeTab, setActiveTab] = useState('home');
+  const [searchText, setSearchText] = useState("");
+  const [activeTab, setActiveTab] = useState("home");
   const [isLoading, setIsLoading] = useState(true);
   const [pageVisible, setPageVisible] = useState(false);
+  const [location, setLocation] = useState<Location.LocationObject | null>(
+    null
+  );
+  const [locationPermission, setLocationPermission] =
+    useState<Location.PermissionStatus | null>(null);
+  const [currentLocationName, setCurrentLocationName] = useState(
+    "Getting location..."
+  );
+  const [isLocationLoading, setIsLocationLoading] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
+  const [isLoadingRecent, setIsLoadingRecent] = useState(true);
   const router = useRouter();
 
   // Simulate page loading
@@ -249,61 +262,221 @@ const LocationSearchScreen = () => {
     return () => clearTimeout(loadTimer);
   }, []);
 
-  const recentSearches = [
-    { id: 1, name: 'Ella', icon: '🏔️' },
-    { id: 2, name: 'Kandy', icon: '🏛️' }
-  ];
+  // Request location permissions and get current location
+  useEffect(() => {
+    requestLocationPermission();
+  }, []);
 
-  type TabButtonProps = {
-    id: string;
-    icon: React.ComponentType<{ size: number; color: string; strokeWidth: number }>;
-    isActive: boolean;
-    onPress: () => void;
+  const requestLocationPermission = async () => {
+    try {
+      const status = await LocationService.requestPermissions();
+      setLocationPermission(status);
+
+      if (status === "granted") {
+        getCurrentLocation();
+      } else {
+        setCurrentLocationName("Location access denied");
+        if (status === "denied") {
+          const permissionGranted =
+            await LocationService.showPermissionDialog();
+          if (permissionGranted) {
+            getCurrentLocation();
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error requesting location permission:", error);
+      setCurrentLocationName("Location unavailable");
+    }
   };
 
-  const TabButton = ({ id, icon: Icon, isActive, onPress }: TabButtonProps) => (
-    <TouchableOpacity
-      onPress={onPress}
-      className={`flex-1 items-center justify-center py-3 ${
-        isActive 
-          ? 'bg-teal-500 rounded-full mx-1' 
-          : 'hover:bg-gray-100 rounded-full mx-1'
-      }`}
-      activeOpacity={0.7}
-    >
-      <Icon 
-        size={24} 
-        color={isActive ? 'white' : '#6B7280'} 
-        strokeWidth={2}
-      />
-    </TouchableOpacity>
+  const getCurrentLocation = async () => {
+    try {
+      setIsLocationLoading(true);
+
+      const currentLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      setLocation(currentLocation);
+
+      // Get location name
+      const locationName = await LocationService.getLocationName(
+        currentLocation.coords.latitude,
+        currentLocation.coords.longitude
+      );
+
+      setCurrentLocationName(locationName);
+    } catch (error) {
+      console.error("Error getting current location:", error);
+      setCurrentLocationName("Location unavailable");
+
+      Alert.alert(
+        "Location Error",
+        "Unable to get your current location. Please ensure GPS is enabled and try again.",
+        [
+          { text: "OK", style: "default" },
+          { text: "Retry", onPress: getCurrentLocation },
+        ]
+      );
+    } finally {
+      setIsLocationLoading(false);
+    }
+  };
+
+  // Load recent searches when component mounts
+  useEffect(() => {
+    loadRecentSearches();
+  }, []);
+
+  // Reload recent searches when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadRecentSearches();
+    }, [])
   );
 
-  type RecentSearchItem = {
-    id: number;
-    name: string;
-    icon: string;
+  const loadRecentSearches = async () => {
+    try {
+      setIsLoadingRecent(true);
+      const searches = await getRecentSearches();
+      setRecentSearches(searches);
+    } catch (error) {
+      console.error("Error loading recent searches:", error);
+    } finally {
+      setIsLoadingRecent(false);
+    }
   };
 
-  const SearchItem = ({
-    item,
-    index,
-  }: {
-    item: RecentSearchItem;
+  const handleNearbySearch = async () => {
+    if (location) {
+      // Save nearby search to recent searches
+      await saveRecentSearch({
+        name: currentLocationName,
+        searchQuery: "nearby",
+        searchType: "nearby",
+        coordinates: {
+          lat: location.coords.latitude,
+          lng: location.coords.longitude,
+        },
+      });
+
+      // Reload recent searches
+      loadRecentSearches();
+
+      router.push({
+        pathname: "/explore/searchResult" as any,
+        params: {
+          location: currentLocationName,
+          lat: location.coords.latitude.toString(),
+          lng: location.coords.longitude.toString(),
+          isNearby: "true",
+        },
+      });
+    } else {
+      // Fallback to Galle if location is not available
+      await saveRecentSearch({
+        name: "Galle",
+        searchQuery: "Galle",
+        searchType: "location",
+      });
+
+      loadRecentSearches();
+
+      router.push({
+        pathname: "/explore/searchResult" as any,
+        params: { location: "Galle" },
+      });
+    }
+  };
+
+  // Handle search functionality
+  const handleSearch = async (searchTerm: string) => {
+    // Save search to recent searches
+    await saveRecentSearch({
+      name: searchTerm,
+      searchQuery: searchTerm,
+      searchType: "location",
+    });
+
+    // Reload recent searches
+    loadRecentSearches();
+
+    router.push({
+      pathname: "/explore/searchResult" as any,
+      params: {
+        location: searchTerm,
+        searchQuery: searchTerm,
+      },
+    });
+  };
+
+  const handleRemoveRecentSearch = async (searchId: string) => {
+    try {
+      // Optimistically update the UI first (immediate response)
+      setRecentSearches((prevSearches) =>
+        prevSearches.filter((search) => search.id !== searchId)
+      );
+
+      // Then update the storage in background
+      await removeRecentSearch(searchId);
+    } catch (error) {
+      console.error("Error removing recent search:", error);
+      // If storage update fails, revert the UI by reloading from storage
+      loadRecentSearches();
+    }
+  };
+
+  type RecentSearchItemProps = {
+    item: RecentSearch;
     index: number;
-  }) => (
+  };
+
+  const SearchItem = ({ item, index }: RecentSearchItemProps) => (
     <StaggeredListItem index={index} delay={100}>
       <TouchableOpacity
         className="flex-row items-center justify-between py-4 px-4 hover:bg-gray-50 active:bg-gray-100"
         activeOpacity={0.8}
+        onPress={() => {
+          if (item.searchType === "nearby" && item.coordinates) {
+            router.push({
+              pathname: "/explore/searchResult" as any,
+              params: {
+                location: item.name,
+                lat: item.coordinates.lat.toString(),
+                lng: item.coordinates.lng.toString(),
+                isNearby: "true",
+              },
+            });
+          } else {
+            router.push({
+              pathname: "/explore/searchResult" as any,
+              params: {
+                location: item.name,
+                searchQuery: item.searchQuery,
+              },
+            });
+          }
+        }}
       >
         <View className="flex-row items-center flex-1">
-          <Text className="text-2xl mr-3">{item.icon}</Text>
-          <Text className="text-gray-800 text-l font-medium">{item.name}</Text>
+          <Text className="text-2xl mr-3">{getLocationIcon(item)}</Text>
+          <View className="flex-1">
+            <Text className="text-gray-800 text-l font-medium">
+              {item.name}
+            </Text>
+            {item.searchType === "nearby" && (
+              <Text className="text-gray-500 text-sm">Nearby search</Text>
+            )}
+          </View>
         </View>
-        <TouchableOpacity 
+        <TouchableOpacity
           className="p-2 hover:bg-gray-200 rounded-full "
           activeOpacity={0.6}
+          onPress={(e) => {
+            e.stopPropagation();
+            handleRemoveRecentSearch(item.id);
+          }}
         >
           <Text className="text-gray-400 text-lg">×</Text>
         </TouchableOpacity>
@@ -321,18 +494,20 @@ const LocationSearchScreen = () => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white " >
-      
+    <SafeAreaView className="flex-1 bg-white ">
       <PageTransition animationType="slideUp" isVisible={pageVisible}>
         {/* Header */}
         <StaggeredListItem index={0} delay={0}>
           <View className="px-4 pt-2 pb-4">
-            <Text className="text-xs text-white text-right mb-4">1</Text>
-            
+            {/* <Text className="text-xs text-white text-right mb-4">1</Text> */}
+
             {/* Search Bar */}
             {/* <SearchBar onPress={() => router.push('/testing')} /> */}
             <View className="relative mt-5">
-              <SearchBar onPress={() => router.push({ pathname: '/explore/searchResult' })} />
+              <SearchBar
+                onSearch={handleSearch}
+                placeholder="Search destinations, hotels, activities..."
+              />
             </View>
           </View>
         </StaggeredListItem>
@@ -340,24 +515,33 @@ const LocationSearchScreen = () => {
         {/* Nearby Section */}
         <StaggeredListItem index={1} delay={80}>
           <View className="px-4 mb-6">
-            <TouchableOpacity 
+            <TouchableOpacity
               className="flex-row items-center hover:bg-gray-50 active:bg-gray-100 p-3 rounded-lg"
               activeOpacity={0.8}
-              onPress={() => router.push({ pathname: '/explore/searchResult' })}
-
+              onPress={handleNearbySearch}
+              disabled={isLocationLoading}
             >
               <TouchableOpacity
                 className="bg-teal-100  p-5 rounded-lg mr-3"
-                activeOpacity={0.8}   
+                activeOpacity={0.8}
               >
                 <MapPinIcon size={30} color="#008080" strokeWidth={2} />
               </TouchableOpacity>
               <View className="flex-1">
-                <Text className="text-gray-800 text-xl font-semibold">Nearby</Text>
+                <Text className="text-gray-800 text-xl font-semibold">
+                  Nearby
+                </Text>
+                {isLocationLoading && (
+                  <Text className="text-gray-500 text-sm mt-1">
+                    Getting your location...
+                  </Text>
+                )}
               </View>
               <View className="flex-row items-center">
                 <MapPinIcon size={16} color="#6B7280" strokeWidth={2} />
-                <Text className="text-gray-500 text-lg ml-1">Galle</Text>
+                <Text className="text-gray-500 text-lg ml-1" numberOfLines={1}>
+                  {currentLocationName}
+                </Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -366,45 +550,46 @@ const LocationSearchScreen = () => {
         {/* Recent Searches */}
         <View className="flex-1 px-4">
           <StaggeredListItem index={2} delay={150}>
-            <Text className="text-gray-600 font-bold text-xl mb-4">Recent searches</Text>
+            <Text className="text-gray-600 font-bold text-xl mb-4">
+              Recent searches
+            </Text>
           </StaggeredListItem>
-          
+
           <ScrollView showsVerticalScrollIndicator={false}>
-            {recentSearches.map((item, index) => (
-              <SearchItem key={item.id} item={item} index={index + 3} />
-            ))}
+            {isLoadingRecent ? (
+              // Loading skeleton for recent searches
+              <View className="py-4">
+                {[1, 2, 3].map((item) => (
+                  <View key={item} className="flex-row items-center py-3 px-4">
+                    <View className="w-8 h-8 bg-gray-200 rounded-full mr-3" />
+                    <View className="flex-1">
+                      <View className="w-3/4 h-4 bg-gray-200 rounded mb-1" />
+                      <View className="w-1/2 h-3 bg-gray-100 rounded" />
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : recentSearches.length > 0 ? (
+              // Show actual recent searches
+              recentSearches.map((item, index) => (
+                <SearchItem key={item.id} item={item} index={index + 3} />
+              ))
+            ) : (
+              // Empty state
+              <StaggeredListItem index={3} delay={200}>
+                <View className="py-8 items-center">
+                  <Text className="text-gray-400 text-lg mb-2">🔍</Text>
+                  <Text className="text-gray-500 text-center">
+                    No recent searches yet
+                  </Text>
+                  <Text className="text-gray-400 text-sm text-center mt-1">
+                    Start exploring to see your search history
+                  </Text>
+                </View>
+              </StaggeredListItem>
+            )}
           </ScrollView>
         </View>
-
-        {/* Bottom Navigation */}
-        {/* <StaggeredListItem index={6} delay={300}>
-          <View className="flex-row bg-white border-t border-gray-200 px-4 py-2 shadow-lg">
-            <TabButton
-              id="home"
-              icon={HomeIcon}
-              isActive={activeTab === 'home'}
-              onPress={() => setActiveTab('home')}
-            />
-            <TabButton
-              id="search"
-              icon={MagnifyingGlassIcon}
-              isActive={activeTab === 'search'}
-              onPress={() => setActiveTab('search')}
-            />
-            <TabButton
-              id="map"
-              icon={MapIcon}
-              isActive={activeTab === 'map'}
-              onPress={() => setActiveTab('map')}
-            />
-            <TabButton
-              id="profile"
-              icon={UserIcon}
-              isActive={activeTab === 'profile'}
-              onPress={() => setActiveTab('profile')}
-            />
-          </View>
-        </StaggeredListItem> */}
       </PageTransition>
     </SafeAreaView>
   );
