@@ -521,6 +521,7 @@ const LocationSearchScreen = () => {
               onPress={handleNearbySearch}
               disabled={isLocationLoading}
             >
+              
               <TouchableOpacity
                 className="bg-teal-100  p-5 rounded-lg mr-3"
                 activeOpacity={0.8}
@@ -589,6 +590,7 @@ const LocationSearchScreen = () => {
               </StaggeredListItem>
             )}
           </ScrollView>
+          
         </View>
       </PageTransition>
     </SafeAreaView>

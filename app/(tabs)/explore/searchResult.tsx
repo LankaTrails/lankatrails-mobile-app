@@ -383,6 +383,35 @@ const GalleApp = () => {
                     <Text className="text-center mt-4 text-gray-600">
                       Finding public places...
                     </Text>
+                    {places.length > 0 ? (
+                      <FlatList
+                        data={places}
+                        keyExtractor={(item) => item.place_id}
+                        renderItem={({ item }) => (
+                          <Card
+                            item={{
+                              id: Number(item.place_id),
+                              title: item.name,
+                              subtitle: item.vicinity,
+                              rating: typeof item.rating === 'number'
+                                ? item.rating
+                                : typeof item.rating === 'string'
+                                ? Number(item.rating)
+                                : 0,
+                              image: item.photos?.[0]
+                                ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${item.photos[0].photo_reference}&key=${GOOGLE_PLACES_API_KEY}`
+                                : '',
+                            }}
+                            onPress={() => router.push('../explore/ServiceView')}
+                            width={180}
+                          />
+                        )}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                      />
+                    ) : (
+                      <Text style={{ color: '#666' }}>No public places found in this category.</Text>
+                    )}
                   </View>
                 );
               }
@@ -673,7 +702,42 @@ const GalleApp = () => {
                   />
                 </View>
               );
-            }
+<!--             }
+                    <Text className="text-2xl font-bold text-gray-800/70">{section.title}</Text>
+                    <TouchableOpacity
+                      onPress={() =>
+                        router.push({
+                          pathname: '../explore/accommodation-foods-transport',
+                          params: { tab: section.tab.toLowerCase() },
+                        })
+                      }
+                    >
+                      <Text className="text-primary font-medium">See more →</Text>
+                    </TouchableOpacity>
+                  </View>
+                </AnimatedCard>
+                <FlatList
+                  data={section.items}
+                  keyExtractor={item => item.id.toString()}
+                  numColumns={2}
+                  columnWrapperStyle={{ justifyContent: 'space-between' }}
+                  renderItem={({ item }) => (
+                    <Card
+                      item={{
+                        ...item,
+                        subtitle: item.subtitle ?? '',
+                        rating: item.rating ?? 0,
+                        image: item.image ?? '',
+                      }}
+                      width={(width - 48) / 2}
+                      onPress={() => router.push('../explore/ServiceView')}
+                    />
+                  )}
+                  contentContainerStyle={{ paddingBottom: 16 }}
+                  scrollEnabled={false}
+                />
+              </View>
+            )); -->
           })()}
 
           {/* Public Places - Only show when "All" tab is selected and has data */}
