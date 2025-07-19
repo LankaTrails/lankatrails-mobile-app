@@ -365,28 +365,53 @@ const ServiceView = () => {
                 </TouchableOpacity>
               ))}
               <View style={{ marginVertical: 8 }}>
-                <TouchableOpacity
-                  onPress={() => {
-                setShowTripModal(false);
-                  setShowDestinationModal(true);
-                
-              }}
-                  style={{
-                    padding: 12,
-                    borderRadius: 12,
-                    marginVertical: 4,
-                    backgroundColor: "#008080",
-                  }}
-                >
-                  <Text
+                {selectedTrip === "" && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setShowTripModal(false);
+                      setShowDestinationModal(true);
+                    }}
                     style={{
-                      color: "#fff",
-                      fontWeight: "600",
+                      padding: 12,
+                      borderRadius: 36,
+                      marginVertical: 4,
+                      backgroundColor: "#ffffff",
+                      borderColor: "#008080",
+                      borderWidth: 3,
                     }}
                   >
-                    New Trip
-                  </Text>
-                </TouchableOpacity>
+                    <View
+                      style={{
+                        alignItems: "center",
+                        flexDirection: "row",
+                        justifyContent: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: "#008080",
+                          fontWeight: "600",
+                          alignItems: "center",
+                          textAlign: "center",
+                          fontSize: 24,
+                        }}
+                      >
+                        +
+                      </Text>
+                      <Text
+                        style={{
+                          color: "#008080",
+                          fontWeight: "600",
+                          alignItems: "center",
+                          textAlign: "center",
+                        }}
+                      >
+                        New Trip
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
               </View>
 
               {selectedTrip && (
@@ -468,7 +493,7 @@ const ServiceView = () => {
             </View>
           )}
 
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 24 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 24 }}>
             {/* <TouchableOpacity
               onPress={() => setShowTripModal(false)}
               style={{ backgroundColor: '#e5e7eb', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999 }}

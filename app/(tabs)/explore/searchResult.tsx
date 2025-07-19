@@ -248,7 +248,7 @@ const GalleApp = () => {
           {/* Tabs */}
           <AnimatedCard delay={200}>
             <View className="flex-row justify-between px-4 my-6">
-              {['All', 'Accommodation', 'Foods', 'Transport', 'Activities'].map((tab) => (
+              {['All', 'Accommodation', 'Foods', 'Transport', 'Activities', 'Tour Guides'].map((tab) => (
                 <TouchableOpacity
                   key={tab}
                   className={`py-2 px-3 rounded-full ${selectedTab === tab ? 'bg-teal-600' : 'bg-white'}`}
@@ -272,76 +272,113 @@ const GalleApp = () => {
               image?: string;
             };
 
-           const sections: {
-  title: string;
-  delay: number;
-  tab: string;
-  items: SectionItem[];
-}[] = [
-  {
-    title: 'Accommodation',
-    delay: 300,
-    tab: 'Accommodation',
-    items: [
-      {
-        id: 1,
-        title: 'New Sigiri Hotel',
-        subtitle: 'Near Sigiriya Rock',
-        rating: 4.9,
-        image: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg',
-      },
-      {
-        id: 2,
-        title: 'Palm Resort',
-        subtitle: 'Galle Town',
-        rating: 4.6,
-        image: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg',
-      },
-    ],
-  },
-  {
-    title: 'Foods',
-    delay: 700,
-    tab: 'Foods',
-    items: [
-      {
-        id: 3,
-        title: 'Sea Breeze Cafe',
-        subtitle: 'Unawatuna Beach',
-        rating: 4.8,
-        image: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg',
-      },
-      {
-        id: 4,
-        title: 'Tropical Restaurant',
-        subtitle: 'Fort Area',
-        rating: 4.5,
-        image: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg',
-      },
-    ],
-  },
-  {
-    title: 'Transport',
-    delay: 1100,
-    tab: 'Transport',
-    items: [
-      {
-        id: 5,
-        title: 'Tuk Tuk Service',
-        subtitle: 'All Over Galle',
-        rating: 4.3,
-        image: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg',
-      },
-      {
-        id: 6,
-        title: 'Galle Rent-A-Car',
-        subtitle: 'Near Bus Station',
-        rating: 4.4,
-        image: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg',
-      },
-    ],
-  },
-];
+            const sections = [
+              {
+                title: 'Accommodation',
+                delay: 300,
+                tab: 'Accommodation',
+                items: [
+                  {
+                    id: 1,
+                    title: 'New Sigiri Hotel',
+                    subtitle: 'Near Sigiriya Rock',
+                    rating: 4.9,
+                    image: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg',
+                  },
+                  {
+                    id: 2,
+                    title: 'Palm Resort',
+                    subtitle: 'Galle Town',
+                    rating: 4.6,
+                    image: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg',
+                  },
+                ],
+              },
+              {
+                title: 'Foods',
+                delay: 700,
+                tab: 'Foods',
+                items: [
+                  {
+                    id: 3,
+                    title: 'Sea Breeze Cafe',
+                    subtitle: 'Unawatuna Beach',
+                    rating: 4.8,
+                    image: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg',
+                  },
+                  {
+                    id: 4,
+                    title: 'Tropical Restaurant',
+                    subtitle: 'Fort Area',
+                    rating: 4.5,
+                    image: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg',
+                  },
+                ],
+              },
+              {
+                title: 'Transport',
+                delay: 1100,
+                tab: 'Transport',
+                items: [
+                  {
+                    id: 5,
+                    title: 'Tuk Tuk Service',
+                    subtitle: 'All Over Galle',
+                    rating: 4.3,
+                    image: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg',
+                  },
+                  {
+                    id: 6,
+                    title: 'Galle Rent-A-Car',
+                    subtitle: 'Near Bus Station',
+                    rating: 4.4,
+                    image: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg',
+                  },
+                ],
+              },
+              {
+                title: 'Activities',
+                delay: 1500,
+                tab: 'Activities',
+                items: [
+                  {
+                    id: 7,
+                    title: 'Whale Watching',
+                    subtitle: 'Mirissa Harbor',
+                    rating: 4.9,
+                    image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945',
+                  },
+                  {
+                    id: 8,
+                    title: 'Surfing Lessons',
+                    subtitle: 'Hikkaduwa Beach',
+                    rating: 4.7,
+                    image: 'https://images.unsplash.com/photo-1510894347714-16b4b4768b2d',
+                  },
+                ],
+              },
+              {
+                title: 'Tour Guides',
+                delay: 1900,
+                tab: 'Tour Guides',
+                items: [
+                  {
+                    id: 9,
+                    title: 'Cultural Tours',
+                    subtitle: 'Galle Fort Expert',
+                    rating: 4.8,
+                    image: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4',
+                  },
+                  {
+                    id: 10,
+                    title: 'Wildlife Safaris',
+                    subtitle: 'Yala National Park',
+                    rating: 4.9,
+                    image: 'https://images.unsplash.com/photo-1582034986517-30d163aa1da9',
+                  },
+                ],
+              },
+            ];
 
             const filtered = selectedTab === 'All' ? sections : sections.filter(s => s.tab === selectedTab);
             return filtered.map(section => (
@@ -353,7 +390,7 @@ const GalleApp = () => {
                       onPress={() =>
                         router.push({
                           pathname: '../explore/accommodation-foods-transport',
-                          params: { tab: section.tab.toLowerCase() },
+                          params: { tab: section.tab.toLowerCase().replace(' ', '-') },
                         })
                       }
                     >
@@ -366,18 +403,34 @@ const GalleApp = () => {
                   keyExtractor={item => item.id.toString()}
                   numColumns={2}
                   columnWrapperStyle={{ justifyContent: 'space-between' }}
-                  renderItem={({ item }) => (
-                    <Card
-                      item={{
-                        ...item,
-                        subtitle: item.subtitle ?? '',
-                        rating: item.rating ?? 0,
-                        image: item.image ?? '',
-                      }}
-                      width={(width - 48) / 2}
-                      onPress={() => router.push('../explore/ServiceView')}
-                    />
-                  )}
+                  renderItem={({ item }) => {
+                    let routePath = '';
+                    if (section.title === 'Foods') {
+                      routePath = '../explore/FoodServiceView';
+                    } else if (section.title === 'Accommodation') {
+                      routePath = '../explore/AccommodationServiceView';
+                    } else if (section.title === 'Transport') {
+                      routePath = '../explore/TransportserviceView';
+                    } else if (section.title === 'Activities') {
+                      routePath = '../explore/ActivityView';
+                    } else if (section.title === 'Tour Guides') {
+                      routePath = '../explore/TourGuideView';
+                    } else {
+                      routePath = '../explore/ServiceView';
+                    }
+                    return (
+                      <Card
+                        item={{
+                          ...item,
+                          subtitle: item.subtitle ?? '',
+                          rating: item.rating ?? 0,
+                          image: item.image ?? '',
+                        }}
+                        width={(width - 48) / 2}
+                        onPress={() => router.push({ pathname: routePath as any })}
+                      />
+                    );
+                  }}
                   contentContainerStyle={{ paddingBottom: 16 }}
                   scrollEnabled={false}
                 />
