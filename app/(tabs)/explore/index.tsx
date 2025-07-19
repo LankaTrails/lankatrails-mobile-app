@@ -13,7 +13,6 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Animated,
-  Dimensions,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -23,62 +22,79 @@ import {
 } from "react-native";
 import { MapPinIcon } from "react-native-heroicons/outline";
 
-const { width, height } = Dimensions.get("window");
+// Animation Configuration
+const ANIMATION_CONFIG = {
+  STAGGER_DELAY: 100,
+  FADE_DURATION: 400,
+  SLIDE_DURATION: 500,
+  SPRING_TENSION: 100,
+  SPRING_FRICTION: 8,
+  PULSE_DURATION: 1000,
+} as const;
 
-// Page Transition Component with multiple animation types
-const PageTransition = ({
-  children,
-  animationType = "fadeIn",
-  isVisible = true,
-}: {
+// Types
+interface PageTransitionProps {
   children: React.ReactNode;
   animationType?: "fadeIn" | "slideUp" | "scaleIn" | "bounceIn";
   isVisible?: boolean;
-}) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-  const scaleAnim = useRef(new Animated.Value(0.9)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
+}
 
-  useEffect(() => {
-    if (isVisible) {
-      // Reset all animations
+interface StaggeredListItemProps {
+  children: React.ReactNode;
+  delay?: number;
+  index?: number;
+}
+
+interface RecentSearchItemProps {
+  item: RecentSearch;
+  index: number;
+  onPress: (item: RecentSearch) => void;
+  onRemove: (id: string) => void;
+}
+
+// Memoized Animation Components
+const PageTransition = React.memo<PageTransitionProps>(
+  ({ children, animationType = "fadeIn", isVisible = true }) => {
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(50)).current;
+    const scaleAnim = useRef(new Animated.Value(0.9)).current;
+
+    useEffect(() => {
+      if (!isVisible) return;
+
+      // Reset animations
       fadeAnim.setValue(0);
       slideAnim.setValue(50);
       scaleAnim.setValue(0.9);
-      rotateAnim.setValue(0);
 
-      // Choose animation based on type
-      switch (animationType) {
-        case "fadeIn":
+      const animations = {
+        fadeIn: () =>
           Animated.timing(fadeAnim, {
             toValue: 1,
             duration: 600,
             useNativeDriver: true,
-          }).start();
-          break;
+          }),
 
-        case "slideUp":
+        slideUp: () =>
           Animated.parallel([
             Animated.timing(fadeAnim, {
               toValue: 1,
-              duration: 500,
+              duration: ANIMATION_CONFIG.SLIDE_DURATION,
               useNativeDriver: true,
             }),
             Animated.spring(slideAnim, {
               toValue: 0,
-              tension: 100,
-              friction: 8,
+              tension: ANIMATION_CONFIG.SPRING_TENSION,
+              friction: ANIMATION_CONFIG.SPRING_FRICTION,
               useNativeDriver: true,
             }),
-          ]).start();
-          break;
+          ]),
 
-        case "scaleIn":
+        scaleIn: () =>
           Animated.parallel([
             Animated.timing(fadeAnim, {
               toValue: 1,
-              duration: 400,
+              duration: ANIMATION_CONFIG.FADE_DURATION,
               useNativeDriver: true,
             }),
             Animated.spring(scaleAnim, {
@@ -87,12 +103,11 @@ const PageTransition = ({
               friction: 6,
               useNativeDriver: true,
             }),
-          ]).start();
-          break;
+          ]),
 
-        case "bounceIn":
+        bounceIn: () => {
           fadeAnim.setValue(1);
-          Animated.sequence([
+          return Animated.sequence([
             Animated.spring(scaleAnim, {
               toValue: 1.1,
               tension: 200,
@@ -105,113 +120,97 @@ const PageTransition = ({
               friction: 8,
               useNativeDriver: true,
             }),
-          ]).start();
-          break;
-      }
-    }
-  }, [isVisible, animationType]);
+          ]);
+        },
+      };
 
-  const getAnimatedStyle = () => {
-    switch (animationType) {
-      case "fadeIn":
-        return { opacity: fadeAnim };
+      animations[animationType]()?.start();
+    }, [isVisible, animationType, fadeAnim, slideAnim, scaleAnim]);
 
-      case "slideUp":
-        return {
+    const getAnimatedStyle = useCallback(() => {
+      const styles = {
+        fadeIn: { opacity: fadeAnim },
+        slideUp: { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+        scaleIn: { opacity: fadeAnim, transform: [{ scale: scaleAnim }] },
+        bounceIn: { opacity: fadeAnim, transform: [{ scale: scaleAnim }] },
+      };
+      return styles[animationType];
+    }, [animationType, fadeAnim, slideAnim, scaleAnim]);
+
+    return (
+      <Animated.View style={[{ flex: 1 }, getAnimatedStyle()]}>
+        {children}
+      </Animated.View>
+    );
+  }
+);
+
+const StaggeredListItem = React.memo<StaggeredListItemProps>(
+  ({ children, delay = 0, index = 0 }) => {
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(30)).current;
+
+    useEffect(() => {
+      const animationDelay = delay + index * ANIMATION_CONFIG.STAGGER_DELAY;
+      const timeoutId = setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: ANIMATION_CONFIG.FADE_DURATION,
+            useNativeDriver: true,
+          }),
+          Animated.spring(slideAnim, {
+            toValue: 0,
+            tension: ANIMATION_CONFIG.SPRING_TENSION,
+            friction: ANIMATION_CONFIG.SPRING_FRICTION,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }, animationDelay);
+
+      return () => clearTimeout(timeoutId);
+    }, [delay, index, fadeAnim, slideAnim]);
+
+    return (
+      <Animated.View
+        style={{
           opacity: fadeAnim,
           transform: [{ translateY: slideAnim }],
-        };
+        }}
+      >
+        {children}
+      </Animated.View>
+    );
+  }
+);
 
-      case "scaleIn":
-        return {
-          opacity: fadeAnim,
-          transform: [{ scale: scaleAnim }],
-        };
-
-      case "bounceIn":
-        return {
-          opacity: fadeAnim,
-          transform: [{ scale: scaleAnim }],
-        };
-
-      default:
-        return { opacity: fadeAnim };
-    }
-  };
-
-  return (
-    <Animated.View style={[{ flex: 1 }, getAnimatedStyle()]}>
-      {children}
-    </Animated.View>
-  );
-};
-
-// Staggered Animation Component for list items
-const StaggeredListItem = ({
-  children,
-  delay = 0,
-  index = 0,
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  index?: number;
-}) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
-
-  useEffect(() => {
-    const animationDelay = delay + index * 100; // 100ms stagger between items
-
-    setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          tension: 100,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }, animationDelay);
-  }, []);
-
-  return (
-    <Animated.View
-      style={{
-        opacity: fadeAnim,
-        transform: [{ translateY: slideAnim }],
-      }}
-    >
-      {children}
-    </Animated.View>
-  );
-};
-
-// Loading Skeleton Component
-const LoadingSkeleton = () => {
+const LoadingSkeleton = React.memo(() => {
   const pulseAnim = useRef(new Animated.Value(0.3)).current;
 
   useEffect(() => {
-    const pulse = () => {
-      Animated.sequence([
+    const createPulseAnimation = () => {
+      return Animated.sequence([
         Animated.timing(pulseAnim, {
           toValue: 1,
-          duration: 1000,
+          duration: ANIMATION_CONFIG.PULSE_DURATION,
           useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
           toValue: 0.3,
-          duration: 1000,
+          duration: ANIMATION_CONFIG.PULSE_DURATION,
           useNativeDriver: true,
         }),
-      ]).start(() => pulse());
+      ]);
     };
-    pulse();
-  }, []);
+
+    const runPulseAnimation = () => {
+      createPulseAnimation().start(() => runPulseAnimation());
+    };
+
+    runPulseAnimation();
+  }, [pulseAnim]);
+
+  const skeletonItems = Array.from({ length: 3 }, (_, i) => i + 1);
 
   return (
     <View className="px-4 py-4">
@@ -223,7 +222,7 @@ const LoadingSkeleton = () => {
         style={{ opacity: pulseAnim }}
         className="bg-gray-200 h-16 rounded-lg mb-4"
       />
-      {[1, 2, 3].map((item) => (
+      {skeletonItems.map((item) => (
         <Animated.View
           key={item}
           style={{ opacity: pulseAnim }}
@@ -232,11 +231,63 @@ const LoadingSkeleton = () => {
       ))}
     </View>
   );
-};
+});
+
+const SearchItem = React.memo<RecentSearchItemProps>(
+  ({ item, index, onPress, onRemove }) => (
+    <StaggeredListItem index={index} delay={100}>
+      <TouchableOpacity
+        className="flex-row items-center justify-between py-4 px-4 hover:bg-gray-50 active:bg-gray-100"
+        activeOpacity={0.8}
+        onPress={() => onPress(item)}
+      >
+        <View className="flex-row items-center flex-1">
+          <Text className="text-2xl mr-3">{getLocationIcon(item)}</Text>
+          <View className="flex-1">
+            <Text
+              className="text-gray-800 text-lg font-medium"
+              numberOfLines={1}
+            >
+              {item.name}
+            </Text>
+            {item.searchType === "nearby" && (
+              <Text className="text-gray-500 text-sm">Nearby search</Text>
+            )}
+          </View>
+        </View>
+        <TouchableOpacity
+          className="p-2 hover:bg-gray-200 rounded-full"
+          activeOpacity={0.6}
+          onPress={(e) => {
+            e.stopPropagation();
+            onRemove(item.id);
+          }}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Text className="text-gray-400 text-lg">×</Text>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </StaggeredListItem>
+  )
+);
+
+const EmptyState = React.memo(() => (
+  <StaggeredListItem index={3} delay={200}>
+    <View className="py-8 items-center">
+      <Text className="text-gray-400 text-4xl mb-2">🔍</Text>
+      <Text className="text-gray-500 text-lg text-center font-medium">
+        No recent searches yet
+      </Text>
+      <Text className="text-gray-400 text-sm text-center mt-2 px-8">
+        Start exploring to see your search history
+      </Text>
+    </View>
+  </StaggeredListItem>
+));
 
 const LocationSearchScreen = () => {
+  // State management
   const [searchText, setSearchText] = useState("");
-  const [activeTab, setActiveTab] = useState("home");
   const [isLoading, setIsLoading] = useState(true);
   const [pageVisible, setPageVisible] = useState(false);
   const [location, setLocation] = useState<Location.LocationObject | null>(
@@ -252,55 +303,59 @@ const LocationSearchScreen = () => {
   const [isLoadingRecent, setIsLoadingRecent] = useState(true);
   const router = useRouter();
 
-  // Simulate page loading
+  // Initialize page
   useEffect(() => {
-    const loadTimer = setTimeout(() => {
+    const initializePage = async () => {
+      // Simulate initial loading time
+      await new Promise((resolve) => setTimeout(resolve, 800));
       setIsLoading(false);
       setPageVisible(true);
-    }, 1500);
+    };
 
-    return () => clearTimeout(loadTimer);
+    initializePage();
   }, []);
 
-  // Request location permissions and get current location
+  // Location management
   useEffect(() => {
     requestLocationPermission();
   }, []);
 
-  const requestLocationPermission = async () => {
+  const requestLocationPermission = useCallback(async () => {
     try {
       const status = await LocationService.requestPermissions();
       setLocationPermission(status);
 
       if (status === "granted") {
-        getCurrentLocation();
+        await getCurrentLocation();
       } else {
         setCurrentLocationName("Location access denied");
         if (status === "denied") {
           const permissionGranted =
             await LocationService.showPermissionDialog();
           if (permissionGranted) {
-            getCurrentLocation();
+            await getCurrentLocation();
           }
         }
       }
     } catch (error) {
-      console.error("Error requesting location permission:", error);
+      console.error("Location permission error:", error);
       setCurrentLocationName("Location unavailable");
     }
-  };
+  }, []);
 
-  const getCurrentLocation = async () => {
+  const getCurrentLocation = useCallback(async () => {
     try {
       setIsLocationLoading(true);
+      setCurrentLocationName("Getting location...");
 
       const currentLocation = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
+        timeInterval: 10000,
+        distanceInterval: 100,
       });
 
       setLocation(currentLocation);
 
-      // Get location name
       const locationName = await LocationService.getLocationName(
         currentLocation.coords.latitude,
         currentLocation.coords.longitude
@@ -322,21 +377,10 @@ const LocationSearchScreen = () => {
     } finally {
       setIsLocationLoading(false);
     }
-  };
-
-  // Load recent searches when component mounts
-  useEffect(() => {
-    loadRecentSearches();
   }, []);
 
-  // Reload recent searches when screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      loadRecentSearches();
-    }, [])
-  );
-
-  const loadRecentSearches = async () => {
+  // Recent searches management
+  const loadRecentSearches = useCallback(async () => {
     try {
       setIsLoadingRecent(true);
       const searches = await getRecentSearches();
@@ -346,11 +390,31 @@ const LocationSearchScreen = () => {
     } finally {
       setIsLoadingRecent(false);
     }
-  };
+  }, []);
 
-  const handleNearbySearch = async () => {
+  useEffect(() => {
+    loadRecentSearches();
+  }, [loadRecentSearches]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadRecentSearches();
+    }, [loadRecentSearches])
+  );
+
+  // Navigation helpers
+  const navigateToSearchResult = useCallback(
+    (params: any) => {
+      router.push({
+        pathname: "/explore/search/results" as any,
+        params,
+      });
+    },
+    [router]
+  );
+
+  const handleNearbySearch = useCallback(async () => {
     if (location) {
-      // Save nearby search to recent searches
       await saveRecentSearch({
         name: currentLocationName,
         searchQuery: "nearby",
@@ -361,20 +425,16 @@ const LocationSearchScreen = () => {
         },
       });
 
-      // Reload recent searches
       loadRecentSearches();
 
-      router.push({
-        pathname: "/explore/searchResult" as any,
-        params: {
-          location: currentLocationName,
-          lat: location.coords.latitude.toString(),
-          lng: location.coords.longitude.toString(),
-          isNearby: "true",
-        },
+      navigateToSearchResult({
+        location: currentLocationName,
+        lat: location.coords.latitude.toString(),
+        lng: location.coords.longitude.toString(),
+        isNearby: "true",
       });
     } else {
-      // Fallback to Galle if location is not available
+      // Fallback to default location
       await saveRecentSearch({
         name: "Galle",
         searchQuery: "Galle",
@@ -382,108 +442,70 @@ const LocationSearchScreen = () => {
       });
 
       loadRecentSearches();
-
-      router.push({
-        pathname: "/explore/searchResult" as any,
-        params: { location: "Galle" },
-      });
+      navigateToSearchResult({ location: "Galle" });
     }
-  };
+  }, [
+    location,
+    currentLocationName,
+    loadRecentSearches,
+    navigateToSearchResult,
+  ]);
 
-  // Handle search functionality
-  const handleSearch = async (searchTerm: string) => {
-    // Save search to recent searches
-    await saveRecentSearch({
-      name: searchTerm,
-      searchQuery: searchTerm,
-      searchType: "location",
-    });
+  const handleSearch = useCallback(
+    async (searchTerm: string) => {
+      await saveRecentSearch({
+        name: searchTerm,
+        searchQuery: searchTerm,
+        searchType: "location",
+      });
 
-    // Reload recent searches
-    loadRecentSearches();
+      loadRecentSearches();
 
-    router.push({
-      pathname: "/explore/searchResult" as any,
-      params: {
+      navigateToSearchResult({
         location: searchTerm,
         searchQuery: searchTerm,
-      },
-    });
-  };
-
-  const handleRemoveRecentSearch = async (searchId: string) => {
-    try {
-      // Optimistically update the UI first (immediate response)
-      setRecentSearches((prevSearches) =>
-        prevSearches.filter((search) => search.id !== searchId)
-      );
-
-      // Then update the storage in background
-      await removeRecentSearch(searchId);
-    } catch (error) {
-      console.error("Error removing recent search:", error);
-      // If storage update fails, revert the UI by reloading from storage
-      loadRecentSearches();
-    }
-  };
-
-  type RecentSearchItemProps = {
-    item: RecentSearch;
-    index: number;
-  };
-
-  const SearchItem = ({ item, index }: RecentSearchItemProps) => (
-    <StaggeredListItem index={index} delay={100}>
-      <TouchableOpacity
-        className="flex-row items-center justify-between py-4 px-4 hover:bg-gray-50 active:bg-gray-100"
-        activeOpacity={0.8}
-        onPress={() => {
-          if (item.searchType === "nearby" && item.coordinates) {
-            router.push({
-              pathname: "/explore/searchResult" as any,
-              params: {
-                location: item.name,
-                lat: item.coordinates.lat.toString(),
-                lng: item.coordinates.lng.toString(),
-                isNearby: "true",
-              },
-            });
-          } else {
-            router.push({
-              pathname: "/explore/searchResult" as any,
-              params: {
-                location: item.name,
-                searchQuery: item.searchQuery,
-              },
-            });
-          }
-        }}
-      >
-        <View className="flex-row items-center flex-1">
-          <Text className="text-2xl mr-3">{getLocationIcon(item)}</Text>
-          <View className="flex-1">
-            <Text className="text-gray-800 text-l font-medium">
-              {item.name}
-            </Text>
-            {item.searchType === "nearby" && (
-              <Text className="text-gray-500 text-sm">Nearby search</Text>
-            )}
-          </View>
-        </View>
-        <TouchableOpacity
-          className="p-2 hover:bg-gray-200 rounded-full "
-          activeOpacity={0.6}
-          onPress={(e) => {
-            e.stopPropagation();
-            handleRemoveRecentSearch(item.id);
-          }}
-        >
-          <Text className="text-gray-400 text-lg">×</Text>
-        </TouchableOpacity>
-      </TouchableOpacity>
-    </StaggeredListItem>
+      });
+    },
+    [loadRecentSearches, navigateToSearchResult]
   );
 
+  const handleRecentSearchPress = useCallback(
+    (item: RecentSearch) => {
+      if (item.searchType === "nearby" && item.coordinates) {
+        navigateToSearchResult({
+          location: item.name,
+          lat: item.coordinates.lat.toString(),
+          lng: item.coordinates.lng.toString(),
+          isNearby: "true",
+        });
+      } else {
+        navigateToSearchResult({
+          location: item.name,
+          searchQuery: item.searchQuery,
+        });
+      }
+    },
+    [navigateToSearchResult]
+  );
+
+  const handleRemoveRecentSearch = useCallback(
+    async (searchId: string) => {
+      try {
+        // Optimistic update
+        setRecentSearches((prev) =>
+          prev.filter((search) => search.id !== searchId)
+        );
+        await removeRecentSearch(searchId);
+      } catch (error) {
+        console.error("Error removing recent search:", error);
+        // Revert on error
+        loadRecentSearches();
+      }
+    },
+    [loadRecentSearches]
+  );
+
+  // Loading state
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-white">
@@ -493,16 +515,15 @@ const LocationSearchScreen = () => {
     );
   }
 
+  // Main render
   return (
-    <SafeAreaView className="flex-1 bg-white ">
+    <SafeAreaView className="flex-1 bg-white">
+      <StatusBar barStyle="dark-content" backgroundColor="white" />
+
       <PageTransition animationType="slideUp" isVisible={pageVisible}>
-        {/* Header */}
+        {/* Header with Search */}
         <StaggeredListItem index={0} delay={0}>
           <View className="px-4 pt-2 pb-4">
-            {/* <Text className="text-xs text-white text-right mb-4">1</Text> */}
-
-            {/* Search Bar */}
-            {/* <SearchBar onPress={() => router.push('/testing')} /> */}
             <View className="relative mt-5">
               <SearchBar
                 onSearch={handleSearch}
@@ -521,7 +542,6 @@ const LocationSearchScreen = () => {
               onPress={handleNearbySearch}
               disabled={isLocationLoading}
             >
-              
               <TouchableOpacity
                 className="bg-teal-100  p-5 rounded-lg mr-3"
                 activeOpacity={0.8}
@@ -551,46 +571,41 @@ const LocationSearchScreen = () => {
         {/* Recent Searches */}
         <View className="flex-1 px-4">
           <StaggeredListItem index={2} delay={150}>
-            <Text className="text-gray-600 font-bold text-xl mb-4">
+            <Text className="text-gray-700 font-bold text-xl mb-4">
               Recent searches
             </Text>
           </StaggeredListItem>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 20 }}
+          >
             {isLoadingRecent ? (
-              // Loading skeleton for recent searches
               <View className="py-4">
-                {[1, 2, 3].map((item) => (
-                  <View key={item} className="flex-row items-center py-3 px-4">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <View key={index} className="flex-row items-center py-3 px-4">
                     <View className="w-8 h-8 bg-gray-200 rounded-full mr-3" />
                     <View className="flex-1">
-                      <View className="w-3/4 h-4 bg-gray-200 rounded mb-1" />
+                      <View className="w-3/4 h-4 bg-gray-200 rounded mb-2" />
                       <View className="w-1/2 h-3 bg-gray-100 rounded" />
                     </View>
                   </View>
                 ))}
               </View>
             ) : recentSearches.length > 0 ? (
-              // Show actual recent searches
               recentSearches.map((item, index) => (
-                <SearchItem key={item.id} item={item} index={index + 3} />
+                <SearchItem
+                  key={item.id}
+                  item={item}
+                  index={index + 3}
+                  onPress={handleRecentSearchPress}
+                  onRemove={handleRemoveRecentSearch}
+                />
               ))
             ) : (
-              // Empty state
-              <StaggeredListItem index={3} delay={200}>
-                <View className="py-8 items-center">
-                  <Text className="text-gray-400 text-lg mb-2">🔍</Text>
-                  <Text className="text-gray-500 text-center">
-                    No recent searches yet
-                  </Text>
-                  <Text className="text-gray-400 text-sm text-center mt-1">
-                    Start exploring to see your search history
-                  </Text>
-                </View>
-              </StaggeredListItem>
+              <EmptyState />
             )}
           </ScrollView>
-          
         </View>
       </PageTransition>
     </SafeAreaView>

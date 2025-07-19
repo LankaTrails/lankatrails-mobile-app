@@ -1,69 +1,60 @@
-import React, { useEffect, useRef, useState } from 'react';
+import HeaderSection from "@/components/explorer-components/HeaderSection";
+import MenuCard, { MenuItem } from "@/components/explorer-components/MenuCard";
+import { Ionicons } from "@expo/vector-icons";
+import { router, useLocalSearchParams } from "expo-router";
+import { Star } from "lucide-react-native";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  View,
-  Text,
-  ScrollView,
-  Image,
+  Alert,
   Animated,
   Dimensions,
-  TouchableOpacity,
-  ToastAndroid,
-  Platform,
-  Alert,
+  Image,
   Linking,
-  FlatList,
-} from 'react-native';
-import { Star } from 'lucide-react-native';
-import { useLocalSearchParams } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import HeaderSection from '@/components/explorer-components/HeaderSection';
-import { router } from 'expo-router';
-import MenuCard, { MenuItem } from '@/components/explorer-components/MenuCard';
-import Card from '@/components/Card';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import ServiceProviderCard from '@/components/explorer-components/ServiceProviderCard';
-import { Ionicons } from '@expo/vector-icons';
+  Platform,
+  ScrollView,
+  Text,
+  ToastAndroid,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
+import { TextInput } from "react-native";
 
-
-import { TextInput } from 'react-native';
-
-
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 const ServiceView = () => {
-
   const [userRating, setUserRating] = useState(0);
-const [userReview, setUserReview] = useState('');
-const [userComplaint, setUserComplaint] = useState('');
-const [showFullDescription, setShowFullDescription] = useState(false);
+  const [userReview, setUserReview] = useState("");
+  const [userComplaint, setUserComplaint] = useState("");
+  const [showFullDescription, setShowFullDescription] = useState(false);
 
-const mockProvider = {
-  id: 1,
-  title: 'Sunset Food Cafe',
-  subtitle: 'Unawatuna Beach',
-  rating: 4.9,
-  image:
-    'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg',
-  contact: {
-    phone: '+94 78 129 4800',
-    email: 'info@sunsetcafe.lk',
-    address: 'No.12, Beach Road, Unawatuna, Sri Lanka',
-  },
-};
-const handleSubmitReview = () => {
-  if (userRating === 0 || userReview.trim() === '') {
-    Alert.alert('Please add a rating and write a review.');
-    return;
-  }
+  const mockProvider = {
+    id: 1,
+    title: "Sunset Food Cafe",
+    subtitle: "Unawatuna Beach",
+    rating: 4.9,
+    image:
+      "https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg",
+    contact: {
+      phone: "+94 78 129 4800",
+      email: "info@sunsetcafe.lk",
+      address: "No.12, Beach Road, Unawatuna, Sri Lanka",
+    },
+  };
+  const handleSubmitReview = () => {
+    if (userRating === 0 || userReview.trim() === "") {
+      Alert.alert("Please add a rating and write a review.");
+      return;
+    }
 
-  // Submit logic here (API call or local state)
-  Alert.alert('Thank you!', 'Your feedback has been submitted.');
+    // Submit logic here (API call or local state)
+    Alert.alert("Thank you!", "Your feedback has been submitted.");
 
-  // Reset inputs
-  setUserRating(0);
-  setUserReview('');
-};
+    // Reset inputs
+    setUserRating(0);
+    setUserReview("");
+  };
   const { name } = useLocalSearchParams<{ name: string }>();
   const [isFavourite, setIsFavourite] = useState(false);
 
@@ -97,42 +88,42 @@ const handleSubmitReview = () => {
   const menuItems: MenuItem[] = [
     {
       id: 1,
-      name: 'Grilled King Prawns',
-      description: 'Large grilled prawns served with garlic butter',
-      price: 'LKR 2500',
+      name: "Grilled King Prawns",
+      description: "Large grilled prawns served with garlic butter",
+      price: "LKR 2500",
       rating: 4.8,
-      image: { 
-        uri: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg' 
+      image: {
+        uri: "https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg",
       },
     },
     {
       id: 2,
-      name: 'Grilled King Prawns',
-      description: 'Large grilled prawns served with garlic butter',
-      price: 'LKR 2500',
+      name: "Grilled King Prawns",
+      description: "Large grilled prawns served with garlic butter",
+      price: "LKR 2500",
       rating: 4.8,
-      image: { 
-        uri: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg' 
+      image: {
+        uri: "https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg",
       },
     },
     {
       id: 3,
-      name: 'Grilled King Prawns',
-      description: 'Fresh king prawns with local herbs',
-      price: 'LKR 2800',
+      name: "Grilled King Prawns",
+      description: "Fresh king prawns with local herbs",
+      price: "LKR 2800",
       rating: 4.6,
-      image: { 
-        uri: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg' 
+      image: {
+        uri: "https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg",
       },
     },
     {
       id: 4,
-      name: 'Grilled King Prawns',
-      description: 'Spiced grilled prawns with local sauce',
-      price: 'LKR 2500',
+      name: "Grilled King Prawns",
+      description: "Spiced grilled prawns with local sauce",
+      price: "LKR 2500",
       rating: 4.8,
-      image: { 
-        uri: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg' 
+      image: {
+        uri: "https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg",
       },
     },
   ];
@@ -156,24 +147,31 @@ const handleSubmitReview = () => {
 
   useEffect(() => {
     // Animate review progress bars
-    const reviewAnimations = Object.keys(progressAnimations).map((key, index) => {
-      const typedKey = key as keyof typeof progressAnimations;
-      return Animated.timing(progressAnimations[typedKey], {
-        toValue: reviewData[typedKey] / 100,
-        duration: 1000,
-        delay: index * 200,
-        useNativeDriver: false,
-      });
-    });
+    const reviewAnimations = Object.keys(progressAnimations).map(
+      (key, index) => {
+        const typedKey = key as keyof typeof progressAnimations;
+        return Animated.timing(progressAnimations[typedKey], {
+          toValue: reviewData[typedKey] / 100,
+          duration: 1000,
+          delay: index * 200,
+          useNativeDriver: false,
+        });
+      }
+    );
 
     // Animate service ratings
-    const serviceAnimations = Object.entries(serviceReviews).map(([key, val]) => {
-      return Animated.timing(animatedWidths[key as keyof typeof serviceReviews], {
-        toValue: val,
-        duration: 1000,
-        useNativeDriver: false,
-      });
-    });
+    const serviceAnimations = Object.entries(serviceReviews).map(
+      ([key, val]) => {
+        return Animated.timing(
+          animatedWidths[key as keyof typeof serviceReviews],
+          {
+            toValue: val,
+            duration: 1000,
+            useNativeDriver: false,
+          }
+        );
+      }
+    );
 
     // Start animations
     Animated.stagger(100, reviewAnimations).start();
@@ -181,13 +179,19 @@ const handleSubmitReview = () => {
   }, []);
 
   // Progress bar component for reviews
-  const ProgressBar = ({ label, animatedValue, color = '#10b981' }: {
+  const ProgressBar = ({
+    label,
+    animatedValue,
+    color = "#10b981",
+  }: {
     label: string;
     animatedValue: Animated.Value;
     color?: string;
   }) => (
     <View className="flex-row items-center mb-2">
-      <Text className="text-sm text-gray-600 w-16 text-right mr-3">{label}</Text>
+      <Text className="text-sm text-gray-600 w-16 text-right mr-3">
+        {label}
+      </Text>
       <View className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
         <Animated.View
           className="h-full rounded-full"
@@ -195,7 +199,7 @@ const handleSubmitReview = () => {
             backgroundColor: color,
             width: animatedValue.interpolate({
               inputRange: [0, 1],
-              outputRange: ['0%', '100%'],
+              outputRange: ["0%", "100%"],
             }),
           }}
         />
@@ -204,7 +208,11 @@ const handleSubmitReview = () => {
   );
 
   // Service rating progress bar
-  const renderServiceProgressBar = (label: string, value: number, animatedValue: Animated.Value) => (
+  const renderServiceProgressBar = (
+    label: string,
+    value: number,
+    animatedValue: Animated.Value
+  ) => (
     <View className="mb-3">
       <Text className="text-gray-700 font-medium mb-1">{label}</Text>
       <View className="h-4 bg-gray-200 rounded-full overflow-hidden">
@@ -212,10 +220,10 @@ const handleSubmitReview = () => {
           style={{
             height: 16,
             borderRadius: 10,
-            backgroundColor: '#008080',
+            backgroundColor: "#008080",
             width: animatedValue.interpolate({
               inputRange: [0, 100],
-              outputRange: ['0%', '100%'],
+              outputRange: ["0%", "100%"],
             }),
           }}
         />
@@ -226,24 +234,26 @@ const handleSubmitReview = () => {
   const handleFavourite = () => {
     setIsFavourite((prev) => {
       const newState = !prev;
-      if (Platform.OS === 'android') {
+      if (Platform.OS === "android") {
         ToastAndroid.show(
-          newState ? 'Added to favourites' : 'Removed from favourites',
+          newState ? "Added to favourites" : "Removed from favourites",
           ToastAndroid.SHORT
         );
       } else {
-        Alert.alert(newState ? 'Added to favourites' : 'Removed from favourites');
+        Alert.alert(
+          newState ? "Added to favourites" : "Removed from favourites"
+        );
       }
       return newState;
     });
   };
-  
+
   const handleShare = () => {
-    const message = 'Check out Sunset Food Cafe in Unawatuna!';
-    if (Platform.OS === 'android') {
-      ToastAndroid.show('Sharing Sunset Food Cafe', ToastAndroid.SHORT);
+    const message = "Check out Sunset Food Cafe in Unawatuna!";
+    if (Platform.OS === "android") {
+      ToastAndroid.show("Sharing Sunset Food Cafe", ToastAndroid.SHORT);
     } else {
-      Alert.alert('Share', message);
+      Alert.alert("Share", message);
     }
   };
 
@@ -253,13 +263,13 @@ const handleSubmitReview = () => {
       `${item.description}\n\nPrice: ${item.price}\nRating: ${item.rating}⭐`,
       [
         {
-          text: 'Cancel',
-          style: 'destructive',
+          text: "Cancel",
+          style: "destructive",
         },
         {
-          text: 'Add to Trip',
-          style: 'default',
-          onPress: () => router.push('../trips'), // Navigate to Plan Trip screen
+          text: "Add to Trip",
+          style: "default",
+          onPress: () => router.push("../trips"), // Navigate to Plan Trip screen
         },
       ],
       { cancelable: true }
@@ -269,52 +279,64 @@ const handleSubmitReview = () => {
   return (
     <>
       <SafeAreaView className="bg-white ">
-        <HeaderSection 
+        <HeaderSection
           title="Sunset Food Cafe"
           isFavourite={isFavourite}
           handleFavourite={handleFavourite}
           handleShare={handleShare}
-          onBack={() => router.push('../explore/searchResult')} 
+          onBack={() =>
+            router.push({
+              pathname: "/explore/search/results" as any,
+            })
+          }
         />
       </SafeAreaView>
-      
+
       <ScrollView className="flex-1 mb-20 bg-gray-50">
         {/* Horizontal Image Gallery */}
-         <View className="ml-6 mb-6">
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    {serviceImages.map((img, index) => (
-                      <Image
-                        key={index}
-                        source={{ uri: img }}
-                        className="w-96 h-96 rounded-lg mr-4 shadow-sm"
-                        resizeMode="cover"
-                      />
-                    ))}
-                  </ScrollView>
-                </View>
+        <View className="ml-6 mb-6">
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {serviceImages.map((img, index) => (
+              <Image
+                key={index}
+                source={{ uri: img }}
+                className="w-96 h-96 rounded-lg mr-4 shadow-sm"
+                resizeMode="cover"
+              />
+            ))}
+          </ScrollView>
+        </View>
 
-         <View className="bg-white rounded-xl ">
-            {/* Overall Rating */}
-            <View className="flex-row p-4">
-              <View className="bg-primary rounded-full w-16 h-16 items-center justify-center mr-4">
-                <Text className="text-white text-2xl font-bold">4.9</Text>
-              </View>
-              <View className="flex-1 ">
-                <Text className="text-lg font-semibold text-gray-800 mb-1">Customer Reviews</Text>
-                <Text className="text-sm text-gray-600">Based on 284 reviews</Text>
-              </View>
+        <View className="bg-white rounded-xl ">
+          {/* Overall Rating */}
+          <View className="flex-row p-4">
+            <View className="bg-primary rounded-full w-16 h-16 items-center justify-center mr-4">
+              <Text className="text-white text-2xl font-bold">4.9</Text>
             </View>
+            <View className="flex-1 ">
+              <Text className="text-lg font-semibold text-gray-800 mb-1">
+                Customer Reviews
+              </Text>
+              <Text className="text-sm text-gray-600">
+                Based on 284 reviews
+              </Text>
             </View>
+          </View>
+        </View>
 
         <View className="px-4 py-3 border-t border-b border-gray-100">
-          <Text className="text-2xl font-semibold text-gray-500 mb-3">Contact</Text>
+          <Text className="text-2xl font-semibold text-gray-500 mb-3">
+            Contact
+          </Text>
 
           <TouchableOpacity
             onPress={() => Linking.openURL(`tel:${mockProvider.contact.phone}`)}
             className="flex-row items-center mb-2"
           >
             <Ionicons name="call" size={24} color="#008080" />
-            <Text className="ml-4 text-gray-700 text-lg">{mockProvider.contact.phone}</Text>
+            <Text className="ml-4 text-gray-700 text-lg">
+              {mockProvider.contact.phone}
+            </Text>
           </TouchableOpacity>
 
           {/* <TouchableOpacity
@@ -327,19 +349,23 @@ const handleSubmitReview = () => {
 
           <View className="flex-row items-start mt-1">
             <Ionicons name="location" size={24} color="#008080" />
-            <Text className="ml-2 text-gray-700 w-[85%]">{mockProvider.contact.address}</Text>
+            <Text className="ml-2 text-gray-700 w-[85%]">
+              {mockProvider.contact.address}
+            </Text>
           </View>
         </View>
         <View className="px-4 mt-4">
-                  <Text className="text-2xl font-semibold text-gray-500 mb-2">Location</Text>
-                  <Image
-                    source={{
-                      uri: `https://maps.googleapis.com/maps/api/staticmap?center=Unawatuna,Sri+Lanka&zoom=15&size=600x300&key=AIzaSyA47Q-I515EK0DU4pvk5jgUcatYcdnf8cY`,
-                    }}
-                    className="w-full h-40 rounded-lg"
-                    resizeMode="cover"
-                  />
-                </View>
+          <Text className="text-2xl font-semibold text-gray-500 mb-2">
+            Location
+          </Text>
+          <Image
+            source={{
+              uri: `https://maps.googleapis.com/maps/api/staticmap?center=Unawatuna,Sri+Lanka&zoom=15&size=600x300&key=AIzaSyA47Q-I515EK0DU4pvk5jgUcatYcdnf8cY`,
+            }}
+            className="w-full h-40 rounded-lg"
+            resizeMode="cover"
+          />
+        </View>
         {/* Restaurant Description */}
         <View className=" p-5">
           <Text className="text-3xl font-bold text-primary mb-4">About Us</Text>
@@ -347,33 +373,41 @@ const handleSubmitReview = () => {
             className="text-lg leading-6 text-gray-500 font-semibold"
             numberOfLines={showFullDescription ? undefined : 3}
           >
-            Sunset Food Cafe is a serene beachside retreat nestled in the heart of Unawatuna, known for its breathtaking sunset views and fresh seafood delicacies. The ambiance is laid-back yet inviting, perfect for romantic dinners, family gatherings, or casual hangouts with friends. Guests can enjoy expertly prepared dishes using local ingredients while soaking in the golden hues of the ocean horizon.
+            Sunset Food Cafe is a serene beachside retreat nestled in the heart
+            of Unawatuna, known for its breathtaking sunset views and fresh
+            seafood delicacies. The ambiance is laid-back yet inviting, perfect
+            for romantic dinners, family gatherings, or casual hangouts with
+            friends. Guests can enjoy expertly prepared dishes using local
+            ingredients while soaking in the golden hues of the ocean horizon.
           </Text>
-        
-          <TouchableOpacity onPress={() => setShowFullDescription(!showFullDescription)}>
+
+          <TouchableOpacity
+            onPress={() => setShowFullDescription(!showFullDescription)}
+          >
             <Text className="text-teal-600 mt-2 font-medium">
-              {showFullDescription ? 'Show less' : 'Show more'}
+              {showFullDescription ? "Show less" : "Show more"}
             </Text>
           </TouchableOpacity>
         </View>
 
         {/* Menu Highlights */}
         <View className="px-4 mb-6">
-          <Text className="text-3xl font-bold text-gray-500 mb-6">Menu Highlights</Text>
+          <Text className="text-3xl font-bold text-gray-500 mb-6">
+            Menu Highlights
+          </Text>
           <View className="flex-row flex-wrap justify-between">
             {menuItems.map((item) => (
               <View key={item.id} className="w-[48%]">
-                <MenuCard 
-                  item={item} 
+                <MenuCard
+                  item={item}
                   // onPress={handleMenuItemPress}
-                  onPress={() => router.push('../explore/FoodItemView')}
-                  
+                  onPress={() => router.push("../explore/FoodItemView")}
                 />
               </View>
             ))}
           </View>
         </View>
-            {/* <ServiceProviderCard
+        {/* <ServiceProviderCard
           id={1}
           name="Sunset Food Cafe"
           subtitle="Unawatuna Beach"
@@ -391,13 +425,12 @@ const handleSubmitReview = () => {
             {renderServiceProgressBar('Value for Money', serviceReviews.value, animatedWidths.value)}
           </View>
         </View> */}
-        
 
         {/* Overall Reviews Section */}
         {/* <View className="px-4 mb-6">
           <View className="bg-white rounded-xl p-6 shadow-sm"> */}
-            {/* Overall Rating */}
-            {/* <View className="flex-row items-center mb-6">
+        {/* Overall Rating */}
+        {/* <View className="flex-row items-center mb-6">
               <View className="bg-primary rounded-full w-16 h-16 items-center justify-center mr-4">
                 <Text className="text-white text-xl font-bold">4.9</Text>
               </View>
@@ -407,8 +440,8 @@ const handleSubmitReview = () => {
               </View>
             </View> */}
 
-            {/* Review Progress Bars */}
-            {/* <ProgressBar 
+        {/* Review Progress Bars */}
+        {/* <ProgressBar 
               label="Excellent" 
               animatedValue={progressAnimations.excellent}
               color="#10b981"
@@ -461,40 +494,49 @@ const handleSubmitReview = () => {
             </View>
           ))}
         </View> */}
-              {/* Leave a Review or Complaint Section */}
-<View className="px-4 mb-20">
-  <Text className="text-3xl font-semibold text-gray-500 mb-4">Leave a Review or Complaint</Text>
+        {/* Leave a Review or Complaint Section */}
+        <View className="px-4 mb-20">
+          <Text className="text-3xl font-semibold text-gray-500 mb-4">
+            Leave a Review or Complaint
+          </Text>
 
-  <View className="bg-white rounded-xl shadow-sm p-4">
-    {/* Rating Stars */}
-    <Text className="text-gray-500 font-medium  text-lg mb-2">Your Rating</Text>
-    <View className="flex-row mb-4">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <TouchableOpacity key={star} onPress={() => setUserRating(star)}>
-          <Star
-            size={24}
-            color={userRating >= star ? '#FBB03B' : '#E5E7EB'}
-            fill={userRating >= star ? '#FBB03B' : 'none'}
-            className="mr-1"
-          />
-        </TouchableOpacity>
-      ))}
-    </View>
+          <View className="bg-white rounded-xl shadow-sm p-4">
+            {/* Rating Stars */}
+            <Text className="text-gray-500 font-medium  text-lg mb-2">
+              Your Rating
+            </Text>
+            <View className="flex-row mb-4">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity
+                  key={star}
+                  onPress={() => setUserRating(star)}
+                >
+                  <Star
+                    size={24}
+                    color={userRating >= star ? "#FBB03B" : "#E5E7EB"}
+                    fill={userRating >= star ? "#FBB03B" : "none"}
+                    className="mr-1"
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
 
-    {/* Review Input */}
-    <Text className="text-gray-500 font-medium mb-1 text-lg">Your Review</Text>
-    <View className="bg-gray-100 rounded-lg px-3 py-2 mb-4">
-      <TextInput
-        multiline
-        placeholder="Write your experience here..."
-        value={userReview}
-        onChangeText={setUserReview}
-        className="text-sm text-gray-800"
-        style={{ minHeight: 80 }}
-      />
-    </View>
+            {/* Review Input */}
+            <Text className="text-gray-500 font-medium mb-1 text-lg">
+              Your Review
+            </Text>
+            <View className="bg-gray-100 rounded-lg px-3 py-2 mb-4">
+              <TextInput
+                multiline
+                placeholder="Write your experience here..."
+                value={userReview}
+                onChangeText={setUserReview}
+                className="text-sm text-gray-800"
+                style={{ minHeight: 80 }}
+              />
+            </View>
 
-    {/* Complaint Input
+            {/* Complaint Input
     <Text className="text-gray-500 font-medium mb-1 text-lg">Complaint (if any)</Text>
     <View className="bg-gray-100 rounded-lg px-3 py-2 mb-4">
       <TextInput
@@ -507,26 +549,30 @@ const handleSubmitReview = () => {
       />
     </View> */}
 
-    {/* Submit Button */}
-    <TouchableOpacity
-      onPress={handleSubmitReview}
-      className="bg-primary py-3 rounded-lg items-center"
-    >
-      <Text className="text-white text-lg font-medium">Submit Feedback</Text>
-    </TouchableOpacity>
+            {/* Submit Button */}
+            <TouchableOpacity
+              onPress={handleSubmitReview}
+              className="bg-primary py-3 rounded-lg items-center"
+            >
+              <Text className="text-white text-lg font-medium">
+                Submit Feedback
+              </Text>
+            </TouchableOpacity>
 
-     <TouchableOpacity
-      onPress={() => router.push('../explore/ComplainPage')}
-      className="border-4 border-primary mt-5 bg-white py-3  items-center rounded-full"
-    >
-      <Text className="text-primary text-lg font-bold">If you have any complaints</Text>
-    </TouchableOpacity>
-  </View>
-</View>
- 
+            <TouchableOpacity
+              onPress={() => router.push("../explore/ComplainPage")}
+              className="border-4 border-primary mt-5 bg-white py-3  items-center rounded-full"
+            >
+              <Text className="text-primary text-lg font-bold">
+                If you have any complaints
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Related Restaurants */}
-      
-       {/* <View className="px-4 mb-20">
+
+        {/* <View className="px-4 mb-20">
   <Text className="text-3xl font-semibold text-gray-500 mb-4">You may also like</Text>
   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
     {[
@@ -562,8 +608,6 @@ const handleSubmitReview = () => {
     ))}
   </ScrollView>
 </View> */}
-
- 
 
         {/* You May Also Like */}
         {/* <View className="px-4 mb-20">
