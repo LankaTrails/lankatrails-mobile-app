@@ -1,3 +1,4 @@
+import MapLocationSelector from "@/components/MapLocationSelector";
 import SearchBar from "@/components/SearchBar";
 import LocationService from "@/utils/locationService";
 import {
@@ -301,6 +302,7 @@ const LocationSearchScreen = () => {
   const [isLocationLoading, setIsLocationLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const [isLoadingRecent, setIsLoadingRecent] = useState(true);
+  const [showMapSelector, setShowMapSelector] = useState(false);
   const router = useRouter();
 
   // Initialize page
@@ -451,6 +453,43 @@ const LocationSearchScreen = () => {
     navigateToSearchResult,
   ]);
 
+  const handleMapLocationSelect = useCallback(
+    async (selectedLocation: {
+      latitude: number;
+      longitude: number;
+      address?: string;
+    }) => {
+      const locationName = selectedLocation.address || "Selected Location";
+
+      await saveRecentSearch({
+        name: locationName,
+        searchQuery: locationName,
+        searchType: "location",
+        coordinates: {
+          lat: selectedLocation.latitude,
+          lng: selectedLocation.longitude,
+        },
+      });
+
+      loadRecentSearches();
+
+      navigateToSearchResult({
+        location: locationName,
+        lat: selectedLocation.latitude.toString(),
+        lng: selectedLocation.longitude.toString(),
+      });
+    },
+    [loadRecentSearches, navigateToSearchResult]
+  );
+
+  const handleOpenMapSelector = useCallback(() => {
+    setShowMapSelector(true);
+  }, []);
+
+  const handleCloseMapSelector = useCallback(() => {
+    setShowMapSelector(false);
+  }, []);
+
   const handleSearch = useCallback(
     async (searchTerm: string) => {
       await saveRecentSearch({
@@ -535,7 +574,7 @@ const LocationSearchScreen = () => {
 
         {/* Nearby Section */}
         <StaggeredListItem index={1} delay={80}>
-          <View className="px-4 mb-6">
+          <View className="px-4">
             <TouchableOpacity
               className="flex-row items-center hover:bg-gray-50 active:bg-gray-100 p-3 rounded-lg"
               activeOpacity={0.8}
@@ -557,12 +596,46 @@ const LocationSearchScreen = () => {
                     Getting your location...
                   </Text>
                 )}
+                <View className="flex-row items-center">
+                  <MapPinIcon size={16} color="#6B7280" strokeWidth={2} />
+                  <Text
+                    className="text-gray-500 text-lg ml-1"
+                    numberOfLines={1}
+                  >
+                    {currentLocationName}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </StaggeredListItem>
+
+        {/* Select on Map Section */}
+        <StaggeredListItem index={2} delay={120}>
+          <View className="px-4 mb-2">
+            <TouchableOpacity
+              className="flex-row items-center hover:bg-gray-50 active:bg-gray-100 p-3 rounded-lg"
+              activeOpacity={0.8}
+              onPress={handleOpenMapSelector}
+            >
+              <TouchableOpacity
+                className="bg-blue-100 p-5 rounded-lg mr-3"
+                activeOpacity={0.8}
+              >
+                <MapPinIcon size={30} color="#2563eb" strokeWidth={2} />
+              </TouchableOpacity>
+              <View className="flex-1">
+                <Text className="text-gray-800 text-xl font-semibold">
+                  Select on Map
+                </Text>
+                <Text className="text-gray-500 text-sm mt-1">
+                  Pin a location on the map
+                </Text>
               </View>
               <View className="flex-row items-center">
-                <MapPinIcon size={16} color="#6B7280" strokeWidth={2} />
-                <Text className="text-gray-500 text-lg ml-1" numberOfLines={1}>
-                  {currentLocationName}
-                </Text>
+                {/* <Text className="text-gray-500 text-lg" numberOfLines={1}>
+                  📍
+                </Text> */}
               </View>
             </TouchableOpacity>
           </View>
@@ -570,8 +643,8 @@ const LocationSearchScreen = () => {
 
         {/* Recent Searches */}
         <View className="flex-1 px-4">
-          <StaggeredListItem index={2} delay={150}>
-            <Text className="text-gray-700 font-bold text-xl mb-4">
+          <StaggeredListItem index={3} delay={180}>
+            <Text className="text-gray-700 font-bold text-xl">
               Recent searches
             </Text>
           </StaggeredListItem>
@@ -581,7 +654,7 @@ const LocationSearchScreen = () => {
             contentContainerStyle={{ paddingBottom: 20 }}
           >
             {isLoadingRecent ? (
-              <View className="py-4">
+              <View className="py-2">
                 {Array.from({ length: 3 }).map((_, index) => (
                   <View key={index} className="flex-row items-center py-3 px-4">
                     <View className="w-8 h-8 bg-gray-200 rounded-full mr-3" />
@@ -608,6 +681,21 @@ const LocationSearchScreen = () => {
           </ScrollView>
         </View>
       </PageTransition>
+
+      {/* Map Location Selector Modal */}
+      <MapLocationSelector
+        visible={showMapSelector}
+        onClose={handleCloseMapSelector}
+        onLocationSelect={handleMapLocationSelect}
+        initialLocation={
+          location
+            ? {
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+              }
+            : undefined
+        }
+      />
     </SafeAreaView>
   );
 };

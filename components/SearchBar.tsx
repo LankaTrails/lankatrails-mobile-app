@@ -30,7 +30,7 @@ function SearchBar({
   };
 
   return (
-    <View className="relative mb-4">
+    <View className="relative">
       <TextInput
         value={searchText}
         onChangeText={setSearchText}
