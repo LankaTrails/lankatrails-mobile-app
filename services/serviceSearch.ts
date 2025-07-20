@@ -1,6 +1,18 @@
 import api from '@/api/axiosInstance';
-import type { ApiResponse, SearchResponse, ServiceSearchRequest } from '@/types/serviceTypes';
+import type { ApiResponse, ProviderDetailRequest, ProviderDetailResponse, SearchResponse, ServiceSearchRequest } from '@/types/serviceTypes';
 import { ServiceCategory } from '@/types/serviceTypes';
+
+export async function searchProvider(
+    request: ProviderDetailRequest
+): Promise<ApiResponse<ProviderDetailResponse>> {
+    try {
+        const response = await api.post('/service/provider', request);
+        return response.data;
+    } catch (error) {
+        console.error('Error searching providers:', error);
+        throw error;
+    }
+}
 
 export async function searchServices(
     request: ServiceSearchRequest

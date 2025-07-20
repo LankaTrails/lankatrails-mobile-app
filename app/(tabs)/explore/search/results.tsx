@@ -602,24 +602,51 @@ const GalleApp: React.FC = () => {
     });
   }, []);
 
-  const handleProviderPress = useCallback((providerId: number) => {
-    router.push({
-      pathname: "/provider/[id]" as any,
-      params: { id: providerId.toString() },
-    });
-  }, []);
+  const handleProviderPress = useCallback(
+    (providerId: number, category?: string) => {
+      console.log("Navigating to provider with category:", category);
+
+      const navParams: any = {
+        providerId: providerId.toString(),
+      };
+
+      // Category is required
+      if (category && category.trim() !== "" && category !== "undefined") {
+        navParams.category = category;
+      }
+
+      // Add search location parameters
+      if (isNearbySearch && coordinates) {
+        // For nearby search, pass coordinates
+        navParams.lat = coordinates.lat.toString();
+        navParams.lng = coordinates.lng.toString();
+        navParams.radiusKm = "10"; // Default radius for nearby search
+      } else {
+        // For city search, pass city name
+        navParams.city = searchLocation;
+      }
+
+      console.log("Navigation params:", navParams);
+
+      router.push({
+        pathname: "/explore/services/provider/[providerId]" as any,
+        params: navParams,
+      });
+    },
+    [isNearbySearch, coordinates, searchLocation]
+  );
 
   const handleItemPress = useCallback((item: any) => {
     if (item.isProvider) {
-      handleProviderPress(item.providerId);
+      console.log("Provider item category:", item.category);
+      console.log("Provider item:", item);
+      handleProviderPress(item.providerId, item.category);
     } else {
-      // For services, navigate to service detail with category
-      const categoryPath = item.category.toUpperCase().replace(/\s+/g, "_");
+      // For services, navigate to service detail
       router.push({
-        pathname: `/service/${categoryPath}/${item.serviceId}` as any,
+        pathname: "/explore/services/[serviceId]" as any,
         params: {
-          category: categoryPath,
-          id: item.serviceId.toString(),
+          serviceId: item.serviceId.toString(),
         },
       });
     }

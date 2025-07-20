@@ -31,13 +31,14 @@ export interface ServiceSearchRequest {
 }
 
 export interface ProviderDetailRequest {
-    providerId : number;
+    providerId: number;
+    category: ServiceCategory;
+
+    // Location is required - either city OR coordinates with radius
+    city?: string;
     lat?: number;
     lng?: number;
     radiusKm?: number;
-
-    city?: string;
-    category?: ServiceCategory;
 }
 
 export enum ServiceCategory {
@@ -62,22 +63,28 @@ export interface Location {
 export interface Service {
     serviceId: number;
     serviceName: string;
-    locationBased: Location;
     mainImageUrl: string;
-    category: string;
+    locationBased: Location;
+    category: ServiceCategory;
+    priceType?: PriceType;
+    price?: number; // Optional price field
 }
 
 export interface ServiceSearchResponse {
     serviceId: number;
     serviceName: string;
     mainImageUrl: string;
+    locationBased: Location;
     category: ServiceCategory;
+    priceType?: PriceType;
+    price?: number; // Optional price field
 }
 
 export interface ProviderSearchResponse {
     providerId: number;
     businessName: string;
     coverImageUrl: string;
+    location: Location;
     category: ServiceCategory;
 }
 
@@ -89,7 +96,7 @@ export interface SearchResponse {
 export interface ApiResponse<T> {
     success: boolean;
     data: T;
-    message?: string;   
+    message?: string;
     details?: string;
 }
 
@@ -99,6 +106,6 @@ export interface ProviderDetailResponse {
     businessDescription: string;
     coverImageUrl: string;
     location: Location;
-    category: ServiceCategory | null;
+    category: ServiceCategory;
     services: Service[];
 }

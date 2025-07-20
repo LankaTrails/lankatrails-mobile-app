@@ -1,23 +1,17 @@
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { ArrowLeft, Heart, Share } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { ArrowLeft } from 'lucide-react-native';
+import React from 'react';
+import { Text, TouchableOpacity, View } from 'react-native';
 
 /* 
   Props:
     - title?: string
     - onBack?: () => void
-    - isFavourite: boolean
-    - handleFavourite: () => void
-    - handleShare: () => void
 */
 
 const HeaderSection = ({
   title = '',
   onBack,
-  isFavourite,
-  handleFavourite,
-  handleShare,
 }) => {
   return (
     <View className="flex-row items-center justify-between mt-5 mb-2 px-4">
@@ -37,19 +31,8 @@ const HeaderSection = ({
         {title}
       </Text>
 
-      {/* Icons */}
-      <View className="flex-row items-center">
-        <TouchableOpacity className="mr-4" onPress={handleFavourite}>
-          <Heart
-            size={30}
-            color="#008080"
-            fill={isFavourite ? '#008080' : 'none'}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={handleShare}>
-          <Share size={30} color="#008080" />
-        </TouchableOpacity>
-      </View>
+      {/* Empty space to maintain layout balance */}
+      <View style={{ width: 34 }} />
     </View>
   );
 };

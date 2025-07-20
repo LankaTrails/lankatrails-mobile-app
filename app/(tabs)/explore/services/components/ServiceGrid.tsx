@@ -12,6 +12,8 @@ interface CardItem {
   subtitle: string;
   rating: number;
   image: string;
+  price?: string; // Price amount
+  priceType?: string; // Price type description
 }
 
 interface ServiceGridProps {
@@ -20,19 +22,48 @@ interface ServiceGridProps {
   onItemPress: (serviceId: string) => void;
 }
 
-const convertServiceToCardItem = (service: Service): CardItem => ({
-  id:
-    typeof service.serviceId === "number"
-      ? service.serviceId
-      : Number(service.serviceId),
-  title: service.serviceName,
-  subtitle:
-    service.locationBased.city || service.locationBased.formattedAddress,
-  rating: 4.5, // Default rating
-  image: service.mainImageUrl
-    ? `http://192.168.1.9:8080${service.mainImageUrl}`
-    : "https://via.placeholder.com/160x96/e2e8f0/64748b?text=No+Image",
-});
+const convertServiceToCardItem = (service: Service): CardItem => {
+  // Format price display
+  let priceAmount = undefined;
+  let priceTypeText = undefined;
+  if (service.price && service.priceType) {
+    const priceTypeMap: Record<string, string> = {
+      FIXED: "Fixed",
+      PER_PERSON: "per person",
+      PER_KM: "per km",
+      PER_HOUR: "per hour",
+      PER_DAY: "per day",
+      PER_NIGHT: "per night",
+      PER_WEEK: "per week",
+      PER_MONTH: "per month",
+    };
+    const typeDisplay =
+      priceTypeMap[service.priceType] ||
+      service.priceType.toLowerCase().replace("_", " ");
+
+    priceAmount = `LKR ${service.price}`;
+    priceTypeText = service.priceType === "FIXED" ? "" : typeDisplay;
+  }
+
+  return {
+    id:
+      typeof service.serviceId === "number"
+        ? service.serviceId
+        : Number(service.serviceId),
+    title: service.serviceName,
+    subtitle:
+      service.locationBased?.city ||
+      service.locationBased?.formattedAddress ||
+      service.category?.replace("_", " ") ||
+      "Service",
+    rating: 4.5, // Default rating
+    image: service.mainImageUrl
+      ? `http://192.168.1.9:8080${service.mainImageUrl}`
+      : "https://via.placeholder.com/160x96/e2e8f0/64748b?text=No+Image",
+    price: priceAmount,
+    priceType: priceTypeText,
+  };
+};
 
 export const ServiceGrid: React.FC<ServiceGridProps> = ({
   services,
