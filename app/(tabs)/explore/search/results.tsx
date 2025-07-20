@@ -4,8 +4,10 @@ import { searchServices } from "@/services/serviceSearch";
 import {
   AccommodationType,
   ActivityType,
+  ApiResponse,
   FoodBeverageType,
-  GroupedProviderService,
+  ProviderSearchResponse,
+  SearchResponse,
   Service,
   ServiceCategory,
   ServiceSearchRequest,
@@ -338,7 +340,8 @@ const GalleApp: React.FC = () => {
   const [placesLoading, setPlacesLoading] = useState(false);
   const [selectedTab, setSelectedTab] = useState<string>("All");
   const [selectedSubType, setSelectedSubType] = useState<string>("All");
-  const [services, setServices] = useState<GroupedProviderService[]>([]);
+  const [providers, setProviders] = useState<ProviderSearchResponse[]>([]);
+  const [services, setServices] = useState<ServiceSearchResponse[]>([]);
   const [servicesLoading, setServicesLoading] = useState(false);
   const [searchLocation, setSearchLocation] = useState("Galle");
 
@@ -351,29 +354,43 @@ const GalleApp: React.FC = () => {
   const coordinates = useCoordinates(params, searchLocation);
   const isNearbySearch = params.isNearby === "true";
 
-  // Flatten grouped services into individual services for display
-  const flattenedServices = useMemo(() => {
-    return services.reduce((acc: Service[], groupedProvider) => {
-      return acc.concat(groupedProvider.services);
-    }, []);
-  }, [services]);
+  // Combine providers and services for filtering and grouping
+  const allItems = useMemo(() => {
+    const providerItems = providers.map((provider) => ({
+      ...provider,
+      isProvider: true,
+      displayName: provider.businessName,
+      displayImage: provider.coverImageUrl,
+      displayCategory: provider.category,
+    }));
 
-  const filteredServices = useMemo(() => {
+    const serviceItems = services.map((service) => ({
+      ...service,
+      isProvider: false,
+      displayName: service.serviceName,
+      displayImage: service.mainImageUrl,
+      displayCategory: service.category,
+    }));
+
+    return [...providerItems, ...serviceItems];
+  }, [providers, services]);
+
+  const filteredItems = useMemo(() => {
     // Since the API already filters by category when requested,
     // we don't need to filter again on the frontend
-    return flattenedServices;
-  }, [flattenedServices]);
+    return allItems;
+  }, [allItems]);
 
-  const groupedServices = useMemo(() => {
-    return flattenedServices.reduce((acc, service) => {
-      const normalizedCategory = normalizeCategory(service.category);
+  const groupedItems = useMemo(() => {
+    return allItems.reduce((acc, item) => {
+      const normalizedCategory = normalizeCategory(item.displayCategory);
       if (!acc[normalizedCategory]) {
         acc[normalizedCategory] = [];
       }
-      acc[normalizedCategory].push(service);
+      acc[normalizedCategory].push(item);
       return acc;
-    }, {} as Record<string, Service[]>);
-  }, [flattenedServices]);
+    }, {} as Record<string, any[]>);
+  }, [allItems]);
 
   // Effects
   useEffect(() => {
@@ -479,33 +496,37 @@ const GalleApp: React.FC = () => {
         selectedSubType,
       });
 
-      const response: ServiceSearchResponse = await searchServices(
+      const response: ApiResponse<SearchResponse> = await searchServices(
         searchRequest
       );
 
       if (response.success && response.data) {
-        console.log("Grouped providers received:", response.data.length);
-        const allServices = response.data.flatMap(
-          (provider) => provider.services
-        );
-        console.log("Total services received:", allServices.length);
-        console.log(
-          "Service categories:",
-          allServices.map((s) => s.category)
-        );
-        console.log(
-          "Normalized categories:",
-          allServices.map((s) => normalizeCategory(s.category))
-        );
-        setServices(response.data);
+        const searchData = response.data;
+        console.log("Search response received:", {
+          providers: searchData.providers?.length || 0,
+          services: searchData.services?.length || 0,
+        });
+
+        // Set providers and services separately
+        setProviders(searchData.providers || []);
+        setServices(searchData.services || []);
+
+        // Log categories for debugging
+        const allCategories = [
+          ...(searchData.providers?.map((p) => p.category) || []),
+          ...(searchData.services?.map((s) => s.category) || []),
+        ];
+        console.log("Categories:", allCategories);
       } else {
         console.error("Search failed:", response.message);
         showError("Failed to load services");
+        setProviders([]);
         setServices([]);
       }
     } catch (error) {
       console.error("Error fetching services:", error);
       showError("Network error occurred");
+      setProviders([]);
       setServices([]);
     } finally {
       setServicesLoading(false);
@@ -579,6 +600,29 @@ const GalleApp: React.FC = () => {
       pathname: "/explore/services/[serviceId]" as any,
       params: { serviceId },
     });
+  }, []);
+
+  const handleProviderPress = useCallback((providerId: number) => {
+    router.push({
+      pathname: "/provider/[id]" as any,
+      params: { id: providerId.toString() },
+    });
+  }, []);
+
+  const handleItemPress = useCallback((item: any) => {
+    if (item.isProvider) {
+      handleProviderPress(item.providerId);
+    } else {
+      // For services, navigate to service detail with category
+      const categoryPath = item.category.toUpperCase().replace(/\s+/g, "_");
+      router.push({
+        pathname: `/service/${categoryPath}/${item.serviceId}` as any,
+        params: {
+          category: categoryPath,
+          id: item.serviceId.toString(),
+        },
+      });
+    }
   }, []);
 
   const handlePlacePress = useCallback((placeId: string) => {
@@ -657,8 +701,8 @@ const GalleApp: React.FC = () => {
     }
 
     if (selectedTab === "All") {
-      const sectionsToShow = Object.keys(groupedServices).filter(
-        (category) => groupedServices[category]?.length > 0
+      const sectionsToShow = Object.keys(groupedItems).filter(
+        (category) => groupedItems[category]?.length > 0
       );
 
       if (sectionsToShow.length === 0) {
@@ -668,12 +712,12 @@ const GalleApp: React.FC = () => {
       return (
         <View className="mb-6 px-4">
           <SectionHeader
-            title="Services"
+            title="Services & Providers"
             location={searchLocation}
             isNearby={isNearbySearch}
           />
           {sectionsToShow.map((category, index) => {
-            const categoryServices = groupedServices[category] || [];
+            const categoryItems = groupedItems[category] || [];
             const displayName = getCategoryDisplayName(category);
             return (
               <View key={category} className="mb-6">
@@ -685,7 +729,7 @@ const GalleApp: React.FC = () => {
                     <View className="flex-row items-center">
                       <View className="bg-gray-100 px-3 py-1 rounded-full mr-3">
                         <Text className="text-gray-600 text-sm font-medium">
-                          {categoryServices.length}
+                          {categoryItems.length}
                         </Text>
                       </View>
                       <TouchableOpacity
@@ -699,9 +743,35 @@ const GalleApp: React.FC = () => {
                   </View>
                 </AnimatedCard>
                 <ServiceGrid
-                  services={categoryServices}
+                  services={categoryItems.map((item) => ({
+                    serviceId: item.isProvider
+                      ? (item as any).providerId
+                      : (item as any).serviceId,
+                    serviceName: item.displayName,
+                    locationBased: {
+                      city: item.isProvider ? "Provider" : "Service",
+                      district: "",
+                      province: "",
+                      country: "",
+                      formattedAddress: "",
+                      postalCode: "",
+                      latitude: 0,
+                      longitude: 0,
+                    },
+                    mainImageUrl: item.displayImage,
+                    category: item.displayCategory,
+                  }))}
                   maxItems={6}
-                  onItemPress={handleServicePress}
+                  onItemPress={(itemId) => {
+                    const item = categoryItems.find(
+                      (i) =>
+                        (i.isProvider
+                          ? (i as any).providerId
+                          : (i as any).serviceId
+                        ).toString() === itemId
+                    );
+                    if (item) handleItemPress(item);
+                  }}
                 />
               </View>
             );
@@ -711,7 +781,7 @@ const GalleApp: React.FC = () => {
     }
 
     // Specific category selected
-    if (filteredServices.length === 0) {
+    if (filteredItems.length === 0) {
       return (
         <View className="px-4 py-12">
           <Text className="text-center text-gray-500 text-lg font-medium">
@@ -727,8 +797,34 @@ const GalleApp: React.FC = () => {
     return (
       <View className="mb-6 px-4">
         <ServiceGrid
-          services={filteredServices}
-          onItemPress={handleServicePress}
+          services={filteredItems.map((item) => ({
+            serviceId: item.isProvider
+              ? (item as any).providerId
+              : (item as any).serviceId,
+            serviceName: item.displayName,
+            locationBased: {
+              city: item.isProvider ? "Provider" : "Service",
+              district: "",
+              province: "",
+              country: "",
+              formattedAddress: "",
+              postalCode: "",
+              latitude: 0,
+              longitude: 0,
+            },
+            mainImageUrl: item.displayImage,
+            category: item.displayCategory,
+          }))}
+          onItemPress={(itemId) => {
+            const item = filteredItems.find(
+              (i) =>
+                (i.isProvider
+                  ? (i as any).providerId
+                  : (i as any).serviceId
+                ).toString() === itemId
+            );
+            if (item) handleItemPress(item);
+          }}
         />
       </View>
     );
@@ -851,9 +947,11 @@ const GalleApp: React.FC = () => {
           {selectedTab === "All" &&
             !servicesLoading &&
             !placesLoading &&
-            ((services.length === 0 && groupedPlaces.length === 0) ||
-              (Object.keys(groupedServices).filter(
-                (category) => groupedServices[category]?.length > 0
+            ((providers.length === 0 &&
+              services.length === 0 &&
+              groupedPlaces.length === 0) ||
+              (Object.keys(groupedItems).filter(
+                (category) => groupedItems[category]?.length > 0
               ).length === 0 &&
                 groupedPlaces.filter(({ places }) => places.length > 0)
                   .length === 0)) && (

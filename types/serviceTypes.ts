@@ -30,6 +30,16 @@ export interface ServiceSearchRequest {
     tourGuideType?: TourGuideType;
 }
 
+export interface ProviderDetailRequest {
+    providerId : number;
+    lat?: number;
+    lng?: number;
+    radiusKm?: number;
+
+    city?: string;
+    category?: ServiceCategory;
+}
+
 export enum ServiceCategory {
     ACCOMMODATION = "ACCOMMODATION",
     ACTIVITY = "ACTIVITY",
@@ -58,16 +68,37 @@ export interface Service {
 }
 
 export interface ServiceSearchResponse {
-    success: boolean;
-    message: string;
-    data: GroupedProviderService[];
-    details: any;
+    serviceId: number;
+    serviceName: string;
+    mainImageUrl: string;
+    category: ServiceCategory;
 }
 
-export interface GroupedProviderService {
+export interface ProviderSearchResponse {
     providerId: number;
     businessName: string;
     coverImageUrl: string;
-    groupedLocation: Location;
+    category: ServiceCategory;
+}
+
+export interface SearchResponse {
+    providers: ProviderSearchResponse[] | null;
+    services: ServiceSearchResponse[] | null;
+}
+
+export interface ApiResponse<T> {
+    success: boolean;
+    data: T;
+    message?: string;   
+    details?: string;
+}
+
+export interface ProviderDetailResponse {
+    providerId: number;
+    businessName: string;
+    businessDescription: string;
+    coverImageUrl: string;
+    location: Location;
+    category: ServiceCategory | null;
     services: Service[];
 }
