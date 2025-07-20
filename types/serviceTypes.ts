@@ -22,10 +22,6 @@ export interface ServiceSearchRequest {
     radiusKm?: number;
 
     city?: string;
-    // district?: string;
-    // province?: string;
-    // country?: string;
-
     category?: ServiceCategory;
     accommodationType?: AccommodationType;
     activityType?: ActivityType;
@@ -64,6 +60,14 @@ export interface Service {
 export interface ServiceSearchResponse {
     success: boolean;
     message: string;
-    data: Service[];
+    data: GroupedProviderService[];
     details: any;
+}
+
+export interface GroupedProviderService {
+    providerId: number;
+    businessName: string;
+    coverImageUrl: string;
+    groupedLocation: Location;
+    services: Service[];
 }

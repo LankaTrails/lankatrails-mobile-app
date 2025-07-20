@@ -5,6 +5,7 @@ import {
   AccommodationType,
   ActivityType,
   FoodBeverageType,
+  GroupedProviderService,
   Service,
   ServiceCategory,
   ServiceSearchRequest,
@@ -337,7 +338,7 @@ const GalleApp: React.FC = () => {
   const [placesLoading, setPlacesLoading] = useState(false);
   const [selectedTab, setSelectedTab] = useState<string>("All");
   const [selectedSubType, setSelectedSubType] = useState<string>("All");
-  const [services, setServices] = useState<Service[]>([]);
+  const [services, setServices] = useState<GroupedProviderService[]>([]);
   const [servicesLoading, setServicesLoading] = useState(false);
   const [searchLocation, setSearchLocation] = useState("Galle");
 
@@ -350,14 +351,21 @@ const GalleApp: React.FC = () => {
   const coordinates = useCoordinates(params, searchLocation);
   const isNearbySearch = params.isNearby === "true";
 
+  // Flatten grouped services into individual services for display
+  const flattenedServices = useMemo(() => {
+    return services.reduce((acc: Service[], groupedProvider) => {
+      return acc.concat(groupedProvider.services);
+    }, []);
+  }, [services]);
+
   const filteredServices = useMemo(() => {
     // Since the API already filters by category when requested,
     // we don't need to filter again on the frontend
-    return services;
-  }, [services]);
+    return flattenedServices;
+  }, [flattenedServices]);
 
   const groupedServices = useMemo(() => {
-    return services.reduce((acc, service) => {
+    return flattenedServices.reduce((acc, service) => {
       const normalizedCategory = normalizeCategory(service.category);
       if (!acc[normalizedCategory]) {
         acc[normalizedCategory] = [];
@@ -365,7 +373,7 @@ const GalleApp: React.FC = () => {
       acc[normalizedCategory].push(service);
       return acc;
     }, {} as Record<string, Service[]>);
-  }, [services]);
+  }, [flattenedServices]);
 
   // Effects
   useEffect(() => {
@@ -476,14 +484,18 @@ const GalleApp: React.FC = () => {
       );
 
       if (response.success && response.data) {
-        console.log("Services received:", response.data.length);
+        console.log("Grouped providers received:", response.data.length);
+        const allServices = response.data.flatMap(
+          (provider) => provider.services
+        );
+        console.log("Total services received:", allServices.length);
         console.log(
           "Service categories:",
-          response.data.map((s) => s.category)
+          allServices.map((s) => s.category)
         );
         console.log(
           "Normalized categories:",
-          response.data.map((s) => normalizeCategory(s.category))
+          allServices.map((s) => normalizeCategory(s.category))
         );
         setServices(response.data);
       } else {
