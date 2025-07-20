@@ -1,7 +1,5 @@
-import Card from "@/components/Card";
 import HeaderSection from "@/components/explorer-components/HeaderSection";
 import MenuCard, { MenuItem } from "@/components/explorer-components/MenuCard";
-import ServiceProviderCard from "@/components/explorer-components/ServiceProviderCard";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { Star } from "lucide-react-native";
@@ -309,27 +307,21 @@ const ServiceView = () => {
           </ScrollView>
         </View>
 
-        {/* Restaurant Description */}
-        <View className=" p-5">
-          <Text
-            className="text-lg leading-6 text-gray-500 font-semibold"
-            numberOfLines={showFullDescription ? undefined : 3}
-          >
-            Sunset Food Cafe is a serene beachside retreat nestled in the heart
-            of Unawatuna, known for its breathtaking sunset views and fresh
-            seafood delicacies. The ambiance is laid-back yet inviting, perfect
-            for romantic dinners, family gatherings, or casual hangouts with
-            friends. Guests can enjoy expertly prepared dishes using local
-            ingredients while soaking in the golden hues of the ocean horizon.
-          </Text>
-
-          <TouchableOpacity
-            onPress={() => setShowFullDescription(!showFullDescription)}
-          >
-            <Text className="text-teal-600 mt-2 font-medium">
-              {showFullDescription ? "Show less" : "Show more"}
-            </Text>
-          </TouchableOpacity>
+        <View className="bg-white rounded-xl ">
+          {/* Overall Rating */}
+          <View className="flex-row p-4">
+            <View className="bg-primary rounded-full w-16 h-16 items-center justify-center mr-4">
+              <Text className="text-white text-2xl font-bold">4.9</Text>
+            </View>
+            <View className="flex-1 ">
+              <Text className="text-lg font-semibold text-gray-800 mb-1">
+                Customer Reviews
+              </Text>
+              <Text className="text-sm text-gray-600">
+                Based on 284 reviews
+              </Text>
+            </View>
+          </View>
         </View>
 
         <View className="px-4 py-3 border-t border-b border-gray-100">
@@ -374,6 +366,29 @@ const ServiceView = () => {
             resizeMode="cover"
           />
         </View>
+        {/* Restaurant Description */}
+        <View className=" p-5">
+          <Text className="text-3xl font-bold text-primary mb-4">About Us</Text>
+          <Text
+            className="text-lg leading-6 text-gray-500 font-semibold"
+            numberOfLines={showFullDescription ? undefined : 3}
+          >
+            Sunset Food Cafe is a serene beachside retreat nestled in the heart
+            of Unawatuna, known for its breathtaking sunset views and fresh
+            seafood delicacies. The ambiance is laid-back yet inviting, perfect
+            for romantic dinners, family gatherings, or casual hangouts with
+            friends. Guests can enjoy expertly prepared dishes using local
+            ingredients while soaking in the golden hues of the ocean horizon.
+          </Text>
+
+          <TouchableOpacity
+            onPress={() => setShowFullDescription(!showFullDescription)}
+          >
+            <Text className="text-teal-600 mt-2 font-medium">
+              {showFullDescription ? "Show less" : "Show more"}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Menu Highlights */}
         <View className="px-4 mb-6">
@@ -383,136 +398,102 @@ const ServiceView = () => {
           <View className="flex-row flex-wrap justify-between">
             {menuItems.map((item) => (
               <View key={item.id} className="w-[48%]">
-                <MenuCard item={item} onPress={handleMenuItemPress} />
+                <MenuCard
+                  item={item}
+                  // onPress={handleMenuItemPress}
+                  onPress={() => router.push("../explore/FoodItemView")}
+                />
               </View>
             ))}
           </View>
         </View>
-        <ServiceProviderCard
+        {/* <ServiceProviderCard
           id={1}
           name="Sunset Food Cafe"
           subtitle="Unawatuna Beach"
           rating={4.9}
           image="https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg"
-          onPress={() => router.push("../explore/ServiceProviderPage")}
-        />
+          onPress={() => router.push('../explore/ServiceProviderPage')}
+        /> */}
         {/* Service Ratings */}
-        <View className="px-4 mb-6">
-          <Text className="text-3xl font-semibold text-gray-500 mb-4">
-            Service Ratings
-          </Text>
+        {/* <View className="px-4 mb-6">
+          <Text className="text-3xl font-semibold text-gray-500 mb-4">Service Ratings</Text>
           <View className="bg-white rounded-xl p-4 shadow-sm">
-            {renderServiceProgressBar(
-              "Food Quality",
-              serviceReviews.food,
-              animatedWidths.food
-            )}
-            {renderServiceProgressBar(
-              "Service",
-              serviceReviews.service,
-              animatedWidths.service
-            )}
-            {renderServiceProgressBar(
-              "Ambiance",
-              serviceReviews.ambiance,
-              animatedWidths.ambiance
-            )}
-            {renderServiceProgressBar(
-              "Value for Money",
-              serviceReviews.value,
-              animatedWidths.value
-            )}
+            {renderServiceProgressBar('Food Quality', serviceReviews.food, animatedWidths.food)}
+            {renderServiceProgressBar('Service', serviceReviews.service, animatedWidths.service)}
+            {renderServiceProgressBar('Ambiance', serviceReviews.ambiance, animatedWidths.ambiance)}
+            {renderServiceProgressBar('Value for Money', serviceReviews.value, animatedWidths.value)}
           </View>
-        </View>
+        </View> */}
 
         {/* Overall Reviews Section */}
-        <View className="px-4 mb-6">
-          <View className="bg-white rounded-xl p-6 shadow-sm">
-            {/* Overall Rating */}
-            <View className="flex-row items-center mb-6">
+        {/* <View className="px-4 mb-6">
+          <View className="bg-white rounded-xl p-6 shadow-sm"> */}
+        {/* Overall Rating */}
+        {/* <View className="flex-row items-center mb-6">
               <View className="bg-primary rounded-full w-16 h-16 items-center justify-center mr-4">
                 <Text className="text-white text-xl font-bold">4.9</Text>
               </View>
               <View className="flex-1">
-                <Text className="text-lg font-semibold text-gray-800 mb-1">
-                  Customer Reviews
-                </Text>
-                <Text className="text-sm text-gray-600">
-                  Based on 284 reviews
-                </Text>
+                <Text className="text-lg font-semibold text-gray-800 mb-1">Customer Reviews</Text>
+                <Text className="text-sm text-gray-600">Based on 284 reviews</Text>
               </View>
-            </View>
+            </View> */}
 
-            {/* Review Progress Bars */}
-            <ProgressBar
-              label="Excellent"
+        {/* Review Progress Bars */}
+        {/* <ProgressBar 
+              label="Excellent" 
               animatedValue={progressAnimations.excellent}
               color="#10b981"
             />
-            <ProgressBar
-              label="Very Good"
+            <ProgressBar 
+              label="Very Good" 
               animatedValue={progressAnimations.veryGood}
               color="#22c55e"
             />
-            <ProgressBar
-              label="Average"
+            <ProgressBar 
+              label="Average" 
               animatedValue={progressAnimations.average}
               color="#eab308"
             />
-            <ProgressBar
-              label="Poor"
+            <ProgressBar 
+              label="Poor" 
               animatedValue={progressAnimations.poor}
               color="#f97316"
             />
-            <ProgressBar
-              label="Terrible"
+            <ProgressBar 
+              label="Terrible" 
               animatedValue={progressAnimations.terrible}
               color="#ef4444"
             />
           </View>
-        </View>
+        </View> */}
 
         {/* Individual Customer Reviews */}
-        <View className="px-4 mb-6">
-          <Text className="text-3xl font-semibold text-gray-500 mb-4">
-            Recent Reviews
-          </Text>
-          {["Nimal", "Sophie", "Kasun", "Emma"].map((reviewer, i) => (
-            <View
-              key={i}
-              className="bg-white rounded-lg p-4 mb-3 shadow-sm border border-gray-100"
-            >
+        {/* <View className="px-4 mb-6">
+          <Text className="text-3xl font-semibold text-gray-500 mb-4">Recent Reviews</Text>
+          {['Nimal', 'Sophie', 'Kasun', 'Emma'].map((reviewer, i) => (
+            <View key={i} className="bg-white rounded-lg p-4 mb-3 shadow-sm border border-gray-100">
               <View className="flex-row items-center mb-2">
                 <View className="w-10 h-10 bg-teal-100 rounded-full items-center justify-center mr-3">
-                  <Text className="text-teal-700 font-semibold">
-                    {reviewer.charAt(0)}
-                  </Text>
+                  <Text className="text-teal-700 font-semibold">{reviewer.charAt(0)}</Text>
                 </View>
                 <Text className="font-semibold text-gray-800">{reviewer}</Text>
               </View>
               <Text className="text-gray-600 text-sm mb-2">
-                {i === 0 &&
-                  "Amazing seafood and breathtaking sunset views! The grilled prawns were perfectly cooked."}
-                {i === 1 &&
-                  "Great atmosphere and friendly service. Perfect spot for a romantic dinner by the beach."}
-                {i === 2 &&
-                  "Fresh ingredients and authentic flavors. The beachfront location is absolutely stunning."}
-                {i === 3 &&
-                  "Excellent food quality and reasonable prices. Will definitely come back again!"}
+                {i === 0 && "Amazing seafood and breathtaking sunset views! The grilled prawns were perfectly cooked."}
+                {i === 1 && "Great atmosphere and friendly service. Perfect spot for a romantic dinner by the beach."}
+                {i === 2 && "Fresh ingredients and authentic flavors. The beachfront location is absolutely stunning."}
+                {i === 3 && "Excellent food quality and reasonable prices. Will definitely come back again!"}
               </Text>
               <View className="flex-row">
                 {[...Array(5)].map((_, starIndex) => (
-                  <Star
-                    key={starIndex}
-                    size={14}
-                    color="#FBB03B"
-                    fill="#FBB03B"
-                  />
+                  <Star key={starIndex} size={14} color="#FBB03B" fill="#FBB03B" />
                 ))}
               </View>
             </View>
           ))}
-        </View>
+        </View> */}
         {/* Leave a Review or Complaint Section */}
         <View className="px-4 mb-20">
           <Text className="text-3xl font-semibold text-gray-500 mb-4">
@@ -591,66 +572,58 @@ const ServiceView = () => {
 
         {/* Related Restaurants */}
 
-        <View className="px-4 mb-20">
-          <Text className="text-3xl font-semibold text-gray-500 mb-4">
-            You may also like
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {[
-              {
-                id: 101,
-                title: "Beach Bar",
-                subtitle: "Coastal Area",
-                rating: 4.7,
-                image: "https://example.com/beach-bar.jpg",
-              },
-              {
-                id: 102,
-                title: "Seafood Grill",
-                subtitle: "Galle Fort",
-                rating: 4.6,
-                image: "https://example.com/seafood-grill.jpg",
-              },
-              {
-                id: 103,
-                title: "Sunset Lounge",
-                subtitle: "Overlooking Ocean",
-                rating: 4.8,
-                image: "https://example.com/sunset-lounge.jpg",
-              },
-            ].map((item) => (
-              <View key={item.id}>
-                <Card
-                  item={item}
-                  width={160}
-                  onPress={() => router.push("../ServiceView")}
-                />
-              </View>
-            ))}
-          </ScrollView>
-        </View>
+        {/* <View className="px-4 mb-20">
+  <Text className="text-3xl font-semibold text-gray-500 mb-4">You may also like</Text>
+  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+    {[
+      {
+        id: 101,
+        title: 'Beach Bar',
+        subtitle: 'Coastal Area',
+        rating: 4.7,
+        image: 'https://example.com/beach-bar.jpg',
+      },
+      {
+        id: 102,
+        title: 'Seafood Grill',
+        subtitle: 'Galle Fort',
+        rating: 4.6,
+        image: 'https://example.com/seafood-grill.jpg',
+      },
+      {
+        id: 103,
+        title: 'Sunset Lounge',
+        subtitle: 'Overlooking Ocean',
+        rating: 4.8,
+        image: 'https://example.com/sunset-lounge.jpg',
+      },
+    ].map(item => (
+      <View key={item.id}>
+        <Card
+          item={item}
+          width={160}
+          onPress={() => router.push('../ServiceView')}
+        />
+      </View>
+    ))}
+  </ScrollView>
+</View> */}
 
         {/* You May Also Like */}
-        <View className="px-4 mb-20">
-          <Text className="text-xl font-semibold text-gray-800 mb-4">
-            Other Restaurents
-          </Text>
+        {/* <View className="px-4 mb-20">
+          <Text className="text-xl font-semibold text-gray-800 mb-4">Other Restaurents</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {["Beach Bar", "Seafood Grill", "Sunset Lounge"].map(
-              (suggestion, i) => (
-                <TouchableOpacity
-                  key={i}
-                  className="bg-white rounded-xl shadow-sm mr-4 w-40 h-32 items-center justify-center border border-gray-100"
-                >
-                  <Text className="text-teal-600 font-medium text-center">
-                    {suggestion}
-                  </Text>
-                  <Text className="text-xs text-gray-500 mt-1">Nearby</Text>
-                </TouchableOpacity>
-              )
-            )}
+            {['Beach Bar', 'Seafood Grill', 'Sunset Lounge'].map((suggestion, i) => (
+              <TouchableOpacity
+                key={i}
+                className="bg-white rounded-xl shadow-sm mr-4 w-40 h-32 items-center justify-center border border-gray-100"
+              >
+                <Text className="text-teal-600 font-medium text-center">{suggestion}</Text>
+                <Text className="text-xs text-gray-500 mt-1">Nearby</Text>
+              </TouchableOpacity>
+            ))}
           </ScrollView>
-        </View>
+        </View> */}
       </ScrollView>
     </>
   );
