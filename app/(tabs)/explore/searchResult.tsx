@@ -415,7 +415,6 @@ const GalleApp = () => {
                   </View>
                 );
               }
-
               if (groupedPlaces.length === 0) {
                 return (
                   <View className="px-4 py-8">
@@ -520,7 +519,6 @@ const GalleApp = () => {
                 </View>
               );
             }
-
             // Get filtered services based on selected tab
             const filteredServices = getFilteredServices();
 
@@ -708,7 +706,7 @@ const GalleApp = () => {
                       onPress={() =>
                         router.push({
                           pathname: '../explore/accommodation-foods-transport',
-                          params: { tab: section.tab.toLowerCase() },
+                          params: { tab: section.tab.toLowerCase().replace(' ', '-') },
                         })
                       }
                     >
@@ -721,18 +719,34 @@ const GalleApp = () => {
                   keyExtractor={item => item.id.toString()}
                   numColumns={2}
                   columnWrapperStyle={{ justifyContent: 'space-between' }}
-                  renderItem={({ item }) => (
-                    <Card
-                      item={{
-                        ...item,
-                        subtitle: item.subtitle ?? '',
-                        rating: item.rating ?? 0,
-                        image: item.image ?? '',
-                      }}
-                      width={(width - 48) / 2}
-                      onPress={() => router.push('../explore/ServiceView')}
-                    />
-                  )}
+                  renderItem={({ item }) => {
+                    let routePath = '';
+                    if (section.title === 'Foods') {
+                      routePath = '../explore/FoodServiceView';
+                    } else if (section.title === 'Accommodation') {
+                      routePath = '../explore/AccommodationServiceView';
+                    } else if (section.title === 'Transport') {
+                      routePath = '../explore/TransportserviceView';
+                    } else if (section.title === 'Activities') {
+                      routePath = '../explore/ActivityView';
+                    } else if (section.title === 'Tour Guides') {
+                      routePath = '../explore/TourGuideView';
+                    } else {
+                      routePath = '../explore/ServiceView';
+                    }
+                    return (
+                      <Card
+                        item={{
+                          ...item,
+                          subtitle: item.subtitle ?? '',
+                          rating: item.rating ?? 0,
+                          image: item.image ?? '',
+                        }}
+                        width={(width - 48) / 2}
+                        onPress={() => router.push({ pathname: routePath as any })}
+                      />
+                    );
+                  }}
                   contentContainerStyle={{ paddingBottom: 16 }}
                   scrollEnabled={false}
                 />

@@ -70,6 +70,8 @@ const AccommodationFoodsTransportView = () => {
       case 'accommodation': return 'Accommodation';
       case 'foods': return 'Foods';
       case 'transport': return 'Transport';
+      case 'activities': return 'Activities';
+      case 'tour-guides': return 'Tour Guides';
       default: return 'Accommodation';
     }
   };
@@ -96,7 +98,7 @@ const AccommodationFoodsTransportView = () => {
 
           {/* Tabs */}
           <View className="flex-row border-b border-gray-200">
-            {['accommodation', 'foods', 'transport'].map((tabKey) => (
+            {['accommodation', 'foods', 'transport','activities','tour-guides'].map((tabKey) => (
               <TouchableOpacity
                 key={tabKey}
                 onPress={() => setActiveView(tabKey)}
