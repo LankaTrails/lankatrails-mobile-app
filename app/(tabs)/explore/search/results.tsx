@@ -49,6 +49,7 @@ import {
 } from "@/components/LoadingStates";
 import { SectionHeader } from "@/components/SectionHeader";
 import { AnimatedCard } from "@/components/transitions/AnimatedCard";
+import { navigateToServiceDetail } from "@/utils/navigationHelpers";
 import { PlaceGrid } from "../places/components/PlaceGrid";
 import { ServiceGrid } from "../services/components/ServiceGrid";
 
@@ -595,15 +596,72 @@ const GalleApp: React.FC = () => {
     setSelectedSubType("All"); // Reset sub-type when tab changes
   }, []);
 
-  const handleServicePress = useCallback((serviceId: string) => {
-    router.push({
-      pathname: "/explore/services/[serviceId]" as any,
-      params: { serviceId },
-    });
-  }, []);
+  const handleServicePress = useCallback(
+    (serviceId: string) => {
+      console.log("🔍 handleServicePress called with serviceId:", serviceId);
+      console.log("📋 Available services count:", services?.length || 0);
+
+      // Add null check for serviceId
+      if (!serviceId) {
+        console.error("❌ ServiceId is null or undefined");
+        return;
+      }
+
+      // Find the service to get its category
+      const service = services?.find(
+        (s) => s?.serviceId?.toString() === serviceId
+      );
+
+      console.log(
+        "🎯 Found service:",
+        service
+          ? {
+              serviceId: service.serviceId,
+              serviceName: service.serviceName,
+              category: service.category,
+            }
+          : "Service not found"
+      );
+
+      if (service && service.category) {
+        console.log(
+          "✅ Navigating to category-specific route:",
+          service.category
+        );
+        navigateToServiceDetail(
+          parseInt(serviceId),
+          service.category as ServiceCategory
+        );
+      } else {
+        console.log(
+          "⚠️ Using fallback navigation - service or category missing"
+        );
+        // Fallback to generic route if service not found
+        router.push({
+          pathname: "/explore/services/[serviceId]" as any,
+          params: { serviceId },
+        });
+      }
+    },
+    [services]
+  );
 
   const handleProviderPress = useCallback(
     (providerId: number, category?: string) => {
+      console.log("🏢 handleProviderPress called with:", {
+        providerId,
+        category,
+        isNearbySearch,
+        coordinates,
+        searchLocation,
+      });
+
+      // Add null check for providerId
+      if (!providerId) {
+        console.error("❌ ProviderId is null or undefined");
+        return;
+      }
+
       console.log("Navigating to provider with category:", category);
 
       const navParams: any = {
@@ -613,6 +671,9 @@ const GalleApp: React.FC = () => {
       // Category is required
       if (category && category.trim() !== "" && category !== "undefined") {
         navParams.category = category;
+        console.log("✅ Category added to navigation params:", category);
+      } else {
+        console.warn("⚠️ Category is missing or invalid:", category);
       }
 
       // Add search location parameters
@@ -621,9 +682,11 @@ const GalleApp: React.FC = () => {
         navParams.lat = coordinates.lat.toString();
         navParams.lng = coordinates.lng.toString();
         navParams.radiusKm = "10"; // Default radius for nearby search
+        console.log("📍 Using coordinate-based navigation");
       } else {
         // For city search, pass city name
         navParams.city = searchLocation;
+        console.log("🏙️ Using city-based navigation:", searchLocation);
       }
 
       console.log("Navigation params:", navParams);
@@ -636,21 +699,64 @@ const GalleApp: React.FC = () => {
     [isNearbySearch, coordinates, searchLocation]
   );
 
-  const handleItemPress = useCallback((item: any) => {
-    if (item.isProvider) {
-      console.log("Provider item category:", item.category);
-      console.log("Provider item:", item);
-      handleProviderPress(item.providerId, item.category);
-    } else {
-      // For services, navigate to service detail
-      router.push({
-        pathname: "/explore/services/[serviceId]" as any,
-        params: {
-          serviceId: item.serviceId.toString(),
-        },
+  const handleItemPress = useCallback(
+    (item: any) => {
+      console.log("🎯 handleItemPress called with item:", {
+        isProvider: item?.isProvider,
+        serviceId: item?.serviceId,
+        providerId: item?.providerId,
+        category: item?.category,
+        displayName: item?.displayName,
       });
-    }
-  }, []);
+
+      // Add null check for item
+      if (!item) {
+        console.error("❌ Item is null or undefined");
+        return;
+      }
+
+      if (item.isProvider) {
+        console.log("🏢 Processing provider item");
+        console.log("Provider item category:", item.category);
+        console.log("Provider item:", item);
+
+        if (!item.providerId) {
+          console.error("❌ Provider ID is missing");
+          return;
+        }
+
+        handleProviderPress(item.providerId, item.category);
+      } else {
+        console.log("⚙️ Processing service item");
+        // For services, navigate to service detail using category-specific route
+        if (!item.serviceId) {
+          console.error("❌ Service ID is missing");
+          return;
+        }
+
+        if (item.category) {
+          console.log("✅ Using category-specific navigation for service:", {
+            serviceId: item.serviceId,
+            category: item.category,
+          });
+          navigateToServiceDetail(
+            item.serviceId,
+            item.category as ServiceCategory
+          );
+        } else {
+          console.log("⚠️ Category missing, using fallback navigation");
+          // Fallback to generic route if category not available
+          router.push({
+            pathname: "/explore/services/[serviceId]" as any,
+            params: {
+              serviceId: item.serviceId.toString(),
+            },
+          });
+        }
+      }
+    },
+    [handleProviderPress]
+  );
 
   const handlePlacePress = useCallback((placeId: string) => {
     router.push({

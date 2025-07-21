@@ -8,6 +8,7 @@ import {
   Service,
   ServiceCategory,
 } from "@/types/serviceTypes";
+import { navigateToServiceDetail } from "@/utils/navigationHelpers";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { Star } from "lucide-react-native";
@@ -26,6 +27,7 @@ import MapView, { Marker } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
+const BASE_URL = process.env.EXPO_PUBLIC_URL;
 
 // Helper function to validate ServiceCategory
 const isValidServiceCategory = (
@@ -147,12 +149,39 @@ const ProviderDetailView = () => {
 
   // Navigation handlers
   const handleServicePress = (service: Service) => {
-    router.push({
-      pathname: "/explore/services/[serviceId]" as any,
-      params: {
-        serviceId: service.serviceId.toString(),
-      },
+    console.log("🔍 handleServicePress called in provider page with service:", {
+      serviceId: service?.serviceId,
+      serviceName: service?.serviceName,
+      category: service?.category,
     });
+
+    // Add null check for service
+    if (!service) {
+      console.error("❌ Service is null or undefined");
+      return;
+    }
+
+    if (!service.serviceId) {
+      console.error("❌ Service ID is missing");
+      return;
+    }
+
+    if (service.category) {
+      console.log("✅ Using category-specific navigation:", service.category);
+      navigateToServiceDetail(
+        service.serviceId,
+        service.category as ServiceCategory
+      );
+    } else {
+      console.log("⚠️ Category missing, using fallback navigation");
+      // Fallback to generic route if category not available
+      router.push({
+        pathname: "/explore/services/[serviceId]" as any,
+        params: {
+          serviceId: service.serviceId.toString(),
+        },
+      });
+    }
   };
 
   const handleSubmitReview = () => {
@@ -224,7 +253,7 @@ const ProviderDetailView = () => {
               source={{
                 uri: provider.coverImageUrl.startsWith("http")
                   ? provider.coverImageUrl
-                  : `http://192.168.1.9:8080${provider.coverImageUrl}`,
+                  : `${BASE_URL}${provider.coverImageUrl}`,
               }}
               className="w-96 h-64 rounded-lg shadow-sm"
               resizeMode="cover"

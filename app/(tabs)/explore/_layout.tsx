@@ -22,6 +22,7 @@ export default function ExploreLayout() {
       <Stack.Screen
         name="services"
         options={{
+          headerShown: false,
           title: "Services",
         }}
       />
