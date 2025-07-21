@@ -523,7 +523,7 @@ const FoodBeverageServiceDetailPage = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() => router.push("../../ComplainPage" as any)}
+              onPress={() => router.push("../../support/complaints" as any)}
               className="border-4 border-primary mt-5 bg-white py-3 items-center rounded-full"
             >
               <Text className="text-primary text-lg font-bold">
