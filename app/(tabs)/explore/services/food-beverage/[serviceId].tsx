@@ -1,3 +1,4 @@
+import AddToTripButton from "@/components/AddToTripButton";
 import HeaderSection from "@/components/explorer-components/HeaderSection";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
@@ -195,6 +196,9 @@ const FoodBeverageServiceDetailPage = () => {
         <HeaderSection
           title={serviceDetail.serviceName}
           onBack={() => router.back()}
+          showFavorite={true}
+          isFavorite={isFavourite}
+          onFavoritePress={handleFavourite}
         />
       </SafeAreaView>
 
@@ -266,6 +270,13 @@ const FoodBeverageServiceDetailPage = () => {
             </Text>
           </View>
         </View>
+
+        <AddToTripButton
+          serviceName={serviceDetail.serviceName}
+          onTripAdded={() => {
+            console.log("Restaurant added to trip successfully");
+          }}
+        />
 
         {/* Restaurant Details */}
         <View className="p-5">

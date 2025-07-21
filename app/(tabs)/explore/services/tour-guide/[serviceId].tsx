@@ -1,3 +1,4 @@
+import AddToTripButton from "@/components/AddToTripButton";
 import HeaderSection from "@/components/explorer-components/HeaderSection";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
@@ -178,6 +179,9 @@ const TourGuideServiceDetailPage = () => {
         <HeaderSection
           title={serviceDetail.serviceName}
           onBack={() => router.back()}
+          showFavorite={true}
+          isFavorite={isFavourite}
+          onFavoritePress={handleFavourite}
         />
       </SafeAreaView>
 
@@ -259,6 +263,13 @@ const TourGuideServiceDetailPage = () => {
             </View>
           )}
         </View>
+
+        <AddToTripButton
+          serviceName={serviceDetail.serviceName}
+          onTripAdded={() => {
+            console.log("Tour guide added to trip successfully");
+          }}
+        />
 
         {/* Languages Spoken */}
         {serviceDetail.languages.length > 0 && (
