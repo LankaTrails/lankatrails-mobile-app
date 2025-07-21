@@ -30,6 +30,17 @@ export interface ServiceSearchRequest {
     tourGuideType?: TourGuideType;
 }
 
+export interface ProviderDetailRequest {
+    providerId: number;
+    category: ServiceCategory;
+
+    // Location is required - either city OR coordinates with radius
+    city?: string;
+    lat?: number;
+    lng?: number;
+    radiusKm?: number;
+}
+
 export enum ServiceCategory {
     ACCOMMODATION = "ACCOMMODATION",
     ACTIVITY = "ACTIVITY",
@@ -52,22 +63,147 @@ export interface Location {
 export interface Service {
     serviceId: number;
     serviceName: string;
-    locationBased: Location;
     mainImageUrl: string;
-    category: string;
+    locationBased: Location;
+    category: ServiceCategory;
+    priceType?: PriceType;
+    price?: number; // Optional price field
 }
 
 export interface ServiceSearchResponse {
-    success: boolean;
-    message: string;
-    data: GroupedProviderService[];
-    details: any;
+    serviceId: number;
+    serviceName: string;
+    mainImageUrl: string;
+    locationBased: Location;
+    category: ServiceCategory;
+    priceType?: PriceType;
+    price?: number; // Optional price field
 }
 
-export interface GroupedProviderService {
+export interface ProviderSearchResponse {
     providerId: number;
     businessName: string;
     coverImageUrl: string;
-    groupedLocation: Location;
+    location: Location;
+    category: ServiceCategory;
+}
+
+export interface SearchResponse {
+    providers: ProviderSearchResponse[] | null;
+    services: ServiceSearchResponse[] | null;
+}
+
+export interface ApiResponse<T> {
+    success: boolean;
+    data: T;
+    message?: string;
+    details?: string;
+}
+
+export interface ProviderDetailResponse {
+    providerId: number;
+    businessName: string;
+    businessDescription: string;
+    coverImageUrl: string;
+    location: Location;
+    category: ServiceCategory;
     services: Service[];
 }
+
+// Common interfaces for service details
+export interface TabSection {
+    id: number;
+    heading: string;
+    content: string;
+}
+
+export interface PolicySection {
+    id: number;
+    heading: string;
+    content: string;
+}
+
+export interface ServiceImage {
+    imageUrl: string;
+    service: any; // Can be null based on the response
+}
+
+// Base service detail interface with common fields
+export interface BaseServiceDetail {
+    serviceId: number | null;
+    serviceName: string;
+    locationBased: Location;
+    contactNo: string;
+    status: string | null;
+    price: number | null;
+    priceType: PriceType | null;
+    tabsSection: TabSection[];
+    policySection: PolicySection[];
+    images: ServiceImage[] | null;
+}
+
+// Tour Guide specific service detail
+export interface TourGuideServiceDetail extends BaseServiceDetail {
+    serviceAreas: any[] | null;
+    languages: string[];
+    tourGuideType: TourGuideType | null;
+}
+
+// Food & Beverage specific service detail
+export interface FoodBeverageServiceDetail extends BaseServiceDetail {
+    openHours: string;
+    foodAndBeverageType: FoodBeverageType;
+    vegetarianOptions: boolean;
+    halalCertified: boolean;
+    alcoholServed: boolean;
+    outdoorSeating: boolean;
+    liveMusic: boolean;
+    cuisineType: string;
+}
+
+// Accommodation specific service detail
+export interface AccommodationServiceDetail extends BaseServiceDetail {
+    accommodationType: AccommodationType;
+    maxGuests: number;
+    numberOfRooms: number | null;
+    freeWifi: boolean;
+    parkingAvailable: boolean;
+    breakfastIncluded: boolean;
+    airConditioned: boolean;
+    swimmingPool: boolean;
+    petFriendly: boolean;
+    laundryService: boolean;
+    roomService: boolean;
+    gymAccess: boolean;
+    spaServices: boolean;
+}
+
+// Activity specific service detail
+export interface ActivityServiceDetail extends BaseServiceDetail {
+    activityType: ActivityType;
+    activityDetails: string;
+    safetyInstructions: string;
+}
+
+// Transport specific service detail
+export interface TransportServiceDetail extends BaseServiceDetail {
+    vehicleCapacity: number;
+    vehicleQty: number;
+    vehicleCategory: VehicleType;
+    driverIncluded: boolean;
+    airConditioned: boolean;
+    transmissionType: TransmissionType;
+    fuelType: FuelType;
+}
+
+// Union type for all service details
+export type ServiceDetail = TourGuideServiceDetail | FoodBeverageServiceDetail | AccommodationServiceDetail | ActivityServiceDetail | TransportServiceDetail;
+
+// Service detail response wrapper
+export interface ServiceDetailResponse {
+    success: boolean;
+    message: string;
+    data: ServiceDetail;
+    details: string | null;
+}
+
