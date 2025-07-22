@@ -1,51 +1,34 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  View,
-  Text,
-  Modal,
-  StyleSheet,
-  TouchableWithoutFeedback,
-  Keyboard,
-  FlatList,
-  TouchableOpacity,
   Animated,
   Dimensions,
-  TextInput,
+  FlatList,
+  Keyboard,
   KeyboardAvoidingView,
+  Modal,
   Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
+import { Location, TripTagType } from "../types/triptypes";
 import LongButton from "./LongButton";
-
-const popularDestinations = [
-  { name: "Ella", vibes: ["Adventure", "Relax"] },
-  { name: "Sigiriya", vibes: ["Adventure", "Culture"] },
-  { name: "Kandy", vibes: ["Culture", "Relax"] },
-  { name: "Galle", vibes: ["Culture", "Relax", "Foodie"] },
-  { name: "Nuwara Eliya", vibes: ["Relax", "Adventure"] },
-  { name: "Jaffna", vibes: ["Culture", "Foodie"] },
-  { name: "Mirissa", vibes: ["Party", "Relax", "Adventure"] },
-  { name: "Anuradhapura", vibes: ["Culture"] },
-  { name: "Polonnaruwa", vibes: ["Culture", "Adventure"] },
-  { name: "Bentota", vibes: ["Party", "Relax"] },
-  { name: "Colombo", vibes: ["Party", "Foodie", "Culture"] },
-  { name: "Negombo", vibes: ["Party", "Relax", "Foodie"] },
-  { name: "Hikkaduwa", vibes: ["Party", "Adventure"] },
-  { name: "Trincomalee", vibes: ["Adventure", "Relax"] },
-];
-
-const tripVibes = [
-  { name: "Party", icon: "🎉" },
-  { name: "Relax", icon: "🧘" },
-  { name: "Adventure", icon: "🏔️" },
-  { name: "Culture", icon: "🏛️" },
-  { name: "Foodie", icon: "🍜" },
-];
 
 interface DestinationModalProps {
   visible: boolean;
   onClose: () => void;
-  onDestinationSelect: (destinations: string[], selectedVibes?: string[]) => void;
+  onDestinationSelect: (
+    destinations: Location[],
+    selectedVibes?: TripTagType[]
+  ) => void;
   animateToTripNameHeight?: boolean;
+  cities?: Location[];
+  availableVibes?: TripTagType[];
+  loadingCities?: boolean;
 }
 
 const DESTINATION_MODAL_HEIGHT = 0.7; // 70% of screen
@@ -55,38 +38,50 @@ export default function DestinationModal({
   onClose,
   onDestinationSelect,
   animateToTripNameHeight = false,
+  cities = [],
+  availableVibes = [],
+  loadingCities = false,
 }: DestinationModalProps) {
+  console.log("DestinationModal props:", {
+    visible,
+    citiesCount: cities.length,
+    availableVibesCount: availableVibes.length,
+    loadingCities,
+  });
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedVibes, setSelectedVibes] = useState<string[]>([]);
-  const [selectedDestinations, setSelectedDestinations] = useState<string[]>([]);
+  const [selectedVibes, setSelectedVibes] = useState<TripTagType[]>([]);
+  const [selectedDestinations, setSelectedDestinations] = useState<Location[]>(
+    []
+  );
   const slideAnim = useRef(new Animated.Value(0)).current;
-  const screenHeight = Dimensions.get('window').height;
+  const screenHeight = Dimensions.get("window").height;
 
   // Filter and sort destinations based on selected vibes and search query
   const getFilteredDestinations = () => {
-    let filtered = popularDestinations.filter((destination) =>
-      destination.name.toLowerCase().includes(searchQuery.toLowerCase())
+    console.log("Filtering destinations. Cities available:", cities.length);
+    console.log("Search query:", searchQuery);
+    console.log("Loading cities:", loadingCities);
+
+    let filtered = cities.filter(
+      (city) =>
+        city.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        city.formattedAddress.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    if (selectedVibes.length > 0) {
-      // Sort by relevance (number of matching vibes)
-      filtered.sort((a, b) => {
-        const aMatches = a.vibes.filter(vibe => selectedVibes.includes(vibe)).length;
-        const bMatches = b.vibes.filter(vibe => selectedVibes.includes(vibe)).length;
-        return bMatches - aMatches; // Sort in descending order (most matches first)
-      });
-    }
+    console.log("Filtered destinations:", filtered.length);
 
+    // For now, we don't have vibe data in Location objects
+    // TODO: Add vibe data to Location objects or create a separate endpoint
+    // Just return filtered by search for now
     return filtered;
   };
 
   const filteredDestinations = getFilteredDestinations();
 
-  const toggleVibe = (vibe: string) => {
-    setSelectedVibes(prev => 
-      prev.includes(vibe) 
-        ? prev.filter(v => v !== vibe)
-        : [...prev, vibe]
+  const toggleVibe = (vibe: TripTagType) => {
+    setSelectedVibes((prev) =>
+      prev.includes(vibe) ? prev.filter((v) => v !== vibe) : [...prev, vibe]
     );
   };
 
@@ -121,11 +116,11 @@ export default function DestinationModal({
     }
   }, [visible, animateToTripNameHeight, slideAnim, screenHeight]);
 
-  const toggleDestination = (destinationName: string) => {
-    setSelectedDestinations(prev => 
-      prev.includes(destinationName) 
-        ? prev.filter(d => d !== destinationName)
-        : [...prev, destinationName]
+  const toggleDestination = (destination: Location) => {
+    setSelectedDestinations((prev) =>
+      prev.some((d) => d.city === destination.city)
+        ? prev.filter((d) => d.city !== destination.city)
+        : [...prev, destination]
     );
   };
 
@@ -134,7 +129,10 @@ export default function DestinationModal({
       // Could show an alert or just return
       return;
     }
-    onDestinationSelect(selectedDestinations, selectedVibes.length > 0 ? selectedVibes : undefined);
+    onDestinationSelect(
+      selectedDestinations,
+      selectedVibes.length > 0 ? selectedVibes : undefined
+    );
     setSearchQuery("");
     setSelectedVibes([]);
     setSelectedDestinations([]);
@@ -154,10 +152,10 @@ export default function DestinationModal({
 
   return (
     <Modal visible={visible} transparent animationType="none">
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
         <TouchableWithoutFeedback
           onPress={() => {
@@ -167,42 +165,80 @@ export default function DestinationModal({
         >
           <View style={styles.backdrop} />
         </TouchableWithoutFeedback>
-        <Animated.View 
+        <Animated.View
           style={[
             styles.modal,
             {
               transform: [{ translateY: modalTranslateY }],
-            }
+            },
           ]}
         >
           <Text style={styles.modalTitle}>Where do you want to go?</Text>
-          
+
           <Text style={styles.sectionTitle}>What&apos;s Your Trip Vibe?</Text>
-          <View style={styles.vibesContainer}>
-            {tripVibes.map((vibe) => (
-              <TouchableOpacity
-                key={vibe.name}
-                style={[
-                  styles.vibeChip,
-                  selectedVibes.includes(vibe.name) && styles.selectedVibeChip
-                ]}
-                onPress={() => toggleVibe(vibe.name)}
-              >
-                <Text style={styles.vibeIcon}>{vibe.icon}</Text>
-                <Text style={[
-                  styles.vibeText,
-                  selectedVibes.includes(vibe.name) && styles.selectedVibeText
-                ]}>
-                  {vibe.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
+          <View style={styles.vibesScrollContainer}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.vibesContent}
+            >
+              <View style={styles.vibesGrid}>
+                <View style={styles.vibesRow}>
+                  {availableVibes.slice(0, 4).map((vibe) => (
+                    <TouchableOpacity
+                      key={vibe}
+                      style={[
+                        styles.vibeChip,
+                        selectedVibes.includes(vibe) && styles.selectedVibeChip,
+                      ]}
+                      onPress={() => toggleVibe(vibe)}
+                    >
+                      <Text style={styles.vibeIcon}>✨</Text>
+                      <Text
+                        style={[
+                          styles.vibeText,
+                          selectedVibes.includes(vibe) &&
+                            styles.selectedVibeText,
+                        ]}
+                      >
+                        {vibe.replace("_", " ")}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <View style={styles.vibesRow}>
+                  {availableVibes.slice(4, 8).map((vibe) => (
+                    <TouchableOpacity
+                      key={vibe}
+                      style={[
+                        styles.vibeChip,
+                        selectedVibes.includes(vibe) && styles.selectedVibeChip,
+                      ]}
+                      onPress={() => toggleVibe(vibe)}
+                    >
+                      <Text style={styles.vibeIcon}>✨</Text>
+                      <Text
+                        style={[
+                          styles.vibeText,
+                          selectedVibes.includes(vibe) &&
+                            styles.selectedVibeText,
+                        ]}
+                      >
+                        {vibe.replace("_", " ")}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </ScrollView>
           </View>
 
           <Text style={styles.sectionTitle}>
-            {selectedVibes.length > 0 ? 'Suggested Destinations' : 'Popular Destinations'}
+            {selectedVibes.length > 0
+              ? "Suggested Destinations"
+              : "Popular Destinations"}
           </Text>
-          
+
           <View style={styles.searchContainer}>
             <TextInput
               style={styles.searchInput}
@@ -212,51 +248,62 @@ export default function DestinationModal({
               placeholderTextColor="#9CA3AF"
             />
           </View>
-          
+
           <FlatList
             data={filteredDestinations}
-            keyExtractor={(item) => item.name}
+            keyExtractor={(item) => `${item.city}-${item.district}`}
             showsVerticalScrollIndicator={false}
             style={styles.destinationsList}
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={[
                   styles.destinationItem,
-                  selectedDestinations.includes(item.name) && styles.selectedDestinationItem
+                  selectedDestinations.some((d) => d.city === item.city) &&
+                    styles.selectedDestinationItem,
                 ]}
-                onPress={() => toggleDestination(item.name)}
+                onPress={() => toggleDestination(item)}
               >
                 <View style={styles.destinationContent}>
-                  <Text style={[
-                    styles.destinationText,
-                    selectedDestinations.includes(item.name) && styles.selectedDestinationText
-                  ]}>
-                    {item.name}
+                  <Text
+                    style={[
+                      styles.destinationText,
+                      selectedDestinations.some((d) => d.city === item.city) &&
+                        styles.selectedDestinationText,
+                    ]}
+                  >
+                    {item.city}
+                  </Text>
+                  <Text style={styles.destinationSubText}>
+                    {item.district}, {item.province}
                   </Text>
                   <View style={styles.destinationIndicators}>
-                    {selectedVibes.length > 0 && (
-                      <View style={styles.matchingVibes}>
-                        {item.vibes
-                          .filter(vibe => selectedVibes.includes(vibe))
-                          .map(vibe => (
-                            <Text key={vibe} style={styles.matchingVibeText}>
-                              {tripVibes.find(tv => tv.name === vibe)?.icon}
-                            </Text>
-                          ))}
-                      </View>
-                    )}
-                    {selectedDestinations.includes(item.name) && (
+                    {selectedDestinations.some((d) => d.city === item.city) && (
                       <Text style={styles.selectedIndicator}>✓</Text>
                     )}
                   </View>
                 </View>
               </TouchableOpacity>
             )}
+            ListEmptyComponent={
+              loadingCities ? (
+                <View style={styles.loadingContainer}>
+                  <Text style={styles.loadingText}>Loading cities...</Text>
+                </View>
+              ) : (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>No cities found</Text>
+                </View>
+              )
+            }
           />
-          
+
           <View style={styles.buttonContainer}>
             <LongButton
-              label={selectedDestinations.length > 0 ? `Next (${selectedDestinations.length} selected)` : "Select Destinations"}
+              label={
+                selectedDestinations.length > 0
+                  ? `Next (${selectedDestinations.length} selected)`
+                  : "Select Destinations"
+              }
               onPress={handleNext}
             />
           </View>
@@ -297,14 +344,29 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   vibesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
     marginBottom: 16,
   },
+  vibesScrollContainer: {
+    height: 100, // Fixed height for two rows
+    marginBottom: 16,
+  },
+  vibesContent: {
+    paddingRight: 20, // Add padding for horizontal scroll
+  },
+  vibesGrid: {
+    flexDirection: "column",
+    gap: 8,
+  },
+  vibesRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
   vibeChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 8,
     backgroundColor: "#F9FAFB",
@@ -354,9 +416,9 @@ const styles = StyleSheet.create({
     borderColor: "#E5E7EB",
   },
   destinationContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   destinationText: {
     fontSize: 16,
@@ -365,7 +427,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   matchingVibes: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 4,
   },
   matchingVibeText: {
@@ -381,14 +443,37 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   destinationIndicators: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   selectedIndicator: {
     fontSize: 18,
     color: "#008080",
     fontWeight: "bold",
+  },
+  destinationSubText: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#6B7280",
+  },
+  emptyContainer: {
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#6B7280",
   },
   buttonContainer: {
     marginTop: 16,

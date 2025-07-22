@@ -1,14 +1,14 @@
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import React, { useRef } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  Animated,
+    Animated,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
 import BackButton from '../../../../components/BackButton';
 import { theme } from '../../../theme';
 
@@ -25,13 +25,39 @@ interface Service {
 
 const DayDetails = () => {
   const params = useLocalSearchParams();
-  
   // Parse the data from route parameters
   const date = params.date as string;
   const dayName = params.dayName as string;
   const weather = params.weather as 'sunny' | 'cloudy' | 'rainy';
   const tripTitle = params.tripTitle as string;
-  const services: Service[] = JSON.parse(params.services as string);
+  let services: Service[] = [];
+  try {
+    services = JSON.parse(params.services as string);
+  } catch {
+    // fallback for hardcoded
+    services = [
+      {
+        id: '1',
+        name: 'Sigiriya Rock Climb',
+        description: 'Climb the ancient rock fortress of Sigiriya.',
+        time: '08:00',
+        duration: '2h',
+        cost: 2500,
+        location: 'Sigiriya',
+        weather: 'sunny',
+      },
+      {
+        id: '2',
+        name: 'Village Lunch',
+        description: 'Enjoy a traditional Sri Lankan lunch in a local village.',
+        time: '12:30',
+        duration: '1h',
+        cost: 1200,
+        location: 'Habarana',
+        weather: 'sunny',
+      },
+    ];
+  }
 
   // Animation for header hide/show
   const scrollY = useRef(new Animated.Value(0)).current;

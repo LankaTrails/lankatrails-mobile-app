@@ -1,12 +1,21 @@
-import React, { useState } from "react";
-import { TouchableOpacity, Animated, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import React, { useState } from "react";
+import { Animated, StyleSheet, TouchableOpacity } from "react-native";
 import { theme } from "../app/theme";
 
-const FAB = ({ onPress }) => {
+interface FABProps {
+  onPress: () => void;
+}
+
+const FAB = ({ onPress }: FABProps) => {
   const [scaleValue] = useState(new Animated.Value(1));
-  const handlePressIn = () => Animated.spring(scaleValue, { toValue: 0.9, useNativeDriver: true }).start();
-  const handlePressOut = () => Animated.spring(scaleValue, { toValue: 1, useNativeDriver: true }).start();
+  const handlePressIn = () =>
+    Animated.spring(scaleValue, {
+      toValue: 0.9,
+      useNativeDriver: true,
+    }).start();
+  const handlePressOut = () =>
+    Animated.spring(scaleValue, { toValue: 1, useNativeDriver: true }).start();
 
   return (
     <TouchableOpacity
@@ -16,7 +25,9 @@ const FAB = ({ onPress }) => {
       onPressOut={handlePressOut}
       activeOpacity={0.8}
     >
-      <Animated.View style={[styles.fab, { transform: [{ scale: scaleValue }] }]}>
+      <Animated.View
+        style={[styles.fab, { transform: [{ scale: scaleValue }] }]}
+      >
         <Ionicons name="add" size={28} color="white" />
       </Animated.View>
     </TouchableOpacity>
@@ -24,7 +35,7 @@ const FAB = ({ onPress }) => {
 };
 
 export const styles = StyleSheet.create({
-fabContainer: {
+  fabContainer: {
     position: "absolute",
     bottom: 130,
     right: 20,

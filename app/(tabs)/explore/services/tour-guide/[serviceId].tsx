@@ -1,4 +1,4 @@
-import AddToTripButton from "@/components/AddToTripButton";
+import AddToTripButton from "@/components/AddToTripButtonNew";
 import HeaderSection from "@/components/explorer-components/HeaderSection";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
@@ -29,8 +29,21 @@ import type {
   ServiceDetailResponse,
   TourGuideServiceDetail,
 } from "@/types/serviceTypes";
+import { ServiceDTO } from "@/types/triptypes";
 
 const BASE_URL = process.env.EXPO_PUBLIC_URL;
+
+// Convert TourGuideServiceDetail to ServiceDTO for AddToTripButton
+const convertToServiceDTO = (detail: TourGuideServiceDetail): ServiceDTO => ({
+  serviceId: detail.serviceId || 0,
+  serviceName: detail.serviceName,
+  category: "TOUR_GUIDE" as const,
+  locationBased: detail.locationBased,
+  mainImageUrl:
+    detail.images && detail.images.length > 0
+      ? detail.images[0].imageUrl
+      : null,
+});
 
 const TourGuideServiceDetailPage = () => {
   const { serviceId } = useLocalSearchParams<{ serviceId: string }>();
@@ -264,12 +277,7 @@ const TourGuideServiceDetailPage = () => {
           )}
         </View>
 
-        <AddToTripButton
-          serviceName={serviceDetail.serviceName}
-          onTripAdded={() => {
-            console.log("Tour guide added to trip successfully");
-          }}
-        />
+        <AddToTripButton service={convertToServiceDTO(serviceDetail)} />
 
         {/* Languages Spoken */}
         {serviceDetail.languages.length > 0 && (

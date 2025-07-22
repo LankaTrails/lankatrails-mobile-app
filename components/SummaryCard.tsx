@@ -76,7 +76,7 @@ export default function SummaryCard({ tripDetails }: SummaryCardProps) {
               </View>
               <View style={styles.item}>
                 <Ionicons name="people-outline" size={18} color="#fff" />
-                <Text style={styles.text}>{tripDetails.members} Member{tripDetails.members > 1 ? 's' : ''}</Text>
+                <Text style={styles.text}>{tripDetails.numberOfAdults + tripDetails.numberOfChildren} Member{tripDetails.numberOfAdults + tripDetails.numberOfChildren > 1 ? 's' : ''}</Text>
               </View>
             </View>
           </BlurView>
