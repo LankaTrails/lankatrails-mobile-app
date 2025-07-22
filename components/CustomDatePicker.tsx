@@ -48,11 +48,15 @@ export default function CustomDatePicker({
   initialDate = new Date(),
   minimumDate,
   maximumDate,
-  title = "Select Date",
+  title = "Select Date & Time",
 }: CustomDatePickerProps) {
   const [selectedDate, setSelectedDate] = useState(initialDate);
   const [currentMonth, setCurrentMonth] = useState(initialDate.getMonth());
   const [currentYear, setCurrentYear] = useState(initialDate.getFullYear());
+  const [selectedHour, setSelectedHour] = useState(initialDate.getHours());
+  const [selectedMinute, setSelectedMinute] = useState(
+    initialDate.getMinutes()
+  );
 
   // Modal animation
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -78,6 +82,8 @@ export default function CustomDatePicker({
       setSelectedDate(initialDate);
       setCurrentMonth(initialDate.getMonth());
       setCurrentYear(initialDate.getFullYear());
+      setSelectedHour(initialDate.getHours());
+      setSelectedMinute(initialDate.getMinutes());
     }
   }, [visible, initialDate]);
 
@@ -121,7 +127,13 @@ export default function CustomDatePicker({
   };
 
   const handleConfirm = () => {
-    onConfirm(selectedDate);
+    // Combine selected date with selected hour and minute
+    const dateWithTime = new Date(selectedDate);
+    dateWithTime.setHours(selectedHour);
+    dateWithTime.setMinutes(selectedMinute);
+    dateWithTime.setSeconds(0);
+    dateWithTime.setMilliseconds(0);
+    onConfirm(dateWithTime);
   };
 
   const renderCalendarDays = () => {
@@ -244,18 +256,93 @@ export default function CustomDatePicker({
           {/* Calendar Days */}
           <View style={styles.calendarGrid}>{renderCalendarDays()}</View>
 
+          {/* Time Selection */}
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "center",
+              alignItems: "center",
+              marginBottom: 20,
+            }}
+          >
+            {/* Hour Picker */}
+            <TouchableOpacity
+              onPress={() => setSelectedHour((h) => (h === 0 ? 23 : h - 1))}
+              style={{ padding: 8 }}
+            >
+              <Ionicons name="chevron-up" size={20} color="#008080" />
+            </TouchableOpacity>
+            <View style={{ alignItems: "center", marginHorizontal: 8 }}>
+              <Text
+                style={{ fontSize: 18, fontWeight: "600", color: "#374151" }}
+              >
+                Hour
+              </Text>
+              <Text
+                style={{ fontSize: 24, fontWeight: "bold", color: "#008080" }}
+              >
+                {selectedHour.toString().padStart(2, "0")}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => setSelectedHour((h) => (h === 23 ? 0 : h + 1))}
+              style={{ padding: 8 }}
+            >
+              <Ionicons name="chevron-down" size={20} color="#008080" />
+            </TouchableOpacity>
+
+            <Text
+              style={{
+                fontSize: 28,
+                fontWeight: "bold",
+                color: "#008080",
+                marginHorizontal: 8,
+              }}
+            >
+              :
+            </Text>
+
+            {/* Minute Picker */}
+            <TouchableOpacity
+              onPress={() => setSelectedMinute((m) => (m === 0 ? 59 : m - 1))}
+              style={{ padding: 8 }}
+            >
+              <Ionicons name="chevron-up" size={20} color="#008080" />
+            </TouchableOpacity>
+            <View style={{ alignItems: "center", marginHorizontal: 8 }}>
+              <Text
+                style={{ fontSize: 18, fontWeight: "600", color: "#374151" }}
+              >
+                Min
+              </Text>
+              <Text
+                style={{ fontSize: 24, fontWeight: "bold", color: "#008080" }}
+              >
+                {selectedMinute.toString().padStart(2, "0")}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => setSelectedMinute((m) => (m === 59 ? 0 : m + 1))}
+              style={{ padding: 8 }}
+            >
+              <Ionicons name="chevron-down" size={20} color="#008080" />
+            </TouchableOpacity>
+          </View>
+
           {/* Selected Date Display */}
           <View style={styles.selectedDateContainer}>
-            <Text style={styles.selectedDateLabel}>Selected Date:</Text>
+            <Text style={styles.selectedDateLabel}>Selected Date & Time:</Text>
             <Text style={styles.selectedDateText}>
-              {formatSelectedDate(selectedDate)}
+              {formatSelectedDate(selectedDate)}{" "}
+              {selectedHour.toString().padStart(2, "0")}:
+              {selectedMinute.toString().padStart(2, "0")}
             </Text>
           </View>
         </ScrollView>
 
         {/* Confirm Button */}
         <View style={styles.buttonContainer}>
-          <LongButton label="Confirm Date" onPress={handleConfirm} />
+          <LongButton label="Confirm Date & Time" onPress={handleConfirm} />
         </View>
       </Animated.View>
     </Modal>

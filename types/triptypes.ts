@@ -17,6 +17,10 @@ export type TripTagType =
     | "FESTIVAL"
     | "LEISURE";
 
+export type TripItemType = "PLACE" | "SERVICE";
+
+export type ServiceType = 'ACTIVITY' | 'TOUR_GUIDE' | 'TRANSPORT' | 'ACCOMMODATION' | 'FOOD_BEVERAGE';
+
 export interface Location {
     locationId?: number | null;
     formattedAddress: string;
@@ -71,4 +75,29 @@ export interface ApiResponse<T> {
     data: T;
     message?: string;
     details?: string;
+}
+
+export interface PlaceDTO {
+    placeId: string;
+    placeName: string | null;
+    photoReference?: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    rating?: number | null;
+}
+
+export interface ServiceDTO {
+    serviceId: number;
+    serviceName: string | null;
+    category: ServiceType | null;
+    locationBased: Location | null;
+    mainImageUrl?: string | null;
+}
+
+export interface TripItem {
+    type: TripItemType;
+    place?: PlaceDTO;
+    service?: ServiceDTO;
+    startTime: string; // ISO date-time string format
+    endTime: string; // ISO date-time string format
 }

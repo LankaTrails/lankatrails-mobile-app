@@ -1,4 +1,4 @@
-import AddToTripButton from "@/components/AddToTripButton";
+import AddToTripButton from "@/components/AddToTripButtonNew";
 import HeaderSection from "@/components/explorer-components/HeaderSection";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
@@ -29,8 +29,23 @@ import type {
   FoodBeverageServiceDetail,
   ServiceDetailResponse,
 } from "@/types/serviceTypes";
+import { ServiceDTO } from "@/types/triptypes";
 
 const BASE_URL = process.env.EXPO_PUBLIC_URL;
+
+// Convert FoodBeverageServiceDetail to ServiceDTO for AddToTripButton
+const convertToServiceDTO = (
+  detail: FoodBeverageServiceDetail
+): ServiceDTO => ({
+  serviceId: detail.serviceId || 0,
+  serviceName: detail.serviceName,
+  category: "FOOD_BEVERAGE" as const,
+  locationBased: detail.locationBased,
+  mainImageUrl:
+    detail.images && detail.images.length > 0
+      ? detail.images[0].imageUrl
+      : null,
+});
 
 const FoodBeverageServiceDetailPage = () => {
   const { serviceId } = useLocalSearchParams<{ serviceId: string }>();
@@ -271,12 +286,7 @@ const FoodBeverageServiceDetailPage = () => {
           </View>
         </View>
 
-        <AddToTripButton
-          serviceName={serviceDetail.serviceName}
-          onTripAdded={() => {
-            console.log("Restaurant added to trip successfully");
-          }}
-        />
+        <AddToTripButton service={convertToServiceDTO(serviceDetail)} />
 
         {/* Restaurant Details */}
         <View className="p-5">

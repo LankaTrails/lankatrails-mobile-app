@@ -1,4 +1,4 @@
-import AddToTripButton from "@/components/AddToTripButton";
+import AddToTripButton from "@/components/AddToTripButtonNew";
 import HeaderSection from "@/components/explorer-components/HeaderSection";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
@@ -29,8 +29,21 @@ import type {
   ActivityServiceDetail,
   ServiceDetailResponse,
 } from "@/types/serviceTypes";
+import { ServiceDTO } from "@/types/triptypes";
 
 const BASE_URL = process.env.EXPO_PUBLIC_URL;
+
+// Convert ActivityServiceDetail to ServiceDTO for AddToTripButton
+const convertToServiceDTO = (detail: ActivityServiceDetail): ServiceDTO => ({
+  serviceId: detail.serviceId || 0,
+  serviceName: detail.serviceName,
+  category: "ACTIVITY" as const,
+  locationBased: detail.locationBased,
+  mainImageUrl:
+    detail.images && detail.images.length > 0
+      ? detail.images[0].imageUrl
+      : null,
+});
 
 const ActivityServiceDetailPage = () => {
   const { serviceId } = useLocalSearchParams<{ serviceId: string }>();
@@ -38,6 +51,20 @@ const ActivityServiceDetailPage = () => {
     useState<ActivityServiceDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Convert service detail to ServiceDTO format
+  const convertToServiceDTO = (detail: ActivityServiceDetail): ServiceDTO => {
+    return {
+      serviceId: detail.serviceId!,
+      serviceName: detail.serviceName,
+      category: "ACTIVITY",
+      locationBased: detail.locationBased,
+      mainImageUrl:
+        detail.images && detail.images.length > 0
+          ? detail.images[0].imageUrl
+          : undefined,
+    };
+  };
   const [isFavourite, setIsFavourite] = useState(false);
   const [userRating, setUserRating] = useState(0);
   const [userReview, setUserReview] = useState("");
@@ -263,7 +290,7 @@ const ActivityServiceDetailPage = () => {
         </View>
 
         <AddToTripButton
-          serviceName={serviceDetail.serviceName}
+          service={convertToServiceDTO(serviceDetail)}
           onTripAdded={() => {
             console.log("Activity added to trip successfully");
           }}
@@ -520,6 +547,11 @@ const ActivityServiceDetailPage = () => {
           </View>
         </View>
       </ScrollView>
+
+      {/* Floating Add to Trip Button */}
+      {serviceDetail && (
+        <AddToTripButton service={convertToServiceDTO(serviceDetail)} />
+      )}
     </>
   );
 };

@@ -1,4 +1,4 @@
-import AddToTripButton from "@/components/AddToTripButton";
+import AddToTripButton from "@/components/AddToTripButtonNew";
 import HeaderSection from "@/components/explorer-components/HeaderSection";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
@@ -29,8 +29,23 @@ import type {
   AccommodationServiceDetail,
   ServiceDetailResponse,
 } from "@/types/serviceTypes";
+import { ServiceDTO } from "@/types/triptypes";
 
 const BASE_URL = process.env.EXPO_PUBLIC_URL;
+
+// Convert AccommodationServiceDetail to ServiceDTO for AddToTripButton
+const convertToServiceDTO = (
+  detail: AccommodationServiceDetail
+): ServiceDTO => ({
+  serviceId: detail.serviceId || 0,
+  serviceName: detail.serviceName,
+  category: "ACCOMMODATION" as const,
+  locationBased: detail.locationBased,
+  mainImageUrl:
+    detail.images && detail.images.length > 0
+      ? detail.images[0].imageUrl
+      : null,
+});
 
 const AccommodationServiceDetailPage = () => {
   const { serviceId } = useLocalSearchParams<{ serviceId: string }>();
@@ -46,6 +61,22 @@ const AccommodationServiceDetailPage = () => {
   const [expandedTabs, setExpandedTabs] = useState<{ [key: number]: boolean }>(
     {}
   );
+
+  // Convert service detail to ServiceDTO format
+  const convertToServiceDTO = (
+    detail: AccommodationServiceDetail
+  ): ServiceDTO => {
+    return {
+      serviceId: detail.serviceId!,
+      serviceName: detail.serviceName,
+      category: "ACCOMMODATION",
+      locationBased: detail.locationBased,
+      mainImageUrl:
+        detail.images && detail.images.length > 0
+          ? detail.images[0].imageUrl
+          : undefined,
+    };
+  };
 
   // Toggle function for individual tabs
   const toggleTab = (tabId: number) => {
@@ -252,7 +283,7 @@ const AccommodationServiceDetailPage = () => {
         </View>
 
         <AddToTripButton
-          serviceName={serviceDetail.serviceName}
+          service={convertToServiceDTO(serviceDetail)}
           onTripAdded={() => {
             console.log("Accommodation added to trip successfully");
           }}
@@ -485,6 +516,11 @@ const AccommodationServiceDetailPage = () => {
           </View>
         </View>
       </ScrollView>
+
+      {/* Floating Add to Trip Button */}
+      {serviceDetail && (
+        <AddToTripButton service={convertToServiceDTO(serviceDetail)} />
+      )}
     </>
   );
 };

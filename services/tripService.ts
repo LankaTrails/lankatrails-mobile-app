@@ -1,5 +1,5 @@
 import api from '@/api/axiosInstance';
-import { ApiResponse, Location, Trip, tripRequest } from '@/types/triptypes';
+import { ApiResponse, Location, Trip, TripItem, tripRequest } from '@/types/triptypes';
 
 /**
  * Creates a new trip
@@ -24,6 +24,20 @@ export const createTrip = async (tripData: tripRequest): Promise<ApiResponse<Tri
 export const getMyTrips = async (): Promise<ApiResponse<Trip[]>> => {
     try {
         const response = await api.get<ApiResponse<Trip[]>>('/trips/my-trips');
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+/**
+ * Creates a new trip
+ * @param tripData The trip data to create
+ * @returns Promise containing the API response with the created trip
+ */
+export const addToTrip = async (tripId: number, tripitem: TripItem): Promise<ApiResponse<Trip>> => {
+    try {
+        const response = await api.post<ApiResponse<Trip>>(`/trips/add-trip-item/${tripId}`, tripitem);
         return response.data;
     } catch (error) {
         throw error;

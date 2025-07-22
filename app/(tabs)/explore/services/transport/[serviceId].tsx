@@ -1,4 +1,4 @@
-import AddToTripButton from "@/components/AddToTripButton";
+import AddToTripButton from "@/components/AddToTripButtonNew";
 import HeaderSection from "@/components/explorer-components/HeaderSection";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
@@ -29,8 +29,21 @@ import type {
   ServiceDetailResponse,
   TransportServiceDetail,
 } from "@/types/serviceTypes";
+import { ServiceDTO } from "@/types/triptypes";
 
 const BASE_URL = process.env.EXPO_PUBLIC_URL;
+
+// Convert TransportServiceDetail to ServiceDTO for AddToTripButton
+const convertToServiceDTO = (detail: TransportServiceDetail): ServiceDTO => ({
+  serviceId: detail.serviceId || 0,
+  serviceName: detail.serviceName,
+  category: "TRANSPORT" as const,
+  locationBased: detail.locationBased,
+  mainImageUrl:
+    detail.images && detail.images.length > 0
+      ? detail.images[0].imageUrl
+      : null,
+});
 
 const TransportServiceDetailPage = () => {
   const { serviceId } = useLocalSearchParams<{ serviceId: string }>();
@@ -278,12 +291,9 @@ const TransportServiceDetailPage = () => {
           )}
         </View>
 
-        <AddToTripButton
-          serviceName={serviceDetail.serviceName}
-          onTripAdded={() => {
-            console.log("Trip added successfully");
-          }}
-        />
+        <View className="px-4 mt-6 mb-6">
+          <AddToTripButton service={convertToServiceDTO(serviceDetail)} />
+        </View>
 
         {/* Vehicle Specifications */}
         <View className="p-5">
