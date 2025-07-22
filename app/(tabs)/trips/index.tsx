@@ -1,38 +1,87 @@
-import React, { useState } from "react";
-import { FlatList, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import EmptyState from "../../../components/EmptyState";
 import NewTripButton from "../../../components/FAB";
 import FilterButton from "../../../components/FilterButton";
 import StatsHeader from "../../../components/StatsHeader";
 import TripCard from "../../../components/TripCard";
 import TripCreationFlow from "../../../components/TripCreationFlow";
+import { getMyTrips } from "../../../services/tripService";
 import { Trip } from "../../../types/triptypes";
 
-const dummyTrips = [
-  {
-    id: "1",
-    title: "Ella Hiking Adventure",
-    details: "3 spots | Scenic views",
-    budget: "Rs. 18,000",
-    duration: "2 Days",
-    status: "Upcoming",
-  },
-  {
-    id: "2",
-    title: "Jaffna Heritage Tour",
-    details: "5 places | Cultural",
-    budget: "Rs. 25,000",
-    duration: "3 Days",
-    status: "Upcoming",
-  },
-];
-
 export default function TripsScreen() {
-  const [trips, setTrips] = useState(dummyTrips);
+  const [trips, setTrips] = useState<any[]>([]);
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [showTripCreationFlow, setShowTripCreationFlow] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const filters = ["All", "Upcoming", "Completed"];
+
+  // Load trips when component mounts
+  useEffect(() => {
+    loadTrips();
+  }, []);
+
+  const loadTrips = async () => {
+    try {
+      setIsLoading(true);
+      const response = await getMyTrips();
+
+      if (response.success && response.data) {
+        // Convert API trips to TripCard format
+        const convertedTrips = response.data.map(convertTripToCardFormat);
+        setTrips(convertedTrips);
+        console.log(`Loaded ${convertedTrips.length} trips from API`);
+      } else {
+        console.error("Failed to load trips:", response.message);
+        // Show empty state instead of dummy data on API failure
+        setTrips([]);
+        Alert.alert("Error", response.message || "Failed to load your trips.");
+      }
+    } catch (error) {
+      console.error("Error loading trips:", error);
+      // Show empty state instead of dummy data on network error
+      setTrips([]);
+      Alert.alert(
+        "Connection Error",
+        "Failed to load your trips. Please check your internet connection and pull down to refresh.",
+        [{ text: "OK", style: "default" }]
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await loadTrips();
+    setIsRefreshing(false);
+  };
+
+  const convertTripToCardFormat = (trip: Trip) => {
+    return {
+      id: trip.tripId.toString(),
+      title: trip.tripName,
+      details: `${trip.locations.length} location${
+        trip.locations.length > 1 ? "s" : ""
+      } | ${trip.numberOfAdults + trip.numberOfChildren} traveler${
+        trip.numberOfAdults + trip.numberOfChildren > 1 ? "s" : ""
+      }`,
+      budget: `Rs. ${trip.totalBudget.toLocaleString()}`,
+      duration: calculateDurationFromDates(trip.startDate, trip.endDate),
+      status: mapTripStatus(trip.status || "PLANNING"),
+    };
+  };
 
   const filteredTrips =
     selectedFilter === "All"
@@ -43,22 +92,18 @@ export default function TripsScreen() {
     setShowTripCreationFlow(true);
   };
 
-  const handleTripCreated = (newTrip: Trip) => {
+  const handleTripCreated = async (newTrip: Trip) => {
     // Convert the Trip object from API to the format expected by TripCard
-    const tripCardData = {
-      id: newTrip.tripId.toString(),
-      title: newTrip.tripName,
-      details: `${newTrip.locations.length} location${
-        newTrip.locations.length > 1 ? "s" : ""
-      } | ${newTrip.numberOfAdults + newTrip.numberOfChildren} member${
-        newTrip.numberOfAdults + newTrip.numberOfChildren > 1 ? "s" : ""
-      }`,
-      budget: `Rs. ${newTrip.totalBudget.toLocaleString()}`,
-      duration: calculateDurationFromDates(newTrip.startDate, newTrip.endDate),
-      status: mapTripStatus(newTrip.status || "PLANNING"),
-    };
+    const tripCardData = convertTripToCardFormat(newTrip);
 
+    // Add to the beginning of the trips list
     setTrips([tripCardData, ...trips]);
+
+    // Optionally refresh the entire list from API to ensure consistency
+    // This is helpful in case there are server-side computed fields
+    setTimeout(() => {
+      loadTrips();
+    }, 1000);
   };
 
   const calculateDurationFromDates = (startDate: string, endDate: string) => {
@@ -92,7 +137,17 @@ export default function TripsScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 140 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={["#008080"]}
+            tintColor="#008080"
+          />
+        }
+      >
         <View style={styles.header}>
           <Text style={styles.heading}>Your Trips</Text>
           <StatsHeader trips={trips} />
@@ -113,7 +168,13 @@ export default function TripsScreen() {
             />
           </View>
         </View>
-        {filteredTrips.length === 0 ? (
+
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#008080" />
+            <Text style={styles.loadingText}>Loading your trips...</Text>
+          </View>
+        ) : filteredTrips.length === 0 ? (
           <EmptyState selectedFilter={selectedFilter} />
         ) : (
           <FlatList
@@ -155,5 +216,17 @@ const styles = StyleSheet.create({
   },
   tripList: {
     paddingHorizontal: 0,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "#6B7280",
+    textAlign: "center",
   },
 });

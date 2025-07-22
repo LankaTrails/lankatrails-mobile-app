@@ -17,6 +17,20 @@ export const createTrip = async (tripData: tripRequest): Promise<ApiResponse<Tri
 };
 
 /**
+ * Creates a new trip
+ * @param tripData The trip data to create
+ * @returns Promise containing the API response with the created trip
+ */
+export const getMyTrips = async (): Promise<ApiResponse<Trip[]>> => {
+    try {
+        const response = await api.get<ApiResponse<Trip[]>>('/trips/my-trips');
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+/**
  * Fetches all cities from the backend
  * @returns Promise containing the API response with array of cities
  */
