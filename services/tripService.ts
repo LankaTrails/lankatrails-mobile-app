@@ -35,6 +35,33 @@ export const getMyTrips = async (): Promise<ApiResponse<Trip[]>> => {
  * @param tripData The trip data to create
  * @returns Promise containing the API response with the created trip
  */
+export const getTripById = async (tripId: number): Promise<ApiResponse<Trip>> => {
+    try {
+        const response = await api.get<ApiResponse<Trip>>(`/trips/${tripId}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+/**
+ * Creates a new trip
+ * @param tripData The trip data to create
+ * @returns Promise containing the API response with the created trip
+ */
+export const getTripItemsByTripId = async (tripId: number): Promise<ApiResponse<TripItem[]>> => {
+    try {
+        const response = await api.get<ApiResponse<TripItem[]>>(`/trips/${tripId}/items`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+/**
+ * Creates a new trip
+ * @param tripData The trip data to create
+ * @returns Promise containing the API response with the created trip
+ */
 export const addToTrip = async (tripId: number, tripitem: TripItem): Promise<ApiResponse<Trip>> => {
     try {
         const response = await api.post<ApiResponse<Trip>>(`/trips/add-trip-item/${tripId}`, tripitem);
