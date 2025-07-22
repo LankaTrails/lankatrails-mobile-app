@@ -14,7 +14,7 @@
       "bundleIdentifier": "com.pkmst.lankatrails",
       "buildNumber": "1.0.0",
       "config": {
-        "googleMapsApiKey": "AIzaSyA47Q-I515EK0DU4pvk5jgUcatYcdnf8cY"
+        "googleMapsApiKey": "AIzaSyAFJ8_eIjeXNhtS5TeuDWwswREqxO4FsGU"
       },
       "infoPlist": {
         "NSCameraUsageDescription": "This app uses the camera to allow photo uploads.",
@@ -36,7 +36,7 @@
       ],
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyA47Q-I515EK0DU4pvk5jgUcatYcdnf8cY"
+          "apiKey": "AIzaSyAFJ8_eIjeXNhtS5TeuDWwswREqxO4FsGU"
         }
       }
     },
