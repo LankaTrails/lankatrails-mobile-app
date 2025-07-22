@@ -286,7 +286,9 @@ const FoodBeverageServiceDetailPage = () => {
           </View>
         </View>
 
-        <AddToTripButton service={convertToServiceDTO(serviceDetail)} />
+        <View className="px-4 mt-6 mb-6">
+          <AddToTripButton service={convertToServiceDTO(serviceDetail)} />
+        </View>
 
         {/* Restaurant Details */}
         <View className="p-5">
