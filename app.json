@@ -13,6 +13,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.pkmst.lankatrails",
       "buildNumber": "1.0.0",
+      "config": {
+        "googleMapsApiKey": "AIzaSyA47Q-I515EK0DU4pvk5jgUcatYcdnf8cY"
+      },
       "infoPlist": {
         "NSCameraUsageDescription": "This app uses the camera to allow photo uploads.",
         "NSLocationWhenInUseUsageDescription": "LankaTrails needs location access to suggest nearby trails.",
@@ -27,6 +30,10 @@
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"
       },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyA47Q-I515EK0DU4pvk5jgUcatYcdnf8cY"
@@ -40,6 +47,12 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "LankaTrails needs location access to suggest nearby trails and services."
+        }
+      ],
       [
         "expo-splash-screen",
         {
