@@ -5,12 +5,10 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  Dimensions,
   Animated,
   Alert,
 } from 'react-native';
-
-const { width } = Dimensions.get('window');
+import Theme, { theme } from '../../../theme';
 
 interface BookingService {
   id: string;
@@ -39,6 +37,7 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
   const [viewMode, setViewMode] = useState<'overview' | 'details'>('overview');
   const [selectedService, setSelectedService] = useState<BookingService | null>(null);
   const [fadeAnim] = useState(new Animated.Value(1));
+  const [expandedServiceId, setExpandedServiceId] = useState<string | null>(null);
   const [bookingServices, setBookingServices] = useState<BookingService[]>([
     {
       id: '1',
@@ -235,6 +234,47 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
     );
   };
 
+  const handleViewServiceDetails = (serviceId: string) => {
+    // Navigate to service details screen or open modal
+    console.log('Viewing service details:', serviceId);
+    // You can implement navigation to a service details screen here
+  };
+
+  const handleRemoveService = (serviceId: string) => {
+    Alert.alert(
+      'Remove Service',
+      'Are you sure you want to remove this service from your trip?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            setBookingServices(prev => prev.filter(service => service.id !== serviceId));
+            console.log('Removing service:', serviceId);
+          },
+        },
+      ]
+    );
+  };
+
+  const toggleServiceOptions = (serviceId: string) => {
+    setExpandedServiceId(expandedServiceId === serviceId ? null : serviceId);
+  };
+
+  const handleServiceClick = (service: BookingService) => {
+    setSelectedService(service);
+    setViewMode('details');
+  };
+
+  const handleBackToOverview = () => {
+    setViewMode('overview');
+    setSelectedService(null);
+  };
+
 
 
   const OverviewView = () => (
@@ -247,12 +287,9 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
         )}
 
         {bookingServices.map((service) => (
-          <TouchableOpacity
+          <View
             key={service.id}
-            style={styles.serviceCard
-  }
-            onPress={() => handleServiceClick(service)}
-            activeOpacity={0.8}
+            style={styles.serviceCard}
           >
             <View style={styles.serviceHeader}>
               <View style={styles.serviceInfo}>
@@ -262,9 +299,26 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
                   <Text style={styles.serviceLocation}>📍 {service.location}</Text>
                 </View>
                 <View style={styles.serviceStatus}>
-                  <Text style={[styles.statusText, { color: getStatusColor(service) }]}>
-                    {getStatusText(service)}
-                  </Text>
+                  {/* Status-based button in top right */}
+                  {service.isBooked ? (
+                    <TouchableOpacity style={styles.bookedButton} disabled>
+                      <Text style={styles.bookedButtonText}>Booked</Text>
+                    </TouchableOpacity>
+                  ) : service.isAvailable ? (
+                    <TouchableOpacity
+                      style={styles.bookButton}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleBookService(service.id);
+                      }}
+                    >
+                      <Text style={styles.bookButtonText}>Book Now</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity style={styles.unavailableButton} disabled>
+                      <Text style={styles.unavailableButtonText}>Not Available</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             </View>
@@ -291,20 +345,33 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
                 <Text style={styles.servicePrice}>LKR {service.cost}</Text>
                 <Text style={styles.serviceDuration}>{service.duration}</Text>
               </View>
-              {!service.isBooked && service.isAvailable && (
-                <TouchableOpacity
-                  style={styles.bookButton}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    handleBookService(service.id);
-                  }}
-                >
-                  <Text style={styles.bookButtonText}>Book Now</Text>
+              <View style={styles.serviceActions}>
+                <TouchableOpacity onPress={() => toggleServiceOptions(service.id)}>
+                  <Text style={styles.editDetailsButton}>
+                    {expandedServiceId === service.id ? 'Close' : 'Options'}
+                  </Text>
                 </TouchableOpacity>
-              )}
-
+              </View>
             </View>
-          </TouchableOpacity>
+
+            {/* Expanded Options */}
+            {expandedServiceId === service.id && (
+              <View style={styles.expandedOptions}>
+                <TouchableOpacity 
+                  style={styles.optionButton}
+                  onPress={() => handleViewServiceDetails(service.id)}
+                >
+                  <Text style={styles.optionButtonText}>View Details</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.optionButton, styles.removeButton]}
+                  onPress={() => handleRemoveService(service.id)}
+                >
+                  <Text style={[styles.optionButtonText, styles.removeButtonText]}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
         ))}
       </ScrollView>
     </Animated.View>
@@ -628,6 +695,70 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#DC2626',
     fontWeight: '500',
+  },
+  serviceActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  editDetailsButton: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#008080',
+  },
+  expandedOptions: {
+    paddingTop: 12,
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    flexDirection: 'row',
+    gap: 12,
+  },
+  optionButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: theme.colors.lightPrimary,
+    borderWidth: 1,
+    borderColor: '#008080',
+    alignItems: 'center',
+  },
+  removeButton: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+  },
+  optionButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#008080',
+  },
+  removeButtonText: {
+    color: '#DC2626',
+  },
+  bookedButton: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 26,
+    opacity: 0.8,
+  },
+  bookedButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  unavailableButton: {
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 26,
+    opacity: 0.8,
+  },
+  unavailableButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
 

@@ -377,7 +377,6 @@ const BudgetView = () => {
           {/* Enhanced Budget Overview Card */}
           <View style={styles.overviewCard}>
             <View style={styles.overviewHeader}>
-              <Text style={styles.overviewTitle}>Total Budget Overview</Text>
             </View>
             
             <View style={styles.overviewRow}>
