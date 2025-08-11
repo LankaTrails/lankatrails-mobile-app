@@ -73,7 +73,6 @@ export default function EditPopup({
     onChange={(text) => onChange(key, text)}
     placeholder={formatLabel(key)}
     secureTextEntry={isPassword}
-    icon="key"
   />
 ))}
 
