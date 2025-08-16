@@ -60,7 +60,6 @@ const GalleApp = () => {
   const mainSlideAnim = useRef(new Animated.Value(40)).current;
 
   useEffect(() => {
-    // Get search parameters from navigation
     if (params.location) {
       setSearchLocation(params.location as string);
     }
@@ -75,31 +74,24 @@ const GalleApp = () => {
     }, 600);
   }, [params]);
 
-  // Fetch services from backend
   const fetchServices = async () => {
     try {
       setServicesLoading(true);
 
       let searchRequest: ServiceSearchRequest;
 
-      // Check if we have coordinates (for nearby search)
       if (params.lat && params.lng && params.isNearby === "true") {
         searchRequest = {
           lat: Number(params.lat),
           lng: Number(params.lng),
-          radiusKm: 20, // 20km radius for nearby search
+          radiusKm: 20,
         };
       } else {
-        // Text-based search
         searchRequest = {
           city: searchLocation,
-          // Add more search parameters as needed
-          // district: searchLocation,
-          // province: searchLocation,
         };
       }
 
-      // Add category filter if a specific category is selected
       if (selectedTab !== "All") {
         const category = mapTabToCategory(selectedTab);
         if (category) {
@@ -107,15 +99,12 @@ const GalleApp = () => {
         }
       }
 
-      const response: ServiceSearchResponse = await searchServices(
-        searchRequest
-      );
+      const response: ServiceSearchResponse = await searchServices(searchRequest);
 
       if (response.success && response.data) {
         setServices(response.data);
       } else {
         console.error("Search failed:", response.message);
-        // Show error message to user
         Platform.OS === "android"
           ? ToastAndroid.show("Failed to load services", ToastAndroid.SHORT)
           : Alert.alert("Error", "Failed to load services");
@@ -137,36 +126,26 @@ const GalleApp = () => {
 
         let lat, lng;
 
-        // Use coordinates if available (nearby search)
         if (params.lat && params.lng) {
           lat = Number(params.lat);
           lng = Number(params.lng);
         } else {
-          // For text-based searches, try to geocode the location
           try {
             const geocodedLocation = await geocodeLocation(searchLocation);
             if (geocodedLocation) {
               lat = geocodedLocation.lat;
               lng = geocodedLocation.lng;
             } else {
-              // Default to Galle coordinates as fallback
               lat = 6.0329;
               lng = 80.2168;
             }
           } catch (geocodeError) {
-            console.error(
-              "Geocoding failed, using default coordinates:",
-              geocodeError
-            );
-            // Default to Galle coordinates as fallback
+            console.error("Geocoding failed:", geocodeError);
             lat = 6.0329;
             lng = 80.2168;
           }
         }
 
-        console.log(
-          `Fetching public places for coordinates: ${lat}, ${lng} (${searchLocation})`
-        );
         const groups = await fetchGroupedPlaces(lat, lng);
         setGroupedPlaces(groups);
       } catch (err) {
@@ -177,22 +156,18 @@ const GalleApp = () => {
     })();
   }, [params.lat, params.lng, searchLocation]);
 
-  // Fetch backend services when component mounts or search location changes
   useEffect(() => {
     fetchServices();
   }, [searchLocation]);
 
-  // Refetch services when selected tab changes (for API-level filtering)
   useEffect(() => {
     if (selectedTab !== "All") {
       fetchServices();
     } else {
-      // For "All" tab, fetch all services without category filter
       fetchServices();
     }
   }, [selectedTab]);
 
-  // Helper function to group services by category
   const groupServicesByCategory = () => {
     const grouped = services.reduce((acc, service) => {
       const category = service.category;
@@ -206,19 +181,17 @@ const GalleApp = () => {
     return grouped;
   };
 
-  // Convert Service to CardItem format
   const convertServiceToCardItem = (service: Service) => ({
     id: service.serviceId,
     title: service.serviceName,
     subtitle:
       service.locationBased.city || service.locationBased.formattedAddress,
-    rating: 4.5, // Default rating since it's not in the Service interface
+    rating: 4.5,
     image:
       `http://10.22.160.79:8080${service.mainImageUrl}` ||
       "https://via.placeholder.com/160x96/e2e8f0/64748b?text=No+Image",
   });
 
-  // Map display tab names to backend category names
   const mapTabToCategory = (tab: string): ServiceCategory | undefined => {
     const mapping: Record<string, ServiceCategory> = {
       Accommodation: ServiceCategory.ACCOMMODATION,
@@ -230,7 +203,6 @@ const GalleApp = () => {
     return mapping[tab];
   };
 
-  // Filter services by category for tab selection
   const getFilteredServices = () => {
     if (selectedTab === "All") {
       return services;
@@ -321,7 +293,6 @@ const GalleApp = () => {
       <StatusBar backgroundColor="#0D9488" />
       <View className="bg-gray-50 pt-12 pb-4">
         <View className="flex-row items-center justify-between mt-5 mb-2 px-4">
-          {/* Back Button */}
           <TouchableOpacity
             onPress={() => router.back()}
             className="flex-row items-center"
@@ -329,7 +300,6 @@ const GalleApp = () => {
             <ArrowLeftIcon size={34} color="#008080" />
           </TouchableOpacity>
 
-          {/* Title */}
           <Text
             className="text-primary text-3xl font-bold mx-2 flex-1 text-center"
             numberOfLines={1}
@@ -346,7 +316,6 @@ const GalleApp = () => {
         }}
       >
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-          {/* Tabs */}
           <View className="px-4 mb-6">
             <FlatList
               data={[
@@ -372,9 +341,7 @@ const GalleApp = () => {
             />
           </View>
 
-          {/* Dynamic Sections based on Backend Services */}
           {(() => {
-            // Handle Public Places filter
             if (selectedTab === "Public Places") {
               if (placesLoading) {
                 return (
@@ -383,35 +350,6 @@ const GalleApp = () => {
                     <Text className="text-center mt-4 text-gray-600">
                       Finding public places...
                     </Text>
-                    {places.length > 0 ? (
-                      <FlatList
-                        data={places}
-                        keyExtractor={(item) => item.place_id}
-                        renderItem={({ item }) => (
-                          <Card
-                            item={{
-                              id: Number(item.place_id),
-                              title: item.name,
-                              subtitle: item.vicinity,
-                              rating: typeof item.rating === 'number'
-                                ? item.rating
-                                : typeof item.rating === 'string'
-                                ? Number(item.rating)
-                                : 0,
-                              image: item.photos?.[0]
-                                ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${item.photos[0].photo_reference}&key=${GOOGLE_PLACES_API_KEY}`
-                                : '',
-                            }}
-                            onPress={() => router.push('../explore/ServiceView')}
-                            width={180}
-                          />
-                        )}
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                      />
-                    ) : (
-                      <Text style={{ color: '#666' }}>No public places found in this category.</Text>
-                    )}
                   </View>
                 );
               }
@@ -428,10 +366,8 @@ const GalleApp = () => {
                 );
               }
 
-              // Show only public places when this tab is selected
               return (
                 <View className="mb-6 px-4">
-                  {/* Public Places Main Heading */}
                   <View className="flex-row items-center justify-between mb-4">
                     <Text className="text-3xl font-bold text-primary">
                       Public Places
@@ -508,7 +444,6 @@ const GalleApp = () => {
               );
             }
 
-            // Handle Services filtering (existing logic but with improvements)
             if (servicesLoading) {
               return (
                 <View className="px-4 py-8">
@@ -519,7 +454,7 @@ const GalleApp = () => {
                 </View>
               );
             }
-            // Get filtered services based on selected tab
+
             const filteredServices = getFilteredServices();
 
             if (filteredServices.length === 0) {
@@ -537,7 +472,6 @@ const GalleApp = () => {
               );
             }
 
-            // If "All" is selected, group by category and hide categories with no data
             if (selectedTab === "All") {
               const groupedServices = groupServicesByCategory();
               const sectionsToShow = Object.keys(groupedServices).filter(
@@ -547,13 +481,11 @@ const GalleApp = () => {
               );
 
               if (sectionsToShow.length === 0) {
-                // Don't show empty state here if there are public places
                 return null;
               }
 
               return (
                 <View className="mb-6 px-4">
-                  {/* Services Main Heading */}
                   <View className="flex-row items-center justify-between mb-4">
                     <Text className="text-3xl font-bold text-primary">
                       Services
@@ -568,7 +500,6 @@ const GalleApp = () => {
                     </View>
                   </View>
 
-                  {/* Service Categories */}
                   {sectionsToShow.map((category, index) => {
                     const categoryServices = groupedServices[category] || [];
 
@@ -601,7 +532,7 @@ const GalleApp = () => {
                         </AnimatedCard>
 
                         <FlatList
-                          data={categoryServices.slice(0, 6)} // Limit to 6 items for preview
+                          data={categoryServices.slice(0, 6)}
                           keyExtractor={(item) => item.serviceId.toString()}
                           numColumns={2}
                           columnWrapperStyle={
@@ -630,10 +561,8 @@ const GalleApp = () => {
                 </View>
               );
             } else {
-              // Show filtered services for specific category
               return (
                 <View className="mb-6 px-4">
-                  {/* Services Main Heading for specific category */}
                   <View className="flex-row items-center justify-between mb-4">
                     <Text className="text-3xl font-bold text-primary">
                       Services
@@ -675,7 +604,7 @@ const GalleApp = () => {
                   </AnimatedCard>
 
                   <FlatList
-                    data={filteredServices.slice(0, 10)} // Show more items for specific category
+                    data={filteredServices.slice(0, 10)}
                     keyExtractor={(item) => item.serviceId.toString()}
                     numColumns={2}
                     columnWrapperStyle={
@@ -700,61 +629,9 @@ const GalleApp = () => {
                   />
                 </View>
               );
-<!--             }
-                    <Text className="text-2xl font-bold text-gray-800/70">{section.title}</Text>
-                    <TouchableOpacity
-                      onPress={() =>
-                        router.push({
-                          pathname: '../explore/accommodation-foods-transport',
-                          params: { tab: section.tab.toLowerCase().replace(' ', '-') },
-                        })
-                      }
-                    >
-                      <Text className="text-primary font-medium">See more →</Text>
-                    </TouchableOpacity>
-                  </View>
-                </AnimatedCard>
-                <FlatList
-                  data={section.items}
-                  keyExtractor={item => item.id.toString()}
-                  numColumns={2}
-                  columnWrapperStyle={{ justifyContent: 'space-between' }}
-                  renderItem={({ item }) => {
-                    let routePath = '';
-                    if (section.title === 'Foods') {
-                      routePath = '../explore/FoodServiceView';
-                    } else if (section.title === 'Accommodation') {
-                      routePath = '../explore/AccommodationServiceView';
-                    } else if (section.title === 'Transport') {
-                      routePath = '../explore/TransportserviceView';
-                    } else if (section.title === 'Activities') {
-                      routePath = '../explore/ActivityView';
-                    } else if (section.title === 'Tour Guides') {
-                      routePath = '../explore/TourGuideView';
-                    } else {
-                      routePath = '../explore/ServiceView';
-                    }
-                    return (
-                      <Card
-                        item={{
-                          ...item,
-                          subtitle: item.subtitle ?? '',
-                          rating: item.rating ?? 0,
-                          image: item.image ?? '',
-                        }}
-                        width={(width - 48) / 2}
-                        onPress={() => router.push({ pathname: routePath as any })}
-                      />
-                    );
-                  }}
-                  contentContainerStyle={{ paddingBottom: 16 }}
-                  scrollEnabled={false}
-                />
-              </View>
-            )); -->
+            }
           })()}
 
-          {/* Public Places - Only show when "All" tab is selected and has data */}
           {selectedTab === "All" &&
             groupedPlaces.length > 0 &&
             !placesLoading && (
@@ -829,7 +706,6 @@ const GalleApp = () => {
               </View>
             )}
 
-          {/* Show empty state only when both services and public places have no data */}
           {selectedTab === "All" &&
             !servicesLoading &&
             !placesLoading &&
