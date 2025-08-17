@@ -27,7 +27,10 @@ interface Place {
   trending: boolean;
 }
 
+import { useNavigation } from '@react-navigation/native';
+
 const TravelAppHome = () => {
+  const navigation = useNavigation();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [searchFocused, setSearchFocused] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -37,7 +40,6 @@ const TravelAppHome = () => {
   const heroImages = [
     "https://images.unsplash.com/photo-1540979388789-6cee28a1cdc9?w=800&h=400&fit=crop",
     "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=400&fit=crop",
-    "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800&h=400&fit=crop"
   ];
 
   const quickActions = [
@@ -67,7 +69,8 @@ const TravelAppHome = () => {
       icon: "navigate-outline", 
       title: "Navigate", 
       subtitle: "Get directions", 
-      color: "#40E0D0" 
+      color: "#40E0D0",
+      onpress: () => { navigation.push('explorer'); }
     }
   ];
 
@@ -187,6 +190,7 @@ const TravelAppHome = () => {
         marginBottom: 16,
       }}
       activeOpacity={0.8}
+      onPress={item.onpress}
     >
       <Ionicons name={item.icon as any} size={24} color="white" style={{ marginBottom: 12 }} />
       <Text style={{ fontSize: 18, fontWeight: '600', color: 'white', marginBottom: 4 }}>
@@ -420,8 +424,8 @@ const TravelAppHome = () => {
                 bottom: 0,
                 left: 0,
                 right: 0,
-                height: '60%',
-                background: 'linear-gradient(transparent, rgba(0,0,0,0.6))',
+                height: '40%',
+                backgroundColor: 'rgba(0,0,0,0.4)',
               }} />
               <View style={{ position: 'absolute', bottom: 24, left: 24 }}>
                 <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white', marginBottom: 8 }}>
