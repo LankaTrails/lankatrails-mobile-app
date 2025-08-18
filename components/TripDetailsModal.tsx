@@ -1,21 +1,20 @@
-import React, { useState, useEffect, useRef } from "react";
-import {
-  View,
-  Text,
-  Modal,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
-  Alert,
-  TouchableWithoutFeedback,
-  Platform,
-  Animated,
-  Dimensions,
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  Animated,
+  Dimensions,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
+import CustomDatePicker from "./CustomDatePicker";
 
 interface TripDetailsModalProps {
   visible: boolean;
@@ -25,11 +24,14 @@ interface TripDetailsModalProps {
   tripTitle?: string; // New prop to receive trip title from TripNameModal
   isEditing?: boolean; // New prop to indicate editing mode
   startFromIntermediate?: boolean; // For seamless transition from TripNameModal
+  numberOfAdults?: number; // Pass adults count from PersonCountModal
+  numberOfChildren?: number; // Pass children count from PersonCountModal
 }
 
 export interface TripDetails {
   budget: string;
-  members: number;
+  numberOfAdults: number;
+  numberOfChildren: number;
   startDate: Date;
   endDate: Date;
   currency: string;
@@ -45,10 +47,19 @@ export default function TripDetailsModal({
   tripTitle,
   isEditing = false,
   startFromIntermediate = false,
+  numberOfAdults: initialAdults,
+  numberOfChildren: initialChildren,
 }: TripDetailsModalProps) {
   const [budget, setBudget] = useState(initialDetails?.budget || "");
-  const [members, setMembers] = useState(initialDetails?.members || 1);
-  const [startDate, setStartDate] = useState(initialDetails?.startDate || new Date());
+  const [numberOfAdults, setNumberOfAdults] = useState(
+    initialDetails?.numberOfAdults || initialAdults || 1
+  );
+  const [numberOfChildren, setNumberOfChildren] = useState(
+    initialDetails?.numberOfChildren || initialChildren || 0
+  );
+  const [startDate, setStartDate] = useState(
+    initialDetails?.startDate || new Date()
+  );
   const [endDate, setEndDate] = useState(
     initialDetails?.endDate || new Date(Date.now() + 24 * 60 * 60 * 1000)
   );
@@ -59,8 +70,10 @@ export default function TripDetailsModal({
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
   // Animation for slide up effect
-  const slideAnim = useRef(new Animated.Value(startFromIntermediate ? 0.3 : 0)).current;
-  const screenHeight = Dimensions.get('window').height;
+  const slideAnim = useRef(
+    new Animated.Value(startFromIntermediate ? 0.3 : 0)
+  ).current;
+  const screenHeight = Dimensions.get("window").height;
 
   useEffect(() => {
     if (visible) {
@@ -94,13 +107,7 @@ export default function TripDetailsModal({
     { code: "GBP", symbol: "£", name: "British Pound" },
   ];
 
-  const handleMembersChange = (increment: boolean) => {
-    if (increment) {
-      setMembers(prev => prev + 1);
-    } else {
-      setMembers(prev => Math.max(1, prev - 1));
-    }
-  };
+  const getTotalTravelers = () => numberOfAdults + numberOfChildren;
 
   const handleStartDateChange = () => {
     setShowStartDatePicker(true);
@@ -110,27 +117,23 @@ export default function TripDetailsModal({
     setShowEndDatePicker(true);
   };
 
-  const handleStartDateConfirm = (event: any, selectedDate?: Date) => {
+  const handleStartDateConfirm = (selectedDate: Date) => {
     setShowStartDatePicker(false);
-    if (selectedDate) {
-      setStartDate(selectedDate);
-      // If start date is after end date, adjust end date
-      if (selectedDate >= endDate) {
-        setEndDate(new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000));
-      }
+    setStartDate(selectedDate);
+    // If start date is after end date, adjust end date
+    if (selectedDate >= endDate) {
+      setEndDate(new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000));
     }
   };
 
-  const handleEndDateConfirm = (event: any, selectedDate?: Date) => {
+  const handleEndDateConfirm = (selectedDate: Date) => {
     setShowEndDatePicker(false);
-    if (selectedDate) {
-      // Ensure end date is not before start date
-      if (selectedDate <= startDate) {
-        Alert.alert("Invalid Date", "End date must be after start date");
-        return;
-      }
-      setEndDate(selectedDate);
+    // Ensure end date is not before start date
+    if (selectedDate <= startDate) {
+      Alert.alert("Invalid Date", "End date must be after start date");
+      return;
     }
+    setEndDate(selectedDate);
   };
 
   const formatDate = (date: Date) => {
@@ -165,7 +168,8 @@ export default function TripDetailsModal({
 
     const tripDetails: TripDetails = {
       budget: budget.trim(),
-      members,
+      numberOfAdults,
+      numberOfChildren,
       startDate,
       endDate,
       currency,
@@ -175,16 +179,15 @@ export default function TripDetailsModal({
     onConfirm(tripDetails);
   };
 
-  const selectedCurrency = currencies.find(c => c.code === currency);
+  const selectedCurrency = currencies.find((c) => c.code === currency);
 
   return (
     <Modal visible={visible} transparent animationType="fade">
       <BlurView intensity={50} tint="dark" style={styles.overlay}>
         <TouchableWithoutFeedback onPress={onClose}>
-          <View style={styles.backdrop}>
-          </View>
+          <View style={styles.backdrop}></View>
         </TouchableWithoutFeedback>
-        <Animated.View 
+        <Animated.View
           style={[
             styles.modal,
             {
@@ -199,7 +202,10 @@ export default function TripDetailsModal({
             },
           ]}
         >
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.content}
+            showsVerticalScrollIndicator={false}
+          >
             {/* Trip Title Section - Always visible now */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Trip Title</Text>
@@ -238,35 +244,31 @@ export default function TripDetailsModal({
               </View>
             </View>
 
-            {/* Members Section */}
+            {/* Travelers Section - Read-only display */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Number of Travelers</Text>
-              <View style={styles.membersContainer}>
-                <TouchableOpacity
-                  style={styles.memberButton}
-                  onPress={() => handleMembersChange(false)}
-                >
-                  <Ionicons name="remove" size={20} color="#008080" />
-                </TouchableOpacity>
-                <View style={styles.membersDisplay}>
-                  <Text style={styles.membersNumber}>{members}</Text>
-                  <Text style={styles.membersLabel}>
-                    {members === 1 ? "Traveler" : "Travelers"}
+              <View style={styles.travelersDisplay}>
+                <View style={styles.travelersInfo}>
+                  <Text style={styles.travelersCount}>
+                    {getTotalTravelers()}{" "}
+                    {getTotalTravelers() === 1 ? "Traveler" : "Travelers"}
+                  </Text>
+                  <Text style={styles.travelersBreakdown}>
+                    {numberOfAdults} adult{numberOfAdults > 1 ? "s" : ""}
+                    {numberOfChildren > 0 &&
+                      `, ${numberOfChildren} child${
+                        numberOfChildren > 1 ? "ren" : ""
+                      }`}
                   </Text>
                 </View>
-                <TouchableOpacity
-                  style={styles.memberButton}
-                  onPress={() => handleMembersChange(true)}
-                >
-                  <Ionicons name="add" size={20} color="#008080" />
-                </TouchableOpacity>
+                <Ionicons name="people" size={24} color="#008080" />
               </View>
             </View>
 
             {/* Date Range Section */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Travel Dates</Text>
-              
+
               {/* Start Date */}
               <View style={styles.dateItem}>
                 <View style={styles.dateLabel}>
@@ -317,7 +319,7 @@ export default function TripDetailsModal({
               </View>
               <View style={styles.summaryItem}>
                 <Text style={styles.summaryLabel}>Travelers:</Text>
-                <Text style={styles.summaryValue}>{members}</Text>
+                <Text style={styles.summaryValue}>{getTotalTravelers()}</Text>
               </View>
               <View style={styles.summaryItem}>
                 <Text style={styles.summaryLabel}>Duration:</Text>
@@ -333,7 +335,10 @@ export default function TripDetailsModal({
             <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
+            <TouchableOpacity
+              style={styles.confirmButton}
+              onPress={handleConfirm}
+            >
               <Text style={styles.confirmButtonText}>
                 {isEditing ? "Update Trip" : "Create Trip"}
               </Text>
@@ -345,9 +350,10 @@ export default function TripDetailsModal({
       {/* Currency Selector Modal */}
       <Modal visible={showCurrencySelector} transparent animationType="fade">
         <View style={styles.overlay}>
-          <TouchableWithoutFeedback onPress={() => setShowCurrencySelector(false)}>
-            <View style={styles.backdrop}>
-            </View>
+          <TouchableWithoutFeedback
+            onPress={() => setShowCurrencySelector(false)}
+          >
+            <View style={styles.backdrop}></View>
           </TouchableWithoutFeedback>
           <View style={styles.currencyModal}>
             <Text style={styles.currencyModalTitle}>Select Currency</Text>
@@ -380,26 +386,24 @@ export default function TripDetailsModal({
         </View>
       </Modal>
 
-      {/* Native Date Pickers */}
-      {showStartDatePicker && (
-        <DateTimePicker
-          value={startDate}
-          mode="date"
-          display={Platform.OS === "ios" ? "spinner" : "default"}
-          minimumDate={new Date()}
-          onChange={handleStartDateConfirm}
-        />
-      )}
+      {/* Custom Date Pickers */}
+      <CustomDatePicker
+        visible={showStartDatePicker}
+        onClose={() => setShowStartDatePicker(false)}
+        onConfirm={handleStartDateConfirm}
+        initialDate={startDate}
+        minimumDate={new Date()}
+        title="Select Start Date"
+      />
 
-      {showEndDatePicker && (
-        <DateTimePicker
-          value={endDate}
-          mode="date"
-          display={Platform.OS === "ios" ? "spinner" : "default"}
-          minimumDate={new Date(startDate.getTime() + 24 * 60 * 60 * 1000)}
-          onChange={handleEndDateConfirm}
-        />
-      )}
+      <CustomDatePicker
+        visible={showEndDatePicker}
+        onClose={() => setShowEndDatePicker(false)}
+        onConfirm={handleEndDateConfirm}
+        initialDate={endDate}
+        minimumDate={new Date(startDate.getTime() + 24 * 60 * 60 * 1000)}
+        title="Select End Date"
+      />
     </Modal>
   );
 }
@@ -521,6 +525,29 @@ const styles = StyleSheet.create({
     color: "#6B7280",
     marginTop: 4,
   },
+  travelersDisplay: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#F0F8FF",
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#E6F7FF",
+  },
+  travelersInfo: {
+    flex: 1,
+  },
+  travelersCount: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#008080",
+    marginBottom: 4,
+  },
+  travelersBreakdown: {
+    fontSize: 14,
+    color: "#374151",
+  },
   dateItem: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -609,7 +636,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#D1D5DB",
     marginRight: 8,
-        marginBottom: 26,
+    marginBottom: 26,
     alignItems: "center",
   },
   cancelButtonText: {

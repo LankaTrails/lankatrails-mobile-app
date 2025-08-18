@@ -1,10 +1,22 @@
 import api from '@/api/axiosInstance';
-import type { ServiceSearchRequest, ServiceSearchResponse } from '@/types/serviceTypes';
+import type { ApiResponse, ProviderDetailRequest, ProviderDetailResponse, SearchResponse, ServiceSearchRequest } from '@/types/serviceTypes';
 import { ServiceCategory } from '@/types/serviceTypes';
+
+export async function searchProvider(
+    request: ProviderDetailRequest
+): Promise<ApiResponse<ProviderDetailResponse>> {
+    try {
+        const response = await api.post('/service/provider', request);
+        return response.data;
+    } catch (error) {
+        console.error('Error searching providers:', error);
+        throw error;
+    }
+}
 
 export async function searchServices(
     request: ServiceSearchRequest
-): Promise<ServiceSearchResponse> {
+): Promise<ApiResponse<SearchResponse>> {
     try {
         const response = await api.post('/service/search', request);
         return response.data;
@@ -19,7 +31,7 @@ export async function searchServicesByLocation(
     location: string,
     category?: ServiceCategory,
     radius?: number
-): Promise<ServiceSearchResponse> {
+): Promise<ApiResponse<SearchResponse>> {
     const request: ServiceSearchRequest = {
         city: location,
         category,
@@ -35,7 +47,7 @@ export async function searchServicesByCoordinates(
     lng: number,
     category?: ServiceCategory,
     radius: number = 10
-): Promise<ServiceSearchResponse> {
+): Promise<ApiResponse<SearchResponse>> {
     const request: ServiceSearchRequest = {
         lat,
         lng,

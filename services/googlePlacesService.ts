@@ -1,7 +1,7 @@
 import locationCache from '@/utils/locationCache';
 import axios from 'axios';
 
-const GOOGLE_PLACES_API_KEY = 'AIzaSyA47Q-I515EK0DU4pvk5jgUcatYcdnf8cY';
+const GOOGLE_PLACES_API_KEY = 'AIzaSyAFJ8_eIjeXNhtS5TeuDWwswREqxO4FsGU';
 
 type PlaceGroup = {
   group: string;
