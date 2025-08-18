@@ -1,9 +1,13 @@
+import * as Clipboard from "expo-clipboard";
+import * as Linking from "expo-linking";
 import { Stack, useLocalSearchParams } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
+  Alert,
   Animated,
   SafeAreaView,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   View,
@@ -12,12 +16,15 @@ import BackButton from "../../../../components/BackButton";
 import FilterButton from "../../../../components/FilterButton";
 import HeaderButton from "../../../../components/HeaderButton";
 import FloatingActionButton from "../../../../components/OptionsButton";
+import QRCodeModal from "../../../../components/QRCodeModal";
 import SummaryCard from "../../../../components/SummaryCard";
 import TripDetailsModal, {
   TripDetails as TripDetailsType,
 } from "../../../../components/TripDetailsModal";
 import BookingsView from "./BookingsView";
 import ScheduleView from "./ScheduleView";
+
+const prefix = Linking.createURL("/");
 
 interface Service {
   id: string;
@@ -37,12 +44,19 @@ interface TripDay {
   weather: "sunny" | "cloudy" | "rainy";
 }
 
-import { getTripById, getTripItemsByTripId } from "@/services/tripService";
+import {
+  generateTripInvitation,
+  getTripById,
+  getTripItemsByTripId,
+} from "@/services/tripService";
 
 const TripDetails = () => {
   const tripID = useLocalSearchParams().id as string;
   const [viewMode, setViewMode] = useState<"schedule" | "bookings">("schedule");
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [currentInvitationLink, setCurrentInvitationLink] =
+    useState<string>("");
   const [trip, setTrip] = useState<any>(null);
   const [tripDays, setTripDays] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -240,13 +254,109 @@ const TripDetails = () => {
 
   // Header/modal handlers (restored)
   const handleEdit = () => setShowEditModal(true);
-  const handleShare = () => {
-    // Implement share functionality
-    console.log("Sharing trip:", trip?.tripName || tripDetails.title);
+
+  const handleShare = async () => {
+    try {
+      if (!trip?.tripId) {
+        Alert.alert("Error", "Trip not found");
+        return;
+      }
+
+      setLoading(true);
+      const response = await generateTripInvitation(Number(tripID));
+
+      if (response.success && response.data) {
+        const invitationToken = response.data;
+        // const invitationLink = `https://lankatrails.app/invite/${invitationToken}`;
+        // const invitationLink = `lankatrailsmobileapp://invite/${invitationToken}`;
+        const invitationLink = `${prefix}invite/${invitationToken}`;
+
+        // Show options to user
+        Alert.alert(
+          "Share Trip Invitation",
+          "Choose how you'd like to share this trip invitation:",
+          [
+            {
+              text: "Show QR Code",
+              onPress: () => {
+                setCurrentInvitationLink(invitationLink);
+                setShowQRModal(true);
+              },
+            },
+            {
+              text: "Copy Link",
+              onPress: async () => {
+                try {
+                  await Clipboard.setStringAsync(invitationLink);
+                  Alert.alert(
+                    "Success",
+                    "Invitation link copied to clipboard!"
+                  );
+                } catch (error) {
+                  console.error("Error copying to clipboard:", error);
+                  Alert.alert("Error", "Failed to copy invitation link");
+                }
+              },
+            },
+            {
+              text: "Share",
+              onPress: async () => {
+                try {
+                  await Share.share({
+                    message: `Join my trip "${
+                      trip?.tripName || tripDetails.title
+                    }"! Click this link to join: ${invitationLink}`,
+                    title: `Join ${trip?.tripName || tripDetails.title}`,
+                  });
+                } catch (error) {
+                  console.error("Error sharing:", error);
+                  Alert.alert("Error", "Failed to share invitation link");
+                }
+              },
+            },
+            {
+              text: "Cancel",
+              style: "cancel",
+            },
+          ]
+        );
+      } else {
+        throw new Error(response.message || "Failed to generate invitation");
+      }
+    } catch (error: any) {
+      console.error("Failed to generate trip invitation:", error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to generate invitation link";
+      Alert.alert("Error", errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
+
   const handleDelete = () => {
-    // Implement delete functionality
-    console.log("Deleting trip:", trip?.tripName || tripDetails.title);
+    Alert.alert(
+      "Delete Trip",
+      `Are you sure you want to delete "${
+        trip?.tripName || tripDetails.title
+      }"? This action cannot be undone.`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            // Implement delete functionality
+            console.log("Deleting trip:", trip?.tripName || tripDetails.title);
+            // You would call your delete API here
+          },
+        },
+      ]
+    );
   };
   const handleEditModalClose = () => setShowEditModal(false);
   const handleEditModalConfirm = (updatedDetails: TripDetailsType) => {
@@ -337,6 +447,13 @@ const TripDetails = () => {
         onConfirm={handleEditModalConfirm}
         initialDetails={tripDetails}
         isEditing={true}
+      />
+
+      <QRCodeModal
+        visible={showQRModal}
+        onClose={() => setShowQRModal(false)}
+        invitationLink={currentInvitationLink}
+        tripName={trip?.tripName || tripDetails.title}
       />
     </>
   );
