@@ -21,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from "@expo/vector-icons";
 
 
+
 interface BudgetCategory {
   id: string;
   name: string;
