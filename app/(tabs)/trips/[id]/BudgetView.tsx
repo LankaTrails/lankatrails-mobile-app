@@ -18,6 +18,8 @@ import BackButton from '../../../../components/BackButton';
 import FilterButton from '../../../../components/FilterButton';
 import Svg, { Circle } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from "@expo/vector-icons";
+
 
 
 interface BudgetCategory {
@@ -65,7 +67,7 @@ const BudgetView = () => {
     {
       id: '1',
       name: 'Accommodation',
-      allocated: 15000,
+      allocated: 0,
       spent: 12000,
       color: '#3B82F6',
       icon: '🏨'
@@ -73,7 +75,7 @@ const BudgetView = () => {
     {
       id: '2',
       name: 'Transportation',
-      allocated: 8000,
+      allocated: 0,
       spent: 6500,
       color: '#10B981',
       icon: '🚗'
@@ -81,7 +83,7 @@ const BudgetView = () => {
     {
       id: '3',
       name: 'Food & Dining',
-      allocated: 12000,
+      allocated: 0,
       spent: 8750,
       color: '#F59E0B',
       icon: '🍽️'
@@ -89,7 +91,7 @@ const BudgetView = () => {
     {
       id: '4',
       name: 'Activities',
-      allocated: 10000,
+      allocated: 0,
       spent: 2450,
       color: '#EF4444',
       icon: '🎯'
@@ -97,7 +99,7 @@ const BudgetView = () => {
     {
       id: '5',
       name: 'Shopping',
-      allocated: 5000,
+      allocated: 0, // No budget allocated
       spent: 1200,
       color: '#8B5CF6',
       icon: '🛍️'
@@ -105,7 +107,7 @@ const BudgetView = () => {
     {
       id: '6',
       name: 'Miscellaneous',
-      allocated: 3000,
+      allocated: 0, // No budget allocated
       spent: 800,
       color: '#6B7280',
       icon: '💼'
@@ -169,7 +171,12 @@ const BudgetView = () => {
     }
   }, [showAddExpenseModal, showBudgetModal, showCategorySelector]);
 
-  const totalBudget = budgetCategories.reduce((sum, cat) => sum + cat.allocated, 0);
+  // Filter categories with budget > 0
+  const categoriesWithBudget = budgetCategories.filter(cat => cat.allocated > 0);
+  const hasAnyBudgetCategories = categoriesWithBudget.length > 0;
+
+  // Calculate totals - include all spending even for categories without budget
+  const totalBudget = 50000;
   const totalSpent = budgetCategories.reduce((sum, cat) => sum + cat.spent, 0);
   const remainingBudget = totalBudget - totalSpent;
 
@@ -353,6 +360,8 @@ const BudgetView = () => {
   };
 
   const recentExpenses = expenses.slice(-10).reverse();
+ 
+  const currencyType = 'LKR';
 
   return (
     <>
@@ -367,17 +376,23 @@ const BudgetView = () => {
         {/* Header */}
         <View style={styles.header}>
           <BackButton/>
-        <View style={styles.headerText}>
-          <Text style={styles.headerTitle}>Budget Overview</Text>
+          <View style={styles.headerText}>
+            <Text style={styles.headerTitle}>
+  Budget{' '}
+  <Text style={styles.currencyText}>{currencyType}</Text>
+</Text>
           </View>
-          <View style={styles.headerSpacer} />
+          <TouchableOpacity 
+            onPress={openBudgetModal}
+          >
+            <Ionicons name="options-outline" size={25} color={theme.colors.primary} />
+          </TouchableOpacity>
         </View>
 
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 150 }}>
-          {/* Enhanced Budget Overview Card */}
+          {/* Enhanced Budget Overview Card - Always show */}
           <View style={styles.overviewCard}>
             <View style={styles.overviewHeader}>
-              <Text style={styles.overviewTitle}>Total Budget Overview</Text>
             </View>
             
             <View style={styles.overviewRow}>
@@ -393,29 +408,42 @@ const BudgetView = () => {
               </View>
               <View style={styles.overviewItem}>
                 <Text style={[styles.overviewValue, { color: remainingBudget >= 0 ? '#008080' : '#EF4444' }]}>
-                  {Math.abs(remainingBudget).toLocaleString()}
+                  {hasAnyBudgetCategories ? Math.abs(remainingBudget).toLocaleString() : totalSpent.toLocaleString()}
                 </Text>
-                <Text style={styles.overviewLabel}>{remainingBudget >= 0 ? 'Remaining' : 'Over Budget'}</Text>
+                <Text style={styles.overviewLabel}>
+                  {hasAnyBudgetCategories 
+                    ? (remainingBudget >= 0 ? 'Remaining' : 'Over Budget')
+                    : 'Total Expenses'
+                  }
+                </Text>
               </View>
             </View>
             
-            {/* Enhanced Overall Progress Bar */}
+            {/* Enhanced Overall Progress Bar - Show differently based on budget existence */}
             <View style={styles.progressContainer}>
               <View style={styles.progressBarContainer}>
-                <View style={styles.progressBar}>
-                  <View 
-                    style={[
-                      styles.progressFill, 
-                      { 
-                        width: `${Math.min((totalSpent / totalBudget) * 100, 100)}%`,
-                        backgroundColor: getProgressColor(totalSpent, totalBudget)
-                      }
-                    ]} 
-                  />
-                </View>
-                <Text style={styles.progressText}>
-                  {Math.round((totalSpent / totalBudget) * 100)}% of budget used
-                </Text>
+                {hasAnyBudgetCategories ? (
+                  <>
+                    <View style={styles.progressBar}>
+                      <View 
+                        style={[
+                          styles.progressFill, 
+                          { 
+                            width: `${Math.min((totalSpent / totalBudget) * 100, 100)}%`,
+                            backgroundColor: getProgressColor(totalSpent, totalBudget)
+                          }
+                        ]} 
+                      />
+                    </View>
+                    <Text style={styles.progressText}>
+                      {Math.round((totalSpent / totalBudget) * 100)}% of budget used
+                    </Text>
+                  </>
+                ) : (
+                  <Text style={styles.progressText}>
+                    Set up budget categories to track your spending progress
+                  </Text>
+                )}
               </View>
             </View>
           </View>
@@ -436,58 +464,65 @@ const BudgetView = () => {
           {/* Content based on active tab */}
           {activeTab === 'categories' ? (
             <View style={styles.contentContainer}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Categories</Text>
-                <TouchableOpacity 
-                  style={styles.editButton}
-                  onPress={openBudgetModal}
-                >
-                  <Text style={styles.editButtonText}>Edit Budget</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Enhanced Categories Grid */}
-              <View style={styles.categoriesGrid}>
-                {budgetCategories.map((category) => (
-                  <View key={category.id} style={styles.categoryGridCard}>
-                    <View style={styles.categoryCardHeader}>
-                      <View style={[styles.categoryIconContainer, { backgroundColor: category.color + '15' }]}>
-                        <Text style={styles.categoryIcon}>{category.icon}</Text>
+              {hasAnyBudgetCategories ? (
+                /* Enhanced Categories Grid */
+                <View style={styles.categoriesGrid}>
+                  {categoriesWithBudget.map((category) => (
+                    <View key={category.id} style={styles.categoryGridCard}>
+                      <View style={styles.categoryCardHeader}>
+                        <View style={[styles.categoryIconContainer, { backgroundColor: category.color + '15' }]}>
+                          <Text style={styles.categoryIcon}>{category.icon}</Text>
+                        </View>
+                        <CircularProgress 
+                          percentage={getProgressPercentage(category.spent, category.allocated)}
+                          color={getProgressColor(category.spent, category.allocated)}
+                          size={60}
+                        />
                       </View>
-                      <CircularProgress 
-                        percentage={getProgressPercentage(category.spent, category.allocated)}
-                        color={getProgressColor(category.spent, category.allocated)}
-                        size={60}
-                      />
-                    </View>
-                    
-                    <Text style={styles.categoryGridName}>{category.name}</Text>
-                    
-                    <View style={styles.categoryAmountContainer}>
-                      <Text style={styles.categoryGridAmount}>
-                        LKR {category.spent.toLocaleString()}
-                      </Text>
-                      <Text style={styles.categoryGridBudget}>
-                        of {category.allocated.toLocaleString()}
-                      </Text>
-                    </View>
-                    
-                    <View style={[
-                      styles.categoryRemainingContainer,
-                      { backgroundColor: (category.allocated - category.spent) >= 0 ? '#F0FDF4' : '#FEF2F2' }
-                    ]}>
-                      <Text style={[
-                        styles.categoryGridRemaining,
-                        { color: (category.allocated - category.spent) >= 0 ? '#16A34A' : '#EF4444' }
+                      
+                      <Text style={styles.categoryGridName}>{category.name}</Text>
+                      
+                      <View style={styles.categoryAmountContainer}>
+                        <Text style={styles.categoryGridAmount}>
+                          {currencyType} {category.spent.toLocaleString()}
+                        </Text>
+                        <Text style={styles.categoryGridBudget}>
+                          of {category.allocated.toLocaleString()}
+                        </Text>
+                      </View>
+                      
+                      <View style={[
+                        styles.categoryRemainingContainer,
+                        { backgroundColor: (category.allocated - category.spent) >= 0 ? '#F0FDF4' : '#FEF2F2' }
                       ]}>
-                        {(category.allocated - category.spent) >= 0 ? ' ' : ' '}
-                        LKR {Math.abs(category.allocated - category.spent).toLocaleString()} 
-                        {(category.allocated - category.spent) >= 0 ? ' left' : ' over'}
-                      </Text>
+                        <Text style={[
+                          styles.categoryGridRemaining,
+                          { color: (category.allocated - category.spent) >= 0 ? '#16A34A' : '#EF4444' }
+                        ]}>
+                          {(category.allocated - category.spent) >= 0 ? ' ' : ' '}
+                          {currencyType} {Math.abs(category.allocated - category.spent).toLocaleString()} 
+                          {(category.allocated - category.spent) >= 0 ? ' left' : ' over'}
+                        </Text>
+                      </View>
                     </View>
+                  ))}
+                </View>
+              ) : (
+                /* No Budget Categories Message */
+                <View style={styles.noBudgetContainer}>
+                  <View style={styles.noBudgetCard}>
+                    <Text style={styles.noBudgetDescription}>
+                      Set up your budget categories to start tracking your expenses and managing your finances effectively.
+                    </Text>
+                    <TouchableOpacity 
+                      style={styles.addBudgetButton}
+                      onPress={openBudgetModal}
+                    >
+                      <Text style={styles.addBudgetButtonText}>Add Budget Categories</Text>
+                    </TouchableOpacity>
                   </View>
-                ))}
-              </View>
+                </View>
+              )}
             </View>
           ) : (
             <View style={styles.contentContainer}>
@@ -511,7 +546,7 @@ const BudgetView = () => {
                       </View>
                     </View>
                     <View style={styles.expenseRight}>
-                      <Text style={styles.expenseAmount}>-LKR {expense.amount.toLocaleString()}</Text>
+                      <Text style={styles.expenseAmount}>-{currencyType} {expense.amount.toLocaleString()}</Text>
                       <Text style={styles.expenseDate}>{expense.date} • {expense.time}</Text>
                     </View>
                   </View>
@@ -537,12 +572,12 @@ const BudgetView = () => {
           type="info"
           values={{
             [`Expense Name (${getSelectedCategoryName()})`]: expenseValues.name,
-            'Amount (LKR)': expenseValues.amount,
+            [`Amount (${currencyType})`]: expenseValues.amount,
           }}
           onChange={(key, value) => {
             if (key.startsWith('Expense Name')) {
               handleExpenseValueChange('name', value);
-            } else if (key === 'Amount (LKR)') {
+            } else if (key === `Amount (${currencyType})`) {
               handleExpenseValueChange('amount', value);
             }
           }}
@@ -555,7 +590,7 @@ const BudgetView = () => {
           visible={showBudgetModal}
           type="info"
           values={{
-            [`New Budget for ${getSelectedCategoryName()} (LKR)`]: budgetValues.amount,
+            [`New Budget for ${getSelectedCategoryName()} (${currencyType})`]: budgetValues.amount,
           }}
           onChange={(key, value) => {
             handleBudgetValueChange('amount', value);
@@ -596,8 +631,24 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#111827',
   },
-  headerSpacer: {
-    width: 30, // Same width as BackButton to balance the layout
+  headerEditButton: {
+    backgroundColor: theme.colors.lightPrimary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    elevation: 2,
+  },
+  headerEditButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.primary,
+  },
+  currencyText: {
+    fontSize: 14, // smaller font size
+    fontWeight: 'normal',
+    color: '#666', // lighter color if you want
   },
   // Enhanced Overview Card Styles
   overviewCard: {
@@ -701,6 +752,54 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: theme.colors.primary,
+  },
+
+  // No Budget Categories Styles
+  noBudgetContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  noBudgetCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 32,
+    alignItems: 'center',
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    maxWidth: 320,
+  },
+  noBudgetIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  noBudgetTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#1E293B',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  noBudgetDescription: {
+    fontSize: 15,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  addBudgetButton: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+    elevation: 2,
+  },
+  addBudgetButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 
   // Enhanced Category Cards
@@ -840,6 +939,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#EF4444',
     marginBottom: 4,
+  },
+  expenseDate: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '500',
   },
 });
 

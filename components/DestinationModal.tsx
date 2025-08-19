@@ -15,6 +15,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Location, TripTagType } from "../types/triptypes";
 import LongButton from "./LongButton";
 
@@ -173,7 +174,17 @@ export default function DestinationModal({
             },
           ]}
         >
-          <Text style={styles.modalTitle}>Where do you want to go?</Text>
+          {/* Header with back button */}
+          <View style={styles.headerRow}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={onClose}
+            >
+              <Ionicons name="arrow-back" size={24} color="#008080" />
+            </TouchableOpacity>
+            <Text style={[styles.modalTitle, styles.headerTitle]}>Where do you want to go?</Text>
+            <View style={styles.headerSpacer} />
+          </View>
 
           <Text style={styles.sectionTitle}>What&apos;s Your Trip Vibe?</Text>
           <View style={styles.vibesScrollContainer}>
@@ -478,5 +489,21 @@ const styles = StyleSheet.create({
   buttonContainer: {
     marginTop: 16,
     paddingHorizontal: 0,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  headerTitle: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  headerSpacer: {
+    width: 24,
   },
 });
