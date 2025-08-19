@@ -279,16 +279,7 @@ const TripDetails = () => {
         >
           <BackButton />
           <View style={styles.headerText}>
-            <Text 
-              style={[
-                styles.headerTitle,
-                // Dynamically adjust font size based on title length
-                (trip?.tripName || tripDetails.title).length > 15 && styles.headerTitleLong,
-                (trip?.tripName || tripDetails.title).length > 25 && styles.headerTitleVeryLong
-              ]}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
+            <Text style={styles.headerTitle}>
               {trip?.tripName || tripDetails.title}
             </Text>
           </View>
@@ -381,19 +372,13 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#111827",
   },
-  headerTitleLong: {
-    fontSize: 20,
-  },
-  headerTitleVeryLong: {
-    fontSize: 16,
-  },
   headerRightSpace: {
     width: 56, // Same width as the FAB to center the title properly
   },
   content: {
     flex: 1,
     paddingHorizontal: 14,
-    paddingTop: 60, // Add padding to account for fixed header
+    paddingTop: 50, // Add padding to account for fixed header
   },
   tabContainer: {
     flexDirection: "row",
