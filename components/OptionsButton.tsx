@@ -115,7 +115,7 @@ const OptionsButton = () => {
     else if (option === 'Map')
       alert("Route -> map view!");
     else if (option === 'Chat')
-     router.push('../../../screens/Chat');
+     router.push('./{id}/Chat');
 
   };
 

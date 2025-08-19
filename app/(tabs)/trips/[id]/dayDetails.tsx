@@ -1,7 +1,6 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import {
-    Alert,
     Animated,
     SafeAreaView,
     ScrollView,
@@ -31,10 +30,6 @@ const DayDetails = () => {
   const dayName = params.dayName as string;
   const weather = params.weather as 'sunny' | 'cloudy' | 'rainy';
   const tripTitle = params.tripTitle as string;
-  
-  // State for expanded service options
-  const [expandedServiceId, setExpandedServiceId] = useState<string | null>(null);
-  
   let services: Service[] = [];
   try {
     services = JSON.parse(params.services as string);
@@ -123,31 +118,6 @@ const DayDetails = () => {
     console.log('View service details:', serviceId);
   };
 
-  const handleRemoveService = (serviceId: string) => {
-    Alert.alert(
-      'Remove Service',
-      'Are you sure you want to remove this service from your trip?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () => {
-            // Implement service removal logic here
-            console.log('Removing service:', serviceId);
-          },
-        },
-      ]
-    );
-  };
-
-  const toggleServiceOptions = (serviceId: string) => {
-    setExpandedServiceId(expandedServiceId === serviceId ? null : serviceId);
-  };
-
   return (
     <>
     <Stack.Screen options={{ headerShown: false }} />
@@ -162,18 +132,7 @@ const DayDetails = () => {
       >
        <BackButton/>
         <View style={styles.headerText}>
-          <Text 
-            style={[
-              styles.headerTitle,
-              // Dynamically adjust font size based on title length
-              tripTitle.length > 15 && styles.headerTitleLong,
-              tripTitle.length > 25 && styles.headerTitleVeryLong
-            ]}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {tripTitle}
-          </Text>
+          <Text style={styles.headerTitle}>{tripTitle}</Text>
         </View>
         <View style={styles.headerSpacer} />
       </Animated.View>
@@ -219,30 +178,10 @@ const DayDetails = () => {
                 <Text style={styles.weatherIcon}>{getWeatherIcon(service.weather || weather)}</Text>
                 <Text style={styles.serviceWeatherText}>Weather forecast</Text>
               </View>
-              <TouchableOpacity onPress={() => toggleServiceOptions(service.id)}>
-                <Text style={styles.changeDetailsButton}>
-                  {expandedServiceId === service.id ? 'Close' : 'Options'}
-                </Text>
+              <TouchableOpacity onPress={() => handleViewServiceDetails(service.id)}>
+                <Text style={styles.changeDetailsButton}>Edit Details</Text>
               </TouchableOpacity>
             </View>
-
-            {/* Expanded Options */}
-            {expandedServiceId === service.id && (
-              <View style={styles.expandedOptions}>
-                <TouchableOpacity 
-                  style={styles.optionButton}
-                  onPress={() => handleViewServiceDetails(service.id)}
-                >
-                  <Text style={styles.optionButtonText}>View Details</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.optionButton, styles.removeButton]}
-                  onPress={() => handleRemoveService(service.id)}
-                >
-                  <Text style={[styles.optionButtonText, styles.removeButtonText]}>Remove</Text>
-                </TouchableOpacity>
-              </View>
-            )}
           </View>
         ))}
           {/* Add service */}
@@ -304,12 +243,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#111827',
   },
-  headerTitleLong: {
-    fontSize: 20,
-  },
-  headerTitleVeryLong: {
-    fontSize: 16,
-  },
   
   headerText: {
     flex: 1,
@@ -318,7 +251,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 14,
-    paddingTop: 50, // Add padding to account for fixed header
+    paddingTop: 40, // Add padding to account for fixed header
   },
   dayHeader: {
     flexDirection: 'row',
@@ -514,36 +447,6 @@ const styles = StyleSheet.create({
   addDaySubtext: {
     fontSize: 14,
     color: '#6B7280',
-  },
-  expandedOptions: {
-    paddingTop: 12,
-    marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    flexDirection: 'row',
-    gap: 12,
-  },
-  optionButton: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: theme.colors.lightPrimary,
-    borderWidth: 1,
-    borderColor: '#008080',
-    alignItems: 'center',
-  },
-  removeButton: {
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FECACA',
-  },
-  optionButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#008080',
-  },
-  removeButtonText: {
-    color: '#DC2626',
   },
 });
 

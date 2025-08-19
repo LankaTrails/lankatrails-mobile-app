@@ -289,9 +289,12 @@ const ActivityServiceDetailPage = () => {
           )}
         </View>
 
-        <View className="px-4 mt-6 mb-6">
-          <AddToTripButton service={convertToServiceDTO(serviceDetail)} />
-        </View>
+        <AddToTripButton
+          service={convertToServiceDTO(serviceDetail)}
+          onTripAdded={() => {
+            console.log("Activity added to trip successfully");
+          }}
+        />
 
         {/* Activity Details */}
         <View className="p-5">
@@ -546,9 +549,9 @@ const ActivityServiceDetailPage = () => {
       </ScrollView>
 
       {/* Floating Add to Trip Button */}
-      {/* {serviceDetail && (
+      {serviceDetail && (
         <AddToTripButton service={convertToServiceDTO(serviceDetail)} />
-      )} */}
+      )}
     </>
   );
 };

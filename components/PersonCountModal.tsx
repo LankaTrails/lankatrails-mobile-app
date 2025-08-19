@@ -89,18 +89,7 @@ export default function PersonCountModal({
         style={[styles.modal, { transform: [{ translateY: modalTranslateY }] }]}
       >
         <View style={styles.header}>
-          {/* Header with back button */}
-          <View style={styles.headerRow}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={onClose}
-            >
-              <Ionicons name="arrow-back" size={24} color="#008080" />
-            </TouchableOpacity>
-            <View style={styles.headerTitleContainer}>
-              <Text style={styles.modalTitle}>Number of Travelers</Text>
-            </View>
-          </View>
+          <Text style={styles.modalTitle}>Number of Travelers</Text>
           <Text style={styles.subtitle}>
             Select the number of adults and children for your trip
           </Text>
@@ -218,16 +207,17 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
     padding: 20,
-    height: "60%",
+    height: "50%",
   },
   header: {
-    alignItems: "stretch",
+    alignItems: "center",
     marginBottom: 24,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: "600",
     color: "#111827",
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
@@ -324,33 +314,5 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     paddingTop: 20,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
-    position: "relative",
-    height: 40,
-  },
-  backButton: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    justifyContent: "center",
-    paddingLeft: 0,
-    zIndex: 2,
-  },
-  headerTitleContainer: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1,
-    pointerEvents: "none",
   },
 });
