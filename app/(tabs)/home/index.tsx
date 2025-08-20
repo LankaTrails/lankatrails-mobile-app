@@ -8,9 +8,11 @@ import {
   TouchableOpacity,
   StatusBar,
   Dimensions,
+  ImageBackground,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import SearchBar from "@/components/SearchBar";
 import {
   StaggeredListItem,
@@ -19,7 +21,7 @@ import {
 import Card from "@/components/Card";
 import ImageSlider from "@/components/transitions/ImageSlider";
 import { router } from "expo-router";
-import { fetchPopularPlacesSriLanka } from "@/utils/fetchPopularPlacesSriLanka"; // ← Import logic
+import { fetchPopularPlacesSriLanka } from "@/utils/fetchPopularPlacesSriLanka";
 
 const { width } = Dimensions.get("window");
 
@@ -52,6 +54,39 @@ const TravelApp = () => {
       }
     })();
   }, []);
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 18) return "Good Afternoon";
+    return "Good Evening";
+  };
+
+  const categories = ["Hotels", "Beaches", "Hiking", "Culture", "Wildlife", "Restaurants"];
+
+  const trendingDestinations = [
+    {
+      id: 1,
+      name: "Sigiriya Rock Fortress",
+      location: "Dambulla",
+      image:
+        "https://images.unsplash.com/photo-1626697550561-8ff63f63683c?q=80&w=1000",
+    },
+    {
+      id: 2,
+      name: "Mirissa Beach",
+      location: "Mirissa",
+      image:
+        "https://images.unsplash.com/photo-1519046904884-53103b34b206?q=80&w=1000",
+    },
+    {
+      id: 3,
+      name: "Yala National Park",
+      location: "Hambantota",
+      image:
+        "https://images.unsplash.com/photo-1621135809414-8fba7ddfb616?q=80&w=1000",
+    },
+  ];
 
   const popularservices = [
     {
@@ -97,10 +132,12 @@ const TravelApp = () => {
       <View style={{ height: insets.top, backgroundColor: "#ffffff" }} />
 
       {/* Header */}
-      <View className={`px-4 pt-4 pb-2 ${showNotifications ? 'bg-white/80' : 'bg-white'}`}>
+      <View className={`px-4 pt-4 pb-2 ${showNotifications ? "bg-white/80" : "bg-white"}`}>
         <View className="flex-row justify-between items-center mb-4">
           <View>
-            <Text className="text-primary mt-6 text-4xl font-bold">Hello, Sarah</Text>
+            <Text className="text-primary mt-6 text-4xl font-bold">
+              {getGreeting()}, Sarah 👋
+            </Text>
             <Text className="text-gray-500 mt-3 text-lg font-semibold">
               Where do you want to go?
             </Text>
@@ -117,7 +154,7 @@ const TravelApp = () => {
 
       {/* Main Content */}
       <ScrollView
-        className={`flex-1 ${showNotifications ? 'opacity-60' : ' '}` }
+        className={`flex-1 ${showNotifications ? "opacity-60" : " "}`}
         showsVerticalScrollIndicator={false}
         scrollEnabled={!showNotifications}
       >
@@ -132,12 +169,56 @@ const TravelApp = () => {
           />
         </View>
 
-        {/* Popular Services (static) */}
-{/* Popular Services */}
+        {/* Categories */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-4 mb-6">
+          {categories.map((cat, i) => (
+            <TouchableOpacity key={i} className="bg-gray-100 px-4 py-2 mr-2 rounded-full">
+              <Text className="text-gray-700 font-medium">{cat}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* Trending Destinations */}
         <View className="px-4 mb-6">
-          <Text className="text-black text-3xl font-bold mb-4">
-            Popular Services
-          </Text>
+          <Text className="text-black text-3xl font-bold mb-4">Trending Destinations</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {trendingDestinations.map((place, index) => (
+              <TouchableOpacity key={place.id} className="mr-4">
+                <ImageBackground
+                  source={{ uri: place.image }}
+                  className="w-64 h-40 rounded-2xl overflow-hidden justify-end"
+                >
+                  <LinearGradient
+                    colors={["transparent", "rgba(0,0,0,0.6)"]}
+                    className="w-full h-full justify-end p-4"
+                  >
+                    <Text className="text-white text-lg font-bold">{place.name}</Text>
+                    <Text className="text-gray-200 text-sm">{place.location}</Text>
+                  </LinearGradient>
+                </ImageBackground>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Travel Tip + Weather Widget */}
+        <View className="px-4 mb-6 flex-row justify-between">
+          <View className="bg-blue-100 rounded-xl p-4 w-[48%]">
+            <Text className="text-blue-700 font-bold mb-2">🌤️ Weather</Text>
+            <Text className="text-gray-700">Colombo</Text>
+            <Text className="text-gray-500">28°C | Sunny</Text>
+          </View>
+          <View className="bg-green-100 rounded-xl p-4 w-[48%]">
+            <Text className="text-green-700 font-bold mb-2">💡 Travel Tip</Text>
+            <Text className="text-gray-700">
+              Best time to visit Ella is morning 🌄
+            </Text>
+          </View>
+        </View>
+
+        {/* Popular Services */}
+        <View className="px-4 mb-6">
+          <Text className="text-black text-3xl font-bold mb-4">Popular Services</Text>
           <View className="flex-row flex-wrap justify-between -mx-1">
             {popularservices.map((place, index) => (
               <StaggeredListItem key={place.id} delay={index * 100}>
@@ -149,7 +230,7 @@ const TravelApp = () => {
                     rating: place.rating || 0,
                     image: place.image,
                   }}
-                  width={width * 0.5 - 16} // Adjust width for two columns
+                  width={width * 0.5 - 16}
                   onPress={(selectedPlace) => {
                     console.log("Pressed:", selectedPlace.title);
                   }}
@@ -158,92 +239,62 @@ const TravelApp = () => {
             ))}
           </View>
         </View>
+
         {/* 🚀 Popular Places (Dynamic) */}
         <View className="px-4 mb-6">
           <Text className="text-black text-3xl font-bold mb-4">Popular Places</Text>
-
           <View className="flex-row flex-wrap justify-between -mx-1">
-            {loadingPopular ? (
-              // Show 4 loading skeletons
-              Array.from({ length: 4 }).map((_, index) => (
-                <LoadingSkeleton key={index} />
-              ))
-            ) : (
-              popularPlaces.map((place, index) => (
-                <StaggeredListItem key={place.place_id} delay={index * 100}>
-                  <Card
-                    item={{
-                      id: parseInt(place.place_id, 10) || 0,
-                      title: place.name,
-                      subtitle: place.vicinity ?? "Sri Lanka",
-                      rating: place.rating ?? 0,
-                      image: place.image ?? "https://via.placeholder.com/200x150",
-                    }}
-                    width={width * 0.5 - 16}
-                    onPress={(selectedPlace) => {
-                      console.log("Navigating to place:", selectedPlace.title);
-                      router.push({
-                        pathname: "../../screens/PublicPlaceDetails",
-                        params: { placeId: place.place_id }
-                      });
-                    }}
-                  />
-                </StaggeredListItem>
-              ))
-            )}
+            {loadingPopular
+              ? Array.from({ length: 4 }).map((_, index) => (
+                  <LoadingSkeleton key={index} />
+                ))
+              : popularPlaces.map((place, index) => (
+                  <StaggeredListItem key={place.place_id} delay={index * 100}>
+                    <Card
+                      item={{
+                        id: parseInt(place.place_id, 10) || 0,
+                        title: place.name,
+                        subtitle: place.vicinity ?? "Sri Lanka",
+                        rating: place.rating ?? 0,
+                        image: place.image ?? "https://via.placeholder.com/200x150",
+                      }}
+                      width={width * 0.5 - 16}
+                      onPress={(selectedPlace) => {
+                        console.log("Navigating to place:", selectedPlace.title);
+                        router.push({
+                          pathname: "../../screens/PublicPlaceDetails",
+                          params: { placeId: place.place_id },
+                        });
+                      }}
+                    />
+                  </StaggeredListItem>
+                ))}
           </View>
         </View>
 
-        {/* Rest of your content (popular pics, tips, etc.) */}
-        {/* <View className="px-3 mb-3">
-  <Text className="text-black text-3xl font-bold mb-4">
-    Popular Pics at YALA forest
-  </Text> */}
-
-  {/* <View className="flex-row gap-1"> */}
-    {/* Large Image on the Left */}
-    {/* <Image
-      source={require('../../../assets/images/Home/deer.jpg')}
-      className="w-56 h-96 rounded-lg"
-      resizeMode="cover"
-    /> */}
-
-    {/* Two Small Stacked Images on the Right */}
-    {/* <View className="mb-2">
-      <Image
-        source={require('../../../assets/images/Home/leopard.jpg')}
-        className="w-56 h-48 rounded-lg mb-1"
-        resizeMode="cover"
-      />
-      <Image
-        source={require('../../../assets/images/Home/elephants.jpg')}
-        className="w-56 h-48 rounded-lg"
-        resizeMode="cover"
-      />
-    </View>
-  </View>
-</View> */}
-
-{/* Plan Trip CTA */}
-        <View className="mx-4 mb-8 bg-primary/60 rounded-2xl p-6 items-center ">
-          <Text className="text-white text-2xl font-bold mb-4">
-            Let&apos;s start the journey
-          </Text>
-          <TouchableOpacity
-            className="bg-white rounded-full px-6 py-3 mb-2"
-            onPress={() => router.push("../trips")} // Navigate to Plan Trip screen
-          >
-            <Text className="text-primary font-medium">Plan Trip</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            className="bg-white/20 rounded-full px-6 py-3"
-            onPress={() => router.push("../explore")} // Navigate to Explore screen
-          >
-            <Text className="text-white font-medium">Explore</Text>
-          </TouchableOpacity>
+        {/* Plan Trip CTA */}
+        <View className="mx-4 mb-8 rounded-2xl overflow-hidden">
+          <LinearGradient colors={["#1D976C", "#93F9B9"]} className="p-6 items-center">
+            <Text className="text-white text-2xl font-bold mb-4">
+              Let&apos;s start the journey
+            </Text>
+            <TouchableOpacity
+              className="bg-white rounded-full px-6 py-3 mb-2"
+              onPress={() => router.push("../trips")}
+            >
+              <Text className="text-primary font-medium">Plan Trip</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="bg-white/20 rounded-full px-6 py-3"
+              onPress={() => router.push("../explore")}
+            >
+              <Text className="text-white font-medium">Explore</Text>
+            </TouchableOpacity>
+          </LinearGradient>
         </View>
+
         <View className="px-4 mb-24">
-          <Text className=" text-white">LankaTrails</Text>
+          <Text className="text-center text-gray-400">LankaTrails © 2025</Text>
         </View>
       </ScrollView>
 
@@ -256,19 +307,17 @@ const TravelApp = () => {
             activeOpacity={1}
           />
           <View className="bg-white w-[90%] rounded-2xl p-4 shadow-lg">
-            <Text className="text-3xl font-bold m-8 items-center text-black">Notifications</Text>
+            <Text className="text-3xl font-bold mb-6 text-black">Notifications</Text>
             <StaggeredListItem index={0} delay={400}>
               <View className="m-4">
-                <Text className="text-lg text-black">
-                  🧳 Your saved trip to Kandy is waiting!
-                </Text>
+                <Text className="text-lg text-black">🧳 Your saved trip to Kandy is waiting!</Text>
               </View>
               <View className="m-4">
-                <Text className="text-lg text-black">
-                  🌍 New destination added: Trincomalee
-                </Text>
+                <Text className="text-lg text-black">🌍 New destination added: Trincomalee</Text>
               </View>
-              
+              <View className="m-4">
+                <Text className="text-lg text-black">💸 Special offer: 20% off in Galle hotels</Text>
+              </View>
             </StaggeredListItem>
             <TouchableOpacity
               className="mt-4 self-end bg-primary px-4 py-2 rounded-full"
