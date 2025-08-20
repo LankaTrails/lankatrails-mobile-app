@@ -21,6 +21,8 @@ export type TripItemType = "PLACE" | "SERVICE";
 
 export type ServiceType = 'ACTIVITY' | 'TOUR_GUIDE' | 'TRANSPORT' | 'ACCOMMODATION' | 'FOOD_BEVERAGE';
 
+export type TripRole = "EDITOR" | "ADMIN" | "MEMBER" | "VIEWER";
+
 export interface Location {
     locationId?: number | null;
     formattedAddress: string;
@@ -100,4 +102,10 @@ export interface TripItem {
     service?: ServiceDTO;
     startTime: string; // ISO date-time string format
     endTime: string; // ISO date-time string format
+}
+
+export interface TripInvitationRequest {
+    tripId: number;
+    role: TripRole;
+    isGroupInvitation: boolean;
 }

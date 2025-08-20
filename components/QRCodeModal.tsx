@@ -18,6 +18,8 @@ interface QRCodeModalProps {
   onClose: () => void;
   invitationLink: string;
   tripName: string;
+  role?: string; // Optional role parameter
+  invitationType?: string; // Optional invitation type parameter
 }
 
 const { width } = Dimensions.get("window");
@@ -28,6 +30,8 @@ export default function QRCodeModal({
   onClose,
   invitationLink,
   tripName,
+  role,
+  invitationType,
 }: QRCodeModalProps) {
   const handleCopyLink = async () => {
     try {
@@ -59,6 +63,22 @@ export default function QRCodeModal({
 
             {/* Trip Name */}
             <Text style={styles.tripName}>{tripName}</Text>
+
+            {/* Invitation Details */}
+            <View style={styles.badgeContainer}>
+              {role && (
+                <View style={styles.roleBadge}>
+                  <Text style={styles.roleText}>{role} Access</Text>
+                </View>
+              )}
+              {invitationType && (
+                <View style={styles.typeBadge}>
+                  <Text style={styles.typeText}>
+                    {invitationType} Invitation
+                  </Text>
+                </View>
+              )}
+            </View>
 
             {/* QR Code Container */}
             <View style={styles.qrContainer}>
@@ -207,5 +227,38 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     marginLeft: 8,
+  },
+  roleBadge: {
+    backgroundColor: "#008080",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    marginHorizontal: 4,
+  },
+  roleText: {
+    color: "white",
+    fontSize: 12,
+    fontWeight: "600",
+    textTransform: "uppercase",
+  },
+  badgeContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+    flexWrap: "wrap",
+  },
+  typeBadge: {
+    backgroundColor: "#6B7280",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    marginHorizontal: 4,
+  },
+  typeText: {
+    color: "white",
+    fontSize: 12,
+    fontWeight: "600",
+    textTransform: "capitalize",
   },
 });
