@@ -83,3 +83,23 @@ export const fetchAllCities = async (): Promise<ApiResponse<Location[]>> => {
         throw error;
     }
 };
+
+// Generate invitation for the trip
+export const generateTripInvitation = async (tripId: number): Promise<ApiResponse<string>> => {
+    try {
+        const response = await api.post<ApiResponse<string>>(`/trips/invitations/${tripId}/generate`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+// Accept the invitation
+export const acceptTripInvitation = async (token: string): Promise<ApiResponse<Trip>> => {
+    try {
+        const response = await api.post<ApiResponse<Trip>>(`/trips/invitations/${token}/accept`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};

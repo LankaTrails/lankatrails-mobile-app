@@ -1,37 +1,46 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useAuth } from "@/hooks/useAuth";
+import { useGoogleAuth } from "@/services/googleAuthService";
+import { BlurView } from "expo-blur";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
+  Alert,
+  Animated,
   Dimensions,
   ImageBackground,
-  StatusBar,
-  Animated,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
+  StatusBar,
+  StyleSheet,
+  Text,
   TouchableOpacity,
-} from 'react-native';
-import InputField from '../../components/InputField';
-import { BlurView } from "expo-blur";
-import LongButton from '../../components/LongButton';
-import { router } from 'expo-router';
-import { useAuth } from '@/hooks/useAuth';
-import { useGoogleAuth } from '@/services/googleAuthService';
+  View,
+} from "react-native";
+import InputField from "../../components/InputField";
+import LongButton from "../../components/LongButton";
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
 const SignIn = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  
+
+  const { redirect } = useLocalSearchParams(); // Get redirect parameter
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const blurFadeAnim = useRef(new Animated.Value(0)).current;
 
-  const { signIn, isLoading, error, clearError, isAuthenticated, signInWithGoogle } = useAuth();
+  const {
+    signIn,
+    isLoading,
+    error,
+    clearError,
+    isAuthenticated,
+    signInWithGoogle,
+  } = useAuth();
   const { promptAsync, exchangeToken, response } = useGoogleAuth();
 
   useEffect(() => {
@@ -56,21 +65,31 @@ const SignIn = () => {
 
   useEffect(() => {
     if (error) {
-      Alert.alert('Login Failed', error);
+      Alert.alert("Login Failed", error);
       clearError();
     }
   }, [error]);
 
   useEffect(() => {
-  console.log('Login Screen Auth State:', { isAuthenticated, isLoading, error });
-  if (isAuthenticated) {
-    router.replace('/(tabs)/home');
-  }
-}, [isAuthenticated]);
+    console.log("Login Screen Auth State:", {
+      isAuthenticated,
+      isLoading,
+      error,
+    });
+    if (isAuthenticated) {
+      // If there's a redirect parameter, go there; otherwise go to home
+      if (redirect && typeof redirect === "string") {
+        console.log("Redirecting to:", redirect);
+        router.replace(redirect as any);
+      } else {
+        router.replace("/(tabs)/home" as any);
+      }
+    }
+  }, [isAuthenticated, redirect]);
 
   const handleSignIn = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password');
+      Alert.alert("Error", "Please enter both email and password");
       return;
     }
     await signIn(email, password);
@@ -78,19 +97,19 @@ const SignIn = () => {
 
   useEffect(() => {
     (async () => {
-      if (response?.type === 'success') {
+      if (response?.type === "success") {
         try {
           const tokens = await exchangeToken();
           if (tokens.idToken) {
             signInWithGoogle(tokens.idToken);
           } else {
-            Alert.alert('Google login failed', 'No ID token received');
+            Alert.alert("Google login failed", "No ID token received");
           }
         } catch (err) {
           if (err instanceof Error) {
-            Alert.alert('Google login failed', err.message);
+            Alert.alert("Google login failed", err.message);
           } else {
-            Alert.alert('Google login failed', 'An unknown error occurred');
+            Alert.alert("Google login failed", "An unknown error occurred");
           }
         }
       }
@@ -98,26 +117,33 @@ const SignIn = () => {
   }, [response]);
 
   const handleSocialSignIn = (provider: string) => {
-    if (provider === 'Google') {
+    if (provider === "Google") {
       promptAsync();
     } else {
-      Alert.alert('Coming Soon', `Sign in with ${provider} is not implemented yet.`);
+      Alert.alert(
+        "Coming Soon",
+        `Sign in with ${provider} is not implemented yet.`
+      );
     }
   };
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="transparent"
+        translucent
+      />
+
       <ImageBackground
-        source={require('../../assets/images/login.jpeg')}
+        source={require("../../assets/images/login.jpeg")}
         style={styles.backgroundImage}
         resizeMode="cover"
       >
         <View style={styles.gradientOverlay} />
-        
+
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardAvoid}
         >
           <ScrollView
@@ -136,7 +162,10 @@ const SignIn = () => {
             >
               <Text style={styles.welcomeText}>Step in!</Text>
               <Text style={styles.subtitle}>
-                Welcome to <Text style={styles.brandText}>Lanka<Text style={{ color: '#ff6600' }}>Trails</Text></Text>
+                Welcome to{" "}
+                <Text style={styles.brandText}>
+                  Lanka<Text style={{ color: "#ff6600" }}>Trails</Text>
+                </Text>
               </Text>
               <Text style={styles.tagline}>Start Your Journey!</Text>
             </Animated.View>
@@ -150,10 +179,19 @@ const SignIn = () => {
                 },
               ]}
             >
-              <Animated.View style={{ ...StyleSheet.absoluteFillObject, opacity: blurFadeAnim }}>
-                <BlurView intensity={15} tint="light" style={StyleSheet.absoluteFill} />
+              <Animated.View
+                style={{
+                  ...StyleSheet.absoluteFillObject,
+                  opacity: blurFadeAnim,
+                }}
+              >
+                <BlurView
+                  intensity={15}
+                  tint="light"
+                  style={StyleSheet.absoluteFill}
+                />
               </Animated.View>
-              
+
               <InputField
                 label="Email"
                 placeholder="Enter your email"
@@ -174,18 +212,18 @@ const SignIn = () => {
                 // onRightIconPress={() => setShowPassword(!showPassword)}
               />
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.forgotPassword}
                 // onPress={() => router.push('/forgot-password')}
               >
                 <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
               </TouchableOpacity>
 
-              <LongButton 
-                label={isLoading ? 'Signing In...' : 'Sign In'} 
+              <LongButton
+                label={isLoading ? "Signing In..." : "Sign In"}
                 onPress={handleSignIn}
               />
-              
+
               <View style={styles.dividerContainer}>
                 <View style={styles.dividerLine} />
                 <Text style={styles.dividerText}>or sign in with</Text>
@@ -193,23 +231,40 @@ const SignIn = () => {
               </View>
 
               <View style={styles.socialContainer}>
-                {['Google', 'Facebook'].map((provider) => (
+                {["Google", "Facebook"].map((provider) => (
                   <TouchableOpacity
                     key={provider}
                     style={styles.socialButton}
                     onPress={() => handleSocialSignIn(provider)}
                   >
                     <Text style={styles.socialButtonText}>
-                      {provider === 'Google' ? 'G' : 
-                       provider === 'Facebook' ? 'f' : ''}
+                      {provider === "Google"
+                        ? "G"
+                        : provider === "Facebook"
+                        ? "f"
+                        : ""}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
               <View style={styles.signUpContainer}>
-                <Text style={styles.signUpText}>Don&#39;t have an account? </Text>
-                <TouchableOpacity onPress={() => router.replace('/signUp')}>
+                <Text style={styles.signUpText}>
+                  Don&#39;t have an account?{" "}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    // If there's a redirect parameter, pass it to sign-up; otherwise just go to sign-up
+                    if (redirect && typeof redirect === "string") {
+                      router.replace({
+                        pathname: "/(auth)/signUp" as any,
+                        params: { redirect },
+                      });
+                    } else {
+                      router.replace("/(auth)/signUp" as any);
+                    }
+                  }}
+                >
                   <Text style={styles.signUpLink}>Sign Up</Text>
                 </TouchableOpacity>
               </View>
@@ -227,125 +282,125 @@ const styles = StyleSheet.create({
   },
   backgroundImage: {
     flex: 1,
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   gradientOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.05)',
+    backgroundColor: "rgba(0,0,0,0.05)",
   },
   keyboardAvoid: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingHorizontal: 14,
     paddingTop: StatusBar.currentHeight || 40,
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 40,
   },
   welcomeText: {
     fontSize: 32,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    textAlign: 'center',
+    fontWeight: "800",
+    color: "#FFFFFF",
+    textAlign: "center",
     marginBottom: 8,
-    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowColor: "rgba(0,0,0,0.3)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
   },
   subtitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    textAlign: 'center',
+    fontWeight: "600",
+    color: "#FFFFFF",
+    textAlign: "center",
     marginBottom: 4,
   },
   brandText: {
-    color: '#008080',
-    fontWeight: '700',
+    color: "#008080",
+    fontWeight: "700",
   },
   tagline: {
     fontSize: 16,
-    color: 'rgba(255,255,255,0.8)',
-    textAlign: 'center',
-    fontWeight: '400',
+    color: "rgba(255,255,255,0.8)",
+    textAlign: "center",
+    fontWeight: "400",
   },
   formContainer: {
-    backgroundColor: 'rgba(247, 247, 247, 0.84)',
+    backgroundColor: "rgba(247, 247, 247, 0.84)",
     borderRadius: 20,
     padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-    shadowColor: '#000',
+    borderColor: "rgba(255,255,255,0.2)",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
     elevation: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   forgotPassword: {
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
     marginBottom: 14,
   },
   forgotPasswordText: {
-    color: '#008080',
+    color: "#008080",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginVertical: 14,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.39)',
+    backgroundColor: "rgba(0, 0, 0, 0.39)",
   },
   dividerText: {
-    color: 'rgba(0, 0, 0, 0.39)',
+    color: "rgba(0, 0, 0, 0.39)",
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     marginHorizontal: 16,
   },
   socialContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
+    flexDirection: "row",
+    justifyContent: "space-evenly",
     marginBottom: 32,
   },
   socialButton: {
     width: 36,
     height: 36,
-    backgroundColor: 'rgba(115, 115, 115, 0)',
+    backgroundColor: "rgba(115, 115, 115, 0)",
     borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
-    borderColor: '#008080',
+    borderColor: "#008080",
   },
   socialButtonText: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#008080',
+    fontWeight: "700",
+    color: "#008080",
   },
   signUpContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   signUpText: {
-    color: 'rgba(0, 0, 0, 0.39)',
+    color: "rgba(0, 0, 0, 0.39)",
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   signUpLink: {
-    color: '#008080',
+    color: "#008080",
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });
 
