@@ -164,13 +164,16 @@ const TravelApp = () => {
 
           <View className="flex-row flex-wrap justify-between -mx-1">
             {loadingPopular ? (
-              <LoadingSkeleton count={4} />
+              // Show 4 loading skeletons
+              Array.from({ length: 4 }).map((_, index) => (
+                <LoadingSkeleton key={index} />
+              ))
             ) : (
               popularPlaces.map((place, index) => (
                 <StaggeredListItem key={place.place_id} delay={index * 100}>
                   <Card
                     item={{
-                      id: place.place_id,
+                      id: parseInt(place.place_id, 10) || 0,
                       title: place.name,
                       subtitle: place.vicinity ?? "Sri Lanka",
                       rating: place.rating ?? 0,
@@ -178,7 +181,11 @@ const TravelApp = () => {
                     }}
                     width={width * 0.5 - 16}
                     onPress={(selectedPlace) => {
-                      console.log("Pressed:", selectedPlace.title);
+                      console.log("Navigating to place:", selectedPlace.title);
+                      router.push({
+                        pathname: "../../screens/PublicPlaceDetails",
+                        params: { placeId: place.place_id }
+                      });
                     }}
                   />
                 </StaggeredListItem>
@@ -220,7 +227,7 @@ const TravelApp = () => {
 {/* Plan Trip CTA */}
         <View className="mx-4 mb-8 bg-primary/60 rounded-2xl p-6 items-center ">
           <Text className="text-white text-2xl font-bold mb-4">
-            Let's start the journey
+            Let&apos;s start the journey
           </Text>
           <TouchableOpacity
             className="bg-white rounded-full px-6 py-3 mb-2"

@@ -43,7 +43,7 @@ export default function SelectPopup({
           <Text style={styles.modalTitle}>
             {modalType === 'expense'
               ? 'Select Category for Expense'
-              : 'Select Category to Update Budget'}
+              : 'Edit Budget Category'}
           </Text>
 
           <ScrollView style={styles.categoryList} showsVerticalScrollIndicator={false}>
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
     padding: 20,
-    height: '60%',
+    height: '65%',
   },
   modalTitle: {
     fontSize: 18,
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   categoryList: {
-    maxHeight: 380,
+    maxHeight: 480,
   },
   categoryOption: {
     flexDirection: 'row',

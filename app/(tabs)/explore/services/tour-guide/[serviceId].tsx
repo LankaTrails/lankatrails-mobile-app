@@ -277,7 +277,9 @@ const TourGuideServiceDetailPage = () => {
           )}
         </View>
 
-        <AddToTripButton service={convertToServiceDTO(serviceDetail)} />
+        <View className="px-4 mt-6 mb-6">
+          <AddToTripButton service={convertToServiceDTO(serviceDetail)} />
+        </View>
 
         {/* Languages Spoken */}
         {serviceDetail.languages.length > 0 && (

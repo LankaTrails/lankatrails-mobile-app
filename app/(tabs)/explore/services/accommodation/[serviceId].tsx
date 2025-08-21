@@ -282,12 +282,9 @@ const AccommodationServiceDetailPage = () => {
           )}
         </View>
 
-        <AddToTripButton
-          service={convertToServiceDTO(serviceDetail)}
-          onTripAdded={() => {
-            console.log("Accommodation added to trip successfully");
-          }}
-        />
+        <View className="px-4 mt-6 mb-6">
+          <AddToTripButton service={convertToServiceDTO(serviceDetail)} />
+        </View>
 
         {/* Accommodation Details */}
         <View className="p-5">
@@ -518,9 +515,9 @@ const AccommodationServiceDetailPage = () => {
       </ScrollView>
 
       {/* Floating Add to Trip Button */}
-      {serviceDetail && (
+      {/* {serviceDetail && (
         <AddToTripButton service={convertToServiceDTO(serviceDetail)} />
-      )}
+      )} */}
     </>
   );
 };
