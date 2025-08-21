@@ -1,15 +1,16 @@
 /**
- * Chat Screen - Integrates REST API chat room creation with WebSocket real-time messaging
+ * Chat Screen - Integrates REST API chat room creation with STOMP WebSocket real-time messaging
  * 
  * Features:
  * 1. Uses chatService.ts to create/get direct chat rooms via REST API
- * 2. WebSocket connection for real-time messaging
+ * 2. STOMP WebSocket connection for real-time messaging with authentication
  * 3. Displays loading states for chat room initialization
  * 4. Handles connection status and reconnection
+ * 5. Supports typing indicators and read receipts
  * 
  * Integration with Backend:
  * - REST API: /api/chat/rooms/direct/{userId} (ChatRoomController.java)
- * - WebSocket: ws://localhost:3001 for real-time messaging
+ * - STOMP WebSocket: ws://localhost:8080/ws for real-time messaging
  */
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
@@ -27,8 +28,9 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import BackButton from "@/components/BackButton";
 import { theme } from "@/app/theme";
-import { getDirectChatRoom } from "@/services/chatService";
-import { ChatRoom } from "@/types/chatTypes";
+import { getDirectChatRoom, getChatRoomById } from "@/services/chatService";
+import { DirectChatRoom, GroupChatRoom } from "@/types/chatTypes";
+import { getToken } from "@/utils/tokenStorage";
 
 interface Message {
   id: string;
@@ -44,17 +46,6 @@ interface GroupMember {
   name: string;
   isOnline: boolean;
   lastSeen?: number;
-}
-
-interface TripDetailsType {
-  budget: string;
-  startDate: Date;
-  endDate: Date;
-  currency: string;
-  distance: string;
-  title: string;
-  numberOfAdults: number;
-  numberOfChildren: number;
 }
 
 interface WebSocketMessage {
@@ -78,8 +69,9 @@ export default function Chat() {
   const [isReconnecting, setIsReconnecting] = useState(false);
   const [typingUsers, setTypingUsers] = useState<{[key: string]: string}>({}); // userId -> userName
   const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
-  const [chatRoom, setChatRoom] = useState<ChatRoom | null>(null);
+  const [chatRoom, setChatRoom] = useState<GroupChatRoom | DirectChatRoom | null>(null);
   const [isLoadingChatRoom, setIsLoadingChatRoom] = useState(false);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<GroupMember>({
     id: 'user_' + Date.now(),
     name: 'You',
@@ -88,73 +80,184 @@ export default function Chat() {
   
   const flatListRef = useRef<FlatList>(null);
   const ws = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimeoutRef = useRef<number | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
   
-  const [trip, setTrip] = useState<any>(null);
-  const [tripDetails, setTripDetails] = useState<TripDetailsType>({
-    budget: "45000",
-    startDate: new Date("2024-06-22"),
-    endDate: new Date("2024-06-26"),
-    currency: "LKR",
-    distance: "120km",
-    title: "Galle Adventure",
-    numberOfAdults: 2,
-    numberOfChildren: 1,
-  });
 
-  // WebSocket URL - Replace with your server URL
-  const WS_URL = 'ws://localhost:3001'; // Update this with your backend URL
-  const GROUP_ID = trip?.id || 'galle_adventure_group';
+  // STOMP WebSocket URL - Backend WebSocket endpoint
+  const WS_URL = 'http://localhost:8080/ws';
+  const GROUP_ID = chatRoom?.id || 'default_group';
+
+  // Load authentication token
+  const loadAuthToken = useCallback(async () => {
+    try {
+      const token = await getToken('ACCESS_TOKEN');
+      if (token) {
+        setAccessToken(token);
+        console.log('Authentication token loaded');
+        return token;
+      } else {
+        console.warn('No authentication token found');
+        Alert.alert('Authentication Required', 'Please log in to access chat rooms.');
+        return null;
+      }
+    } catch (error) {
+      console.error('Error loading auth token:', error);
+      Alert.alert('Error', 'Failed to load authentication. Please log in again.');
+      return null;
+    }
+  }, []);
 
   // Initialize chat room using the REST API
   const initializeChatRoom = useCallback(async (providerId?: number) => {
-    if (!providerId) return;
+    if (!providerId) {
+      console.log('No provider ID provided for chat room initialization');
+      return;
+    }
     
+    console.log(`Attempting to initialize chat room with provider ID: ${providerId}`);
     setIsLoadingChatRoom(true);
     try {
       const response = await getDirectChatRoom(providerId);
+      console.log('Chat room API response:', response);
+      
       if (response.success && response.data) {
         setChatRoom(response.data);
-        console.log('Chat room initialized:', response.data);
+        console.log('Chat room initialized successfully:', response.data);
+        return response.data; // Return the chat room data
       } else {
-        Alert.alert('Error', response.message || 'Failed to initialize chat room');
+        console.error('Chat room API error:', response.message);
+        const errorMsg = response.message || 'Failed to initialize chat room';
+        Alert.alert('Error', errorMsg);
+        throw new Error(errorMsg);
       }
     } catch (error) {
       console.error('Error initializing chat room:', error);
-      Alert.alert('Error', 'Failed to connect to chat room');
+      
+      // More detailed error logging
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        
+        // Handle specific authentication error
+        if (error.message.includes('Authentication required')) {
+          Alert.alert(
+            'Authentication Required', 
+            'Please log in to access chat rooms. You will be redirected to the login page.',
+            [
+              { text: 'OK', onPress: () => {
+                // You can add navigation to login page here
+                console.log('Navigate to login page');
+              }}
+            ]
+          );
+        } else {
+          Alert.alert('Error', `Failed to connect to chat room: ${error.message}`);
+        }
+      } else {
+        Alert.alert('Error', 'Failed to connect to chat room: Unknown error');
+      }
+      throw error; // Re-throw to handle in calling function
     } finally {
       setIsLoadingChatRoom(false);
     }
   }, []);
 
-  const connectWebSocket = useCallback(() => {
+  // Alternative method to initialize by room ID
+  const initializeChatRoomById = useCallback(async (roomId: number) => {
+    console.log(`Attempting to initialize chat room by ID: ${roomId}`);
+    setIsLoadingChatRoom(true);
+    try {
+      const response = await getChatRoomById(roomId);
+      console.log('Chat room by ID API response:', response);
+      
+      if (response.success && response.data) {
+        // Convert ChatRoom to DirectChatRoom if needed
+        const chatRoomData = response.data as DirectChatRoom;
+        setChatRoom(chatRoomData);
+        console.log('Chat room initialized by ID successfully:', chatRoomData);
+        return chatRoomData;
+      } else {
+        const errorMsg = response.message || 'Failed to get chat room by ID';
+        Alert.alert('Error', errorMsg);
+        throw new Error(errorMsg);
+      }
+    } catch (error) {
+      console.error('Error getting chat room by ID:', error);
+      if (error instanceof Error) {
+        Alert.alert('Error', `Failed to get chat room: ${error.message}`);
+      }
+      throw error;
+    } finally {
+      setIsLoadingChatRoom(false);
+    }
+  }, []);
+
+  const connectWebSocket = useCallback(async () => {
     if (ws.current?.readyState === WebSocket.OPEN) {
+      return;
+    }
+
+    // Load authentication token first
+    const token = await loadAuthToken();
+    if (!token) {
+      console.error("Cannot connect WebSocket: No authentication token available");
+      Alert.alert('Authentication Required', 'Please log in to access the chat.');
+      return;
+    }
+
+    // Make sure we have a chat room
+    if (!chatRoom?.id) {
+      console.error("Cannot connect WebSocket: No chat room initialized");
       return;
     }
 
     try {
       setIsReconnecting(true);
-      ws.current = new WebSocket(WS_URL);
+      console.log(`Connecting to WebSocket for chat room ${chatRoom.id}...`);
+
+      // Open WebSocket (native WebSocket API)
+      const wsUrl = `ws://localhost:8080/ws`;
+      ws.current = new WebSocket(wsUrl);
 
       ws.current.onopen = () => {
-        console.log('WebSocket connected');
+        console.log(`Connected to WebSocket for chat room ${chatRoom.id}`);
         setIsConnected(true);
         setIsReconnecting(false);
         reconnectAttempts.current = 0;
-        
-        // Send initial connection message to join group
-        const joinMessage = {
-          type: 'join_group',
-          data: {
-            groupId: GROUP_ID,
-            user: currentUser,
-            tripDetails: tripDetails
-          }
+
+        // Send authentication message first
+        const authMessage = {
+          type: "AUTH",
+          token: token,
         };
-        ws.current?.send(JSON.stringify(joinMessage));
+        ws.current?.send(JSON.stringify(authMessage));
+
+        // Subscribe to room messages
+        const subscribeMessage = {
+          type: "SUBSCRIBE",
+          destination: `/topic/room.${chatRoom.id}`,
+          roomId: chatRoom.id,
+          userId: currentUser.id,
+        };
+        ws.current?.send(JSON.stringify(subscribeMessage));
+
+        // Subscribe to typing indicators
+        const typingSubscribeMessage = {
+          type: "SUBSCRIBE",
+          destination: `/topic/typing.${chatRoom.id}`,
+          roomId: chatRoom.id,
+        };
+        ws.current?.send(JSON.stringify(typingSubscribeMessage));
+
+        // Subscribe to error queue
+        const errorSubscribeMessage = {
+          type: "SUBSCRIBE",
+          destination: `/user/queue/errors`,
+        };
+        ws.current?.send(JSON.stringify(errorSubscribeMessage));
       };
 
       ws.current.onmessage = (event) => {
@@ -162,35 +265,35 @@ export default function Chat() {
           const message: WebSocketMessage = JSON.parse(event.data);
           handleIncomingMessage(message);
         } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+          console.error("Error parsing WebSocket message:", error);
         }
       };
 
       ws.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        console.error("WebSocket error:", error);
         setIsConnected(false);
       };
 
       ws.current.onclose = (event) => {
-        console.log('WebSocket disconnected:', event.code, event.reason);
+        console.log("WebSocket disconnected:", event.code, event.reason);
         setIsConnected(false);
         setIsReconnecting(false);
-        
+
         // Clear typing users
         setTypingUsers({});
-        
+
         // Attempt to reconnect if not a manual close
         if (event.code !== 1000 && reconnectAttempts.current < maxReconnectAttempts) {
           scheduleReconnect();
         }
       };
     } catch (error) {
-      console.error('Error creating WebSocket connection:', error);
+      console.error("Error creating WebSocket connection:", error);
       setIsConnected(false);
       setIsReconnecting(false);
       scheduleReconnect();
     }
-  }, [currentUser, tripDetails, GROUP_ID]);
+  }, [currentUser, chatRoom?.id, loadAuthToken, handleIncomingMessage, scheduleReconnect]);
 
   const scheduleReconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -208,7 +311,7 @@ export default function Chat() {
     }, delay);
   }, [connectWebSocket]);
 
-  const handleIncomingMessage = (message: WebSocketMessage) => {
+  const handleIncomingMessage = useCallback((message: WebSocketMessage) => {
     switch (message.type) {
       case 'message':
         const newMessage: Message = {
@@ -307,7 +410,7 @@ export default function Chat() {
         Alert.alert('Error', message.data.error || 'An error occurred');
         break;
     }
-  };
+  }, [currentUser.id]);
 
   const sendMessage = (text: string, messageId: string) => {
     if (!ws.current || ws.current.readyState !== WebSocket.OPEN) {
@@ -323,20 +426,26 @@ export default function Chat() {
       return;
     }
 
+    if (!chatRoom?.id) {
+      Alert.alert('Error', 'No chat room available. Please reconnect.');
+      return;
+    }
+
+    // STOMP-like message format matching backend expectations
     const messageData = {
-      type: 'group_message',
-      data: {
-        id: messageId,
-        text: text,
-        senderId: currentUser.id,
-        senderName: currentUser.name,
-        timestamp: Date.now(),
-        groupId: GROUP_ID
+      type: 'SEND',
+      destination: '/app/sendMessage',
+      body: {
+        chatRoomId: chatRoom.id,
+        messageType: 'TEXT',
+        content: text
       }
     };
 
     try {
       ws.current.send(JSON.stringify(messageData));
+      console.log('Message sent via STOMP protocol:', messageData);
+      
       // Mark message as sent
       setMessages(prev => 
         prev.map(msg => 
@@ -386,7 +495,7 @@ export default function Chat() {
       // Set timeout to stop typing indicator
       typingTimeoutRef.current = setTimeout(() => {
         // Typing indicator will auto-expire on backend
-      }, 1000);
+      }, 1000) as NodeJS.Timeout;
     }
   };
 
@@ -541,7 +650,7 @@ export default function Chat() {
         />
         <Text style={styles.emptyStateTitle}>Welcome to the Group Chat</Text>
         <Text style={styles.emptyStateDescription}>
-          Start chatting with your group about the trip to {trip?.tripName || tripDetails.title}
+          Start chatting with your group about the trip
         </Text>
         
         {groupMembers.length > 0 && renderGroupMembers()}
@@ -568,7 +677,25 @@ export default function Chat() {
       );
     }
     
-    if (isConnected) return null;
+    if (!chatRoom) {
+      return (
+        <View style={styles.connectionBanner}>
+          <Ionicons name="warning-outline" size={16} color="#f59e0b" />
+          <Text style={styles.connectionBannerText}>Chat room not connected</Text>
+        </View>
+      );
+    }
+    
+    if (isConnected) {
+      return (
+        <View style={styles.connectionBanner}>
+          <Ionicons name="checkmark-circle-outline" size={16} color="#10b981" />
+          <Text style={[styles.connectionBannerText, { color: '#10b981' }]}>
+            Connected to chat room {chatRoom.id}
+          </Text>
+        </View>
+      );
+    }
     
     return (
       <View style={styles.connectionBanner}>
@@ -587,12 +714,39 @@ export default function Chat() {
 
   // Initialize WebSocket connection and chat room
   useEffect(() => {
-    connectWebSocket();
+    // Test connectivity first
+    console.log('Chat component mounted, attempting to connect...');
     
-    // Initialize chat room for direct messaging (example with provider ID)
-    // You can modify this to get the actual provider/user ID from route params or props
-    const exampleProviderId = 123; // Replace with actual provider ID from navigation params
-    initializeChatRoom(exampleProviderId);
+    // Load authentication and initialize chat room first
+    const initializeChat = async () => {
+      try {
+        // Load auth token
+        const token = await loadAuthToken();
+        if (!token) {
+          console.error('No authentication token available');
+          return;
+        }
+        
+        const exampleProviderId = 3; 
+        console.log(`About to initialize chat room with provider ID: ${exampleProviderId}`);
+        const chatRoomData = await initializeChatRoom(exampleProviderId);
+        
+        if (chatRoomData) {
+          console.log('Chat room initialized successfully, connecting WebSocket...');
+          // Connect WebSocket after chat room is initialized
+          setTimeout(() => {
+            connectWebSocket();
+          }, 1000); // Small delay to ensure chat room is set
+        } else {
+          console.error('Failed to initialize chat room');
+        }
+      } catch (error) {
+        console.error('Error during chat initialization:', error);
+        // Don't connect WebSocket if initialization failed
+      }
+    };
+    
+    initializeChat();
     
     return () => {
       if (reconnectTimeoutRef.current) {
@@ -614,7 +768,7 @@ export default function Chat() {
         ws.current.close(1000, 'Component unmounted');
       }
     };
-  }, [connectWebSocket, initializeChatRoom, GROUP_ID, currentUser]);
+  }, [connectWebSocket, initializeChatRoom, loadAuthToken, GROUP_ID, currentUser]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -634,17 +788,6 @@ export default function Chat() {
       <View style={styles.header}>
         <BackButton />
         <View style={styles.headerText}>
-          <Text 
-            style={[
-              styles.headerTitle,
-              (trip?.tripName || tripDetails.title).length > 15 && styles.headerTitleLong,
-              (trip?.tripName || tripDetails.title).length > 25 && styles.headerTitleVeryLong
-            ]}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {trip?.tripName || tripDetails.title}
-          </Text>
           {isConnected && groupMembers.length > 0 && (
             <View style={styles.onlineIndicator}>
               <View style={styles.onlineDot} />

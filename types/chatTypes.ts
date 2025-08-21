@@ -29,10 +29,18 @@ export interface ChatDataResponse {
 
 export interface ChatRoom {
     id: number | null;
-    name: string;
     chatRoomType: ChatRoomType;
-    participantIds: number[];
+    createdAt?: string;
+}
+
+export interface DirectChatRoom extends ChatRoom {
+    providerId: number | null;
+    touristId: number | null;
+}
+
+export interface GroupChatRoom extends ChatRoom {
     tripId: number | null;
+    participantIds: number[];
 }
 
 export interface ChatMessage {
