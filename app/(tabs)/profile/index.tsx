@@ -97,7 +97,7 @@ export default function Profile() {
 
   const handleLogout = () => {
     logout();
-    router.replace("/signIn");
+    router.replace("/signIn" as any);
   };
 
   const handleChangePassword = async () => {
@@ -178,7 +178,7 @@ export default function Profile() {
               // Force logout and redirect
               logout();
               setTimeout(() => {
-                router.replace("/signIn");
+                router.replace("/signIn"as any );
               }, 100);
             },
           },
@@ -188,7 +188,7 @@ export default function Profile() {
           onDismiss: () => {
             // Fallback in case alert is dismissed
             logout();
-            router.replace("/signIn");
+            router.replace("/signIn" as any);
           },
         }
       );
@@ -292,7 +292,7 @@ export default function Profile() {
           <Text style={styles.sectionTitle}>Account</Text>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => router.push("/screens/EditProfile")}
+            onPress={() => router.push("/screens/EditProfile" as any)}
           >
             <View style={styles.actionButtonContent}>
               <Icon name="pencil" size={20} color="#008080" />
@@ -302,7 +302,7 @@ export default function Profile() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => router.push("/screens/Favourites")}
+            onPress={() => router.push("/screens/Favourites" as any)}
           >
             <View style={styles.actionButtonContent}>
               <Icon name="heart" size={20} color="#008080" />
@@ -312,7 +312,7 @@ export default function Profile() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => router.push("/screens/CancelRequests")}
+            onPress={() => router.push("/screens/CancelRequests"as any)}
           >
             <View style={styles.actionButtonContent}>
               <Icon name="close-circle" size={20} color="#008080" />
@@ -320,6 +320,17 @@ export default function Profile() {
             </View>
             <Icon name="chevron-forward" size={20} color="#008080" />
           </TouchableOpacity>
+       <TouchableOpacity
+        style={styles.actionButton}
+        onPress={() => router.push("/screens/ReportsAndIssues" as any)}
+      >
+        <View style={styles.actionButtonContent}>
+          <Icon name="alert-circle" size={20} color="#008080" />
+          <Text style={styles.actionButtonText}>Reports & Issues</Text>
+        </View>
+        <Icon name="chevron-forward" size={20} color="#008080" />
+      </TouchableOpacity>
+
         </View>
         {/* Change Password Section */}
         <View style={styles.section}>
@@ -340,7 +351,7 @@ export default function Profile() {
           <Text style={styles.sectionTitle}>Settings</Text>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => router.push("/screens/NotificationSettings")}
+            onPress={() => router.push("/screens/NotificationSettings" as any)}
           >
             <View style={styles.actionButtonContent}>
               <Icon name="settings" size={20} color="#008080" />
@@ -362,7 +373,7 @@ export default function Profile() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => router.push("/screens/HelpAndSupport")}
+            onPress={() => router.push("/screens/HelpAndSupport" as any)}
           >
             <View style={styles.actionButtonContent}>
               <Icon name="help-circle" size={20} color="#008080" />
