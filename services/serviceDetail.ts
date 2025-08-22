@@ -34,6 +34,7 @@ export async function fetchActivityService(
     try {
         logger.info(`[ServiceDetail] Fetching activity service: ${serviceId}`);
         const response = await api.get<ServiceDetailResponse>(`/provider/activity-service/${serviceId}`);
+        console.log('Activity Service Response:', response.data.data.locations);
         return response.data;
     } catch (error) {
         logger.error('[ServiceDetail] Error fetching activity service:', error);

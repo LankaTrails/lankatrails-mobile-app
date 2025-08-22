@@ -132,7 +132,7 @@ export interface ServiceImage {
 export interface BaseServiceDetail {
     serviceId: number | null;
     serviceName: string;
-    locationBased: Location;
+    locations: Location[];
     contactNo: string;
     status: string | null;
     price: number;

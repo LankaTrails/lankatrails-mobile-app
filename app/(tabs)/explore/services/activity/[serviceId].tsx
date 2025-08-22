@@ -38,7 +38,7 @@ const convertToServiceDTO = (detail: ActivityServiceDetail): ServiceDTO => ({
   serviceId: detail.serviceId || 0,
   serviceName: detail.serviceName,
   category: "ACTIVITY" as const,
-  locationBased: detail.locationBased,
+  locationBased: detail.locations[0],
   mainImageUrl:
     detail.images && detail.images.length > 0
       ? detail.images[0].imageUrl
@@ -58,7 +58,7 @@ const ActivityServiceDetailPage = () => {
       serviceId: detail.serviceId!,
       serviceName: detail.serviceName,
       category: "ACTIVITY",
-      locationBased: detail.locationBased,
+      locationBased: detail.locations[0],
       mainImageUrl:
         detail.images && detail.images.length > 0
           ? detail.images[0].imageUrl
@@ -268,8 +268,8 @@ const ActivityServiceDetailPage = () => {
           <View className="flex-row items-start mt-1">
             <Ionicons name="location" size={24} color="#008080" />
             <Text className="ml-2 text-gray-700 w-[85%]">
-              {serviceDetail.locationBased.formattedAddress ||
-                `${serviceDetail.locationBased.city}, ${serviceDetail.locationBased.district}`}
+              {serviceDetail.locations[0].formattedAddress ||
+                `${serviceDetail.locations[0].city}, ${serviceDetail.locations[0].district}`}
             </Text>
           </View>
 
@@ -338,9 +338,9 @@ const ActivityServiceDetailPage = () => {
         </View>
 
         {/* Location Map */}
-        {serviceDetail.locationBased &&
-          serviceDetail.locationBased.latitude &&
-          serviceDetail.locationBased.longitude && (
+        {serviceDetail.locations[0] &&
+          serviceDetail.locations[0].latitude &&
+          serviceDetail.locations[0].longitude && (
             <View className="px-4 mb-6">
               <View className="flex-row items-center justify-between mb-3">
                 <Text className="text-2xl font-semibold text-gray-500">
@@ -360,7 +360,7 @@ const ActivityServiceDetailPage = () => {
                       Address
                     </Text>
                     <Text className="text-sm text-gray-600">
-                      {serviceDetail.locationBased.formattedAddress}
+                      {serviceDetail.locations[0].formattedAddress}
                     </Text>
                   </View>
                   <Ionicons
@@ -380,8 +380,8 @@ const ActivityServiceDetailPage = () => {
                   <MapView
                     style={{ flex: 1 }}
                     initialRegion={{
-                      latitude: serviceDetail.locationBased.latitude,
-                      longitude: serviceDetail.locationBased.longitude,
+                      latitude: serviceDetail.locations[0].latitude,
+                      longitude: serviceDetail.locations[0].longitude,
                       latitudeDelta: 0.01,
                       longitudeDelta: 0.01,
                     }}
@@ -393,11 +393,11 @@ const ActivityServiceDetailPage = () => {
                   >
                     <Marker
                       coordinate={{
-                        latitude: serviceDetail.locationBased.latitude,
-                        longitude: serviceDetail.locationBased.longitude,
+                        latitude: serviceDetail.locations[0].latitude,
+                        longitude: serviceDetail.locations[0].longitude,
                       }}
                       title={serviceDetail.serviceName}
-                      description={serviceDetail.locationBased.formattedAddress}
+                      description={serviceDetail.locations[0].formattedAddress}
                     />
                   </MapView>
                 </View>
