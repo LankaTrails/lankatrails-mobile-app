@@ -1,18 +1,3 @@
-/**
- * Chat Screen - Integrates REST API chat room creation with STOMP WebSocket real-time messaging
- * 
- * Features:
- * 1. Uses chatService.ts to create/get direct chat rooms via REST API
- * 2. STOMP WebSocket connection for real-time messaging with authentication
- * 3. Displays loading states for chat room initialization
- * 4. Handles connection status and reconnection
- * 5. Supports typing indicators and read receipts
- * 
- * Integration with Backend:
- * - REST API: /api/chat/rooms/direct/{userId} (ChatRoomController.java)
- * - STOMP WebSocket: ws://localhost:8080/ws for real-time messaging
- */
-
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   View,
@@ -26,523 +11,733 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams } from "expo-router";
+import { Client } from "@stomp/stompjs";
+import SockJS from "sockjs-client";
 import BackButton from "@/components/BackButton";
-import { theme } from "@/app/theme";
-import { getDirectChatRoom, getChatRoomById } from "@/services/chatService";
-import { DirectChatRoom, GroupChatRoom } from "@/types/chatTypes";
+import {
+  getDirectChatRoom,
+  getChatRoomById,
+  getGroupChatRoomByTripId,
+  getRoomMessages,
+} from "@/services/chatService";
+import {
+  DirectChatRoom,
+  GroupChatRoom,
+  ChatMessage,
+  ChatMessageType,
+} from "@/types/chatTypes";
 import { getToken } from "@/utils/tokenStorage";
+import { useAuth } from "@/hooks/useAuth";
 
-interface Message {
-  id: string;
-  text: string;
-  senderId: string;
-  senderName: string;
-  timestamp: number;
-  status?: "sending" | "sent" | "failed";
+interface TypingStateDto {
+  roomId: number;
+  userId: number;
+  username: string; // Backend sends 'username' not 'userName'
+  timestamp: string;
+  typing: boolean; // Backend sends 'typing' not 'isTyping'
 }
 
-interface GroupMember {
-  id: string;
-  name: string;
-  isOnline: boolean;
-  lastSeen?: number;
+interface ReadReceiptDto {
+  messageId?: string | null;
+  roomId?: number | null;
 }
 
-interface WebSocketMessage {
-  type: 'message' | 'typing' | 'status' | 'error' | 'member_joined' | 'member_left' | 'members_update';
-  data: {
-    id?: string;
-    text?: string;
-    senderId?: string;
-    senderName?: string;
-    timestamp?: number;
-    error?: string;
-    members?: GroupMember[];
-    member?: GroupMember;
-  };
+interface WebSocketErrorResponse {
+  errorCode: string;
+  message: string;
+  userMessage: string;
+  errorType: string;
+  timestamp?: string;
 }
 
 export default function Chat() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  // Get parameters from route
+  const params = useLocalSearchParams();
+
+  // Get logged-in user
+  const { user } = useAuth();
+
+  const tripId = params.tripId ? Number(params.tripId) : undefined;
+  const providerId = params.providerId ? Number(params.providerId) : undefined;
+  const roomId = params.roomId ? Number(params.roomId) : undefined;
+  const chatType = (params.chatType as "group" | "direct") || "direct";
+  const tripName = params.tripName as string | undefined;
+
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const [isConnected, setIsConnected] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
   const [isReconnecting, setIsReconnecting] = useState(false);
-  const [typingUsers, setTypingUsers] = useState<{[key: string]: string}>({}); // userId -> userName
-  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
-  const [chatRoom, setChatRoom] = useState<GroupChatRoom | DirectChatRoom | null>(null);
+  const [typingUsers, setTypingUsers] = useState<{ [key: string]: string }>({});
+  const [chatRoom, setChatRoom] = useState<
+    GroupChatRoom | DirectChatRoom | null
+  >(null);
   const [isLoadingChatRoom, setIsLoadingChatRoom] = useState(false);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [currentUser, setCurrentUser] = useState<GroupMember>({
-    id: 'user_' + Date.now(),
-    name: 'You',
-    isOnline: true
-  });
-  
+
   const flatListRef = useRef<FlatList>(null);
-  const ws = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<number | null>(null);
-  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const reconnectAttempts = useRef(0);
-  const maxReconnectAttempts = 5;
-  
+  const stompClientRef = useRef<Client | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // STOMP WebSocket URL - Backend WebSocket endpoint
-  const WS_URL = 'http://localhost:8080/ws';
-  const GROUP_ID = chatRoom?.id || 'default_group';
-
-  // Load authentication token
-  const loadAuthToken = useCallback(async () => {
-    try {
-      const token = await getToken('ACCESS_TOKEN');
-      if (token) {
-        setAccessToken(token);
-        console.log('Authentication token loaded');
-        return token;
-      } else {
-        console.warn('No authentication token found');
-        Alert.alert('Authentication Required', 'Please log in to access chat rooms.');
-        return null;
+  // Helper function to get user info by senderId
+  const getUserInfo = useCallback(
+    (senderId: number) => {
+      if (!chatRoom) {
+        console.log(`No chat room data available for senderId: ${senderId}`);
+        return { name: `User ${senderId}`, id: senderId };
       }
-    } catch (error) {
-      console.error('Error loading auth token:', error);
-      Alert.alert('Error', 'Failed to load authentication. Please log in again.');
-      return null;
+
+      // Check if it's the current user
+      if (senderId === user?.id) {
+        return { name: "You", id: senderId };
+      }
+
+      if (chatRoom.chatRoomType === "DIRECT") {
+        const directRoom = chatRoom as DirectChatRoom;
+
+        // Check if sender is the provider
+        if (directRoom.provider && directRoom.providerId === senderId) {
+          // console.log(
+          //   `Found provider info for senderId ${senderId}:`,
+          //   directRoom.provider.businessName
+          // );
+          return {
+            name: directRoom.provider.businessName,
+            id: senderId,
+            avatar: directRoom.provider.profilePictureUrl,
+          };
+        }
+
+        // Check if sender is the tourist
+        if (directRoom.tourist && directRoom.touristId === senderId) {
+          const name = `${directRoom.tourist.firstName} ${directRoom.tourist.lastName}`;
+          // console.log(`Found tourist info for senderId ${senderId}:`, name);
+          return {
+            name,
+            id: senderId,
+            avatar: directRoom.tourist.profilePictureUrl,
+          };
+        }
+      } else if (chatRoom.chatRoomType === "GROUP") {
+        const groupRoom = chatRoom as GroupChatRoom;
+
+        // Find participant by senderId
+        const participant = groupRoom.participants.find(
+          (p) => p.id === senderId
+        );
+        if (participant) {
+          const name = `${participant.firstName} ${participant.lastName}`;
+          console.log(`Found participant info for senderId ${senderId}:`, name);
+          return {
+            name,
+            id: senderId,
+            avatar: participant.profilePictureUrl,
+          };
+        }
+      }
+
+      // Fallback
+      console.log(
+        `No participant info found for senderId ${senderId}, using fallback`
+      );
+      return { name: `User ${senderId}`, id: senderId };
+    },
+    [chatRoom, user?.id]
+  );
+
+  // Helper function to get chat room title
+  const getChatRoomTitle = useCallback(() => {
+    if (!chatRoom) return "Chat";
+
+    if (chatRoom.chatRoomType === "DIRECT") {
+      const directRoom = chatRoom as DirectChatRoom;
+
+      // Show the other participant's name
+      if (directRoom.provider && directRoom.providerId !== user?.id) {
+        return directRoom.provider.businessName;
+      }
+
+      if (directRoom.tourist && directRoom.touristId !== user?.id) {
+        return `${directRoom.tourist.firstName} ${directRoom.tourist.lastName}`;
+      }
+
+      return "Direct Chat";
+    } else if (chatRoom.chatRoomType === "GROUP") {
+      // For group chats, use trip name if available, otherwise fallback
+      return tripName || "Group Chat";
+    }
+
+    return "Chat";
+  }, [chatRoom, user?.id, tripName]);
+
+  // Connect to chat using STOMP client
+  const connectChat = useCallback(
+    async (roomId: number) => {
+      if (stompClientRef.current?.connected) {
+        console.log("STOMP client already connected");
+        return;
+      }
+
+      try {
+        const token = await getToken("ACCESS_TOKEN");
+        if (!token) {
+          console.error("No authentication token found");
+          Alert.alert(
+            "Authentication Required",
+            "Please log in to access chat rooms."
+          );
+          return;
+        }
+
+        console.log(`Connecting to STOMP for room ${roomId}...`);
+        setIsReconnecting(true);
+
+        const baseUrl =
+          process.env.EXPO_PUBLIC_API_URL || "http://localhost:8080";
+        const wsUrl = baseUrl.replace(/\/api$/, "") + "/ws";
+        console.log(`Using WebSocket URL: ${wsUrl}`);
+
+        stompClientRef.current = new Client({
+          webSocketFactory: () => new SockJS(wsUrl),
+          connectHeaders: {
+            Authorization: `Bearer ${token}`,
+          },
+          debug: (msg) => console.log("STOMP Debug:", msg),
+          reconnectDelay: 5000,
+          heartbeatIncoming: 30000,
+          heartbeatOutgoing: 30000,
+        });
+
+        stompClientRef.current.onConnect = () => {
+          console.log("✅ STOMP connected successfully");
+          setIsConnected(true);
+          setIsReconnecting(false);
+
+          if (!stompClientRef.current) return;
+
+          console.log(`Setting up subscriptions for room ${roomId}...`);
+
+          try {
+            // Subscribe to chat room messages
+            stompClientRef.current.subscribe(`/topic/room.${roomId}`, (msg) => {
+              try {
+                console.log("📨 Received message:", msg.body);
+                const messageData: ChatMessage = JSON.parse(msg.body);
+
+                setMessages((prev) => {
+                  // Check if this is a real message replacing a temporary one
+                  if (messageData.senderId === user?.id) {
+                    // Remove any temporary messages from the same user with similar content and timing
+                    const filteredMessages = prev.filter((m) => {
+                      if (
+                        m.id &&
+                        m.id.startsWith("temp_") &&
+                        m.content === messageData.content &&
+                        m.senderId === messageData.senderId &&
+                        Math.abs(
+                          new Date(m.sentAt).getTime() -
+                            new Date(messageData.sentAt).getTime()
+                        ) < 10000
+                      ) {
+                        console.log("Replacing temporary message:", m.id);
+                        return false;
+                      }
+                      return true;
+                    });
+
+                    // Check if the real message already exists
+                    const exists = filteredMessages.find((m) => {
+                      if (messageData.id && m.id === messageData.id)
+                        return true;
+                      return false;
+                    });
+
+                    if (exists) {
+                      console.log(
+                        "Real message already exists, skipping:",
+                        messageData.id
+                      );
+                      return prev;
+                    }
+
+                    console.log(
+                      "Adding real message (replaced temp):",
+                      messageData.id
+                    );
+                    return [...filteredMessages, messageData];
+                  } else {
+                    // For messages from other users, normal duplicate check
+                    const exists = prev.find((m) => {
+                      if (messageData.id && m.id) {
+                        return m.id === messageData.id;
+                      }
+                      // For messages with null IDs, check by content and recent timestamp
+                      return (
+                        m.content === messageData.content &&
+                        m.senderId === messageData.senderId &&
+                        Math.abs(
+                          new Date(m.sentAt).getTime() -
+                            new Date(messageData.sentAt).getTime()
+                        ) < 5000
+                      );
+                    });
+
+                    if (exists) {
+                      console.log(
+                        "Message already exists, skipping:",
+                        messageData.id || "null ID"
+                      );
+                      return prev;
+                    }
+                    console.log(
+                      "Adding new message from other user:",
+                      messageData.id || "null ID"
+                    );
+
+                    // Mark this message as read if it's from another user
+                    if (messageData.senderId !== user?.id && messageData.id) {
+                      setTimeout(() => {
+                        markAsRead(messageData.id || undefined);
+                      }, 500); // Small delay to ensure message is processed
+                    }
+
+                    return [...prev, messageData];
+                  }
+                });
+
+                // Remove sender from typing users
+                setTypingUsers((prev) => {
+                  const updated = { ...prev };
+                  delete updated[messageData.senderId.toString()];
+                  return updated;
+                });
+              } catch (error) {
+                console.error("Error parsing chat message:", error);
+              }
+            });
+
+            // Subscribe to typing indicators
+            stompClientRef.current.subscribe(
+              `/topic/typing.${roomId}`,
+              (msg) => {
+                try {
+                  console.log("⌨️ Received typing indicator:", msg.body);
+                  const typingData: TypingStateDto = JSON.parse(msg.body);
+                  if (typingData.userId !== user?.id && typingData.typing) {
+                    // Get user info from chat room participants instead of backend username
+                    const userInfo = getUserInfo(typingData.userId);
+
+                    setTypingUsers((prev) => ({
+                      ...prev,
+                      [typingData.userId.toString()]: userInfo.name,
+                    }));
+
+                    // Auto-hide typing indicator after 5 seconds
+                    setTimeout(() => {
+                      setTypingUsers((prev) => {
+                        const updated = { ...prev };
+                        delete updated[typingData.userId.toString()];
+                        return updated;
+                      });
+                    }, 5000);
+                  } else if (!typingData.typing) {
+                    setTypingUsers((prev) => {
+                      const updated = { ...prev };
+                      delete updated[typingData.userId.toString()];
+                      return updated;
+                    });
+                  }
+                } catch (error) {
+                  console.error("Error parsing typing indicator:", error);
+                }
+              }
+            );
+
+            setIsSubscribed(true);
+            console.log("✅ All subscriptions set up successfully");
+          } catch (error) {
+            console.error("❌ Error setting up subscriptions:", error);
+            setIsSubscribed(false);
+          }
+
+          // Subscribe to error queue
+          stompClientRef.current.subscribe(`/user/queue/errors`, (msg) => {
+            try {
+              const errorResponse: WebSocketErrorResponse = JSON.parse(
+                msg.body
+              );
+              console.error("WebSocket Error Response:", errorResponse);
+
+              // Handle different error types
+              switch (errorResponse.errorType) {
+                case "auth_error":
+                  Alert.alert(
+                    "Authentication Error",
+                    errorResponse.userMessage ||
+                      "You are not authorized to perform this action."
+                  );
+                  break;
+                case "chat_error":
+                  Alert.alert(
+                    "Chat Error",
+                    errorResponse.userMessage ||
+                      "There was an error with your chat request."
+                  );
+                  break;
+                case "system_error":
+                  Alert.alert(
+                    "System Error",
+                    errorResponse.userMessage ||
+                      "An unexpected error occurred. Please try again."
+                  );
+                  break;
+                default:
+                  Alert.alert(
+                    "Error",
+                    errorResponse.userMessage ||
+                      errorResponse.message ||
+                      "An error occurred."
+                  );
+              }
+            } catch (error) {
+              console.error("Error parsing WebSocket error response:", error);
+              Alert.alert("Error", "An unexpected error occurred.");
+            }
+          });
+        };
+
+        stompClientRef.current.onStompError = (frame) => {
+          console.error("STOMP Error:", frame.headers["message"]);
+          Alert.alert(
+            "Connection Error",
+            frame.headers["message"] || "STOMP connection failed"
+          );
+          setIsConnected(false);
+          setIsReconnecting(false);
+        };
+
+        stompClientRef.current.onWebSocketError = (error) => {
+          console.error("WebSocket Error:", error);
+          setIsConnected(false);
+        };
+
+        stompClientRef.current.onDisconnect = () => {
+          console.log("STOMP disconnected");
+          setIsConnected(false);
+          setIsSubscribed(false);
+          setIsReconnecting(false);
+          setTypingUsers({});
+        };
+
+        // Activate the STOMP client
+        stompClientRef.current.activate();
+      } catch (error) {
+        console.error("Error connecting to chat:", error);
+        setIsConnected(false);
+        setIsReconnecting(false);
+        Alert.alert(
+          "Connection Error",
+          "Failed to connect to chat server. Please try again."
+        );
+      }
+    },
+    [user?.id, getUserInfo] // Added getUserInfo dependency
+  );
+
+  // Send message via STOMP
+  const sendMessage = useCallback(
+    (text: string, messageId: string): void => {
+      if (!stompClientRef.current || !stompClientRef.current.connected) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === messageId ? { ...msg, status: "failed" } : msg
+          )
+        );
+        Alert.alert(
+          "Connection Error",
+          "Unable to send message. Please check your connection."
+        );
+        return;
+      }
+
+      if (!chatRoom?.id) {
+        Alert.alert("Error", "No chat room available. Please reconnect.");
+        return;
+      }
+
+      const messageData = {
+        chatRoomId: chatRoom.id,
+        messageType: "TEXT" as ChatMessageType,
+        content: text,
+        sentAt: new Date().toISOString(),
+      };
+
+      try {
+        console.log("📤 Sending message via STOMP:", messageData);
+        stompClientRef.current.publish({
+          destination: "/app/sendMessage",
+          body: JSON.stringify(messageData),
+        });
+
+        console.log("✅ Message sent successfully");
+      } catch (error) {
+        console.error("❌ Error sending message:", error);
+      }
+    },
+    [chatRoom?.id]
+  );
+
+  // Send typing indicators
+  const sendTypingStart = useCallback((): void => {
+    if (stompClientRef.current?.connected && chatRoom?.id) {
+      stompClientRef.current.publish({
+        destination: `/app/typing/start/room/${chatRoom.id}`,
+        body: JSON.stringify({}),
+      });
+      console.log(`Started typing in room ${chatRoom.id}`);
+    }
+  }, [chatRoom?.id]);
+
+  const sendTypingStop = useCallback((): void => {
+    if (stompClientRef.current?.connected && chatRoom?.id) {
+      stompClientRef.current.publish({
+        destination: `/app/typing/stop/room/${chatRoom.id}`,
+        body: JSON.stringify({}),
+      });
+      console.log(`Stopped typing in room ${chatRoom.id}`);
+    }
+  }, [chatRoom?.id]);
+
+  // Mark messages as read
+  const markAsRead = useCallback(
+    (messageId?: string): void => {
+      if (!stompClientRef.current?.connected || !chatRoom?.id) {
+        console.warn(
+          "Cannot mark as read: STOMP not connected or no chat room"
+        );
+        return;
+      }
+
+      const readReceiptData: ReadReceiptDto = {
+        roomId: messageId ? null : chatRoom.id, // For room-level marking, set roomId
+        messageId: messageId || null, // For single message marking, set messageId
+      };
+
+      try {
+        console.log("📖 Marking as read via STOMP:", readReceiptData);
+        stompClientRef.current.publish({
+          destination: "/app/markAsRead",
+          body: JSON.stringify(readReceiptData),
+        });
+
+        console.log(
+          `✅ Read receipt sent for ${
+            messageId ? `message ${messageId}` : `room ${chatRoom.id}`
+          }`
+        );
+      } catch (error) {
+        console.error("❌ Error sending read receipt:", error);
+      }
+    },
+    [chatRoom?.id]
+  );
+
+  // Disconnect from chat
+  const disconnectChat = useCallback(() => {
+    if (stompClientRef.current) {
+      stompClientRef.current.deactivate();
+      stompClientRef.current = null;
+      setIsConnected(false);
+      setIsSubscribed(false);
+      setTypingUsers({});
+      console.log("Disconnected from chat");
     }
   }, []);
 
-  // Initialize chat room using the REST API
-  const initializeChatRoom = useCallback(async (providerId?: number) => {
-    if (!providerId) {
-      console.log('No provider ID provided for chat room initialization');
-      return;
-    }
-    
-    console.log(`Attempting to initialize chat room with provider ID: ${providerId}`);
+  // Initialize chat room based on type
+  const initializeChatRoom = useCallback(async (): Promise<void> => {
     setIsLoadingChatRoom(true);
     try {
-      const response = await getDirectChatRoom(providerId);
-      console.log('Chat room API response:', response);
-      
-      if (response.success && response.data) {
-        setChatRoom(response.data);
-        console.log('Chat room initialized successfully:', response.data);
-        return response.data; // Return the chat room data
+      let response;
+
+      if (chatType === "group" && tripId) {
+        console.log(`Initializing group chat room for trip ID: ${tripId}`);
+        response = await getGroupChatRoomByTripId(tripId);
+      } else if (chatType === "direct" && providerId) {
+        console.log(
+          `Initializing direct chat room with provider ID: ${providerId}`
+        );
+        response = await getDirectChatRoom(providerId);
+      } else if (roomId) {
+        console.log(`Initializing chat room by ID: ${roomId}`);
+        response = await getChatRoomById(roomId);
       } else {
-        console.error('Chat room API error:', response.message);
-        const errorMsg = response.message || 'Failed to initialize chat room';
-        Alert.alert('Error', errorMsg);
+        throw new Error("Invalid chat room parameters");
+      }
+
+      if (response.success && response.data) {
+        setChatRoom(response.data as GroupChatRoom | DirectChatRoom);
+        console.log("Chat room initialized successfully:", response.data);
+
+        // Log participant information for debugging
+        const roomData = response.data as GroupChatRoom | DirectChatRoom;
+        if (roomData.chatRoomType === "DIRECT") {
+          const directRoom = roomData as DirectChatRoom;
+          console.log("Direct chat participants:", {
+            provider: directRoom.provider,
+            tourist: directRoom.tourist,
+            currentUserId: user?.id,
+          });
+        } else if (roomData.chatRoomType === "GROUP") {
+          const groupRoom = roomData as GroupChatRoom;
+          console.log("Group chat participants:", groupRoom.participants);
+        }
+
+        // Load chat history
+        if (response.data.id) {
+          await loadChatHistory(response.data.id);
+        }
+      } else {
+        const errorMsg = response.message || "Failed to initialize chat room";
+        Alert.alert("Error", errorMsg);
         throw new Error(errorMsg);
       }
     } catch (error) {
-      console.error('Error initializing chat room:', error);
-      
-      // More detailed error logging
+      console.error("Error initializing chat room:", error);
       if (error instanceof Error) {
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
-        
-        // Handle specific authentication error
-        if (error.message.includes('Authentication required')) {
+        if (error.message.includes("Authentication required")) {
           Alert.alert(
-            'Authentication Required', 
-            'Please log in to access chat rooms. You will be redirected to the login page.',
-            [
-              { text: 'OK', onPress: () => {
-                // You can add navigation to login page here
-                console.log('Navigate to login page');
-              }}
-            ]
+            "Authentication Required",
+            "Please log in to access chat rooms."
           );
         } else {
-          Alert.alert('Error', `Failed to connect to chat room: ${error.message}`);
+          Alert.alert(
+            "Error",
+            `Failed to connect to chat room: ${error.message}`
+          );
         }
-      } else {
-        Alert.alert('Error', 'Failed to connect to chat room: Unknown error');
       }
-      throw error; // Re-throw to handle in calling function
     } finally {
       setIsLoadingChatRoom(false);
     }
-  }, []);
+  }, [chatType, tripId, providerId, roomId]);
 
-  // Alternative method to initialize by room ID
-  const initializeChatRoomById = useCallback(async (roomId: number) => {
-    console.log(`Attempting to initialize chat room by ID: ${roomId}`);
-    setIsLoadingChatRoom(true);
-    try {
-      const response = await getChatRoomById(roomId);
-      console.log('Chat room by ID API response:', response);
-      
-      if (response.success && response.data) {
-        // Convert ChatRoom to DirectChatRoom if needed
-        const chatRoomData = response.data as DirectChatRoom;
-        setChatRoom(chatRoomData);
-        console.log('Chat room initialized by ID successfully:', chatRoomData);
-        return chatRoomData;
-      } else {
-        const errorMsg = response.message || 'Failed to get chat room by ID';
-        Alert.alert('Error', errorMsg);
-        throw new Error(errorMsg);
+  // Load existing messages for the chat room
+  const loadChatHistory = useCallback(
+    async (chatRoomId: number): Promise<void> => {
+      try {
+        console.log(`Loading chat history for room ${chatRoomId}`);
+        const response = await getRoomMessages(chatRoomId);
+
+        if (response.success && response.data) {
+          // Data is already in ChatMessage format from the backend
+          setMessages(response.data);
+          console.log(`Loaded ${response.data.length} messages`);
+        }
+      } catch (error) {
+        console.error("Error loading chat history:", error);
       }
-    } catch (error) {
-      console.error('Error getting chat room by ID:', error);
-      if (error instanceof Error) {
-        Alert.alert('Error', `Failed to get chat room: ${error.message}`);
-      }
-      throw error;
-    } finally {
-      setIsLoadingChatRoom(false);
-    }
-  }, []);
+    },
+    []
+  );
 
-  const connectWebSocket = useCallback(async () => {
-    if (ws.current?.readyState === WebSocket.OPEN) {
-      return;
-    }
-
-    // Load authentication token first
-    const token = await loadAuthToken();
-    if (!token) {
-      console.error("Cannot connect WebSocket: No authentication token available");
-      Alert.alert('Authentication Required', 'Please log in to access the chat.');
-      return;
-    }
-
-    // Make sure we have a chat room
-    if (!chatRoom?.id) {
-      console.error("Cannot connect WebSocket: No chat room initialized");
-      return;
-    }
-
-    try {
-      setIsReconnecting(true);
-      console.log(`Connecting to WebSocket for chat room ${chatRoom.id}...`);
-
-      // Open WebSocket (native WebSocket API)
-      const wsUrl = `ws://localhost:8080/ws`;
-      ws.current = new WebSocket(wsUrl);
-
-      ws.current.onopen = () => {
-        console.log(`Connected to WebSocket for chat room ${chatRoom.id}`);
-        setIsConnected(true);
-        setIsReconnecting(false);
-        reconnectAttempts.current = 0;
-
-        // Send authentication message first
-        const authMessage = {
-          type: "AUTH",
-          token: token,
-        };
-        ws.current?.send(JSON.stringify(authMessage));
-
-        // Subscribe to room messages
-        const subscribeMessage = {
-          type: "SUBSCRIBE",
-          destination: `/topic/room.${chatRoom.id}`,
-          roomId: chatRoom.id,
-          userId: currentUser.id,
-        };
-        ws.current?.send(JSON.stringify(subscribeMessage));
-
-        // Subscribe to typing indicators
-        const typingSubscribeMessage = {
-          type: "SUBSCRIBE",
-          destination: `/topic/typing.${chatRoom.id}`,
-          roomId: chatRoom.id,
-        };
-        ws.current?.send(JSON.stringify(typingSubscribeMessage));
-
-        // Subscribe to error queue
-        const errorSubscribeMessage = {
-          type: "SUBSCRIBE",
-          destination: `/user/queue/errors`,
-        };
-        ws.current?.send(JSON.stringify(errorSubscribeMessage));
-      };
-
-      ws.current.onmessage = (event) => {
-        try {
-          const message: WebSocketMessage = JSON.parse(event.data);
-          handleIncomingMessage(message);
-        } catch (error) {
-          console.error("Error parsing WebSocket message:", error);
-        }
-      };
-
-      ws.current.onerror = (error) => {
-        console.error("WebSocket error:", error);
-        setIsConnected(false);
-      };
-
-      ws.current.onclose = (event) => {
-        console.log("WebSocket disconnected:", event.code, event.reason);
-        setIsConnected(false);
-        setIsReconnecting(false);
-
-        // Clear typing users
-        setTypingUsers({});
-
-        // Attempt to reconnect if not a manual close
-        if (event.code !== 1000 && reconnectAttempts.current < maxReconnectAttempts) {
-          scheduleReconnect();
-        }
-      };
-    } catch (error) {
-      console.error("Error creating WebSocket connection:", error);
-      setIsConnected(false);
-      setIsReconnecting(false);
-      scheduleReconnect();
-    }
-  }, [currentUser, chatRoom?.id, loadAuthToken, handleIncomingMessage, scheduleReconnect]);
-
-  const scheduleReconnect = useCallback(() => {
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-    }
-
-    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000); // Exponential backoff, max 30s
-    reconnectAttempts.current += 1;
-
-    reconnectTimeoutRef.current = setTimeout(() => {
-      if (reconnectAttempts.current <= maxReconnectAttempts) {
-        console.log(`Reconnecting... Attempt ${reconnectAttempts.current}`);
-        connectWebSocket();
-      }
-    }, delay);
-  }, [connectWebSocket]);
-
-  const handleIncomingMessage = useCallback((message: WebSocketMessage) => {
-    switch (message.type) {
-      case 'message':
-        const newMessage: Message = {
-          id: message.data.id || Date.now().toString(),
-          text: message.data.text || '',
-          senderId: message.data.senderId || '',
-          senderName: message.data.senderName || 'Unknown',
-          timestamp: message.data.timestamp || Date.now(),
-          status: 'sent'
-        };
-        
-        setMessages(prev => {
-          // Avoid duplicate messages
-          if (prev.find(msg => msg.id === newMessage.id)) {
-            return prev;
-          }
-          return [...prev, newMessage];
-        });
-        
-        // Remove sender from typing users
-        if (message.data.senderId) {
-          setTypingUsers(prev => {
-            const updated = { ...prev };
-            delete updated[message.data.senderId!];
-            return updated;
-          });
-        }
-        break;
-
-      case 'typing':
-        if (message.data.senderId && message.data.senderName && message.data.senderId !== currentUser.id) {
-          setTypingUsers(prev => ({
-            ...prev,
-            [message.data.senderId!]: message.data.senderName!
-          }));
-          
-          // Auto-hide typing indicator after 3 seconds
-          setTimeout(() => {
-            setTypingUsers(prev => {
-              const updated = { ...prev };
-              delete updated[message.data.senderId!];
-              return updated;
-            });
-          }, 3000);
-        }
-        break;
-
-      case 'status':
-        // Handle message status updates (sent, delivered, etc.)
-        if (message.data.id) {
-          setMessages(prev => 
-            prev.map(msg => 
-              msg.id === message.data.id 
-                ? { ...msg, status: 'sent' }
-                : msg
-            )
-          );
-        }
-        break;
-
-      case 'members_update':
-        if (message.data.members) {
-          setGroupMembers(message.data.members);
-        }
-        break;
-
-      case 'member_joined':
-        if (message.data.member) {
-          setGroupMembers(prev => {
-            const exists = prev.find(member => member.id === message.data.member!.id);
-            if (exists) {
-              return prev.map(member => 
-                member.id === message.data.member!.id 
-                  ? { ...member, isOnline: true }
-                  : member
-              );
-            }
-            return [...prev, message.data.member!];
-          });
-        }
-        break;
-
-      case 'member_left':
-        if (message.data.member) {
-          setGroupMembers(prev => 
-            prev.map(member => 
-              member.id === message.data.member!.id 
-                ? { ...member, isOnline: false, lastSeen: Date.now() }
-                : member
-            )
-          );
-        }
-        break;
-
-      case 'error':
-        Alert.alert('Error', message.data.error || 'An error occurred');
-        break;
-    }
-  }, [currentUser.id]);
-
-  const sendMessage = (text: string, messageId: string) => {
-    if (!ws.current || ws.current.readyState !== WebSocket.OPEN) {
-      // Mark message as failed
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === messageId 
-            ? { ...msg, status: 'failed' }
-            : msg
-        )
-      );
-      Alert.alert('Connection Error', 'Unable to send message. Please check your connection.');
-      return;
-    }
-
-    if (!chatRoom?.id) {
-      Alert.alert('Error', 'No chat room available. Please reconnect.');
-      return;
-    }
-
-    // STOMP-like message format matching backend expectations
-    const messageData = {
-      type: 'SEND',
-      destination: '/app/sendMessage',
-      body: {
-        chatRoomId: chatRoom.id,
-        messageType: 'TEXT',
-        content: text
-      }
-    };
-
-    try {
-      ws.current.send(JSON.stringify(messageData));
-      console.log('Message sent via STOMP protocol:', messageData);
-      
-      // Mark message as sent
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === messageId 
-            ? { ...msg, status: 'sent' }
-            : msg
-        )
-      );
-    } catch (error) {
-      console.error('Error sending message:', error);
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === messageId 
-            ? { ...msg, status: 'failed' }
-            : msg
-        )
-      );
-    }
-  };
-
-  const sendTypingIndicator = useCallback(() => {
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      const typingData = {
-        type: 'typing',
-        data: {
-          senderId: currentUser.id,
-          senderName: currentUser.name,
-          groupId: GROUP_ID
-        }
-      };
-      ws.current.send(JSON.stringify(typingData));
-    }
-  }, [currentUser, GROUP_ID]);
-
-  const handleInputChange = (text: string) => {
+  // Handle input text changes
+  const handleInputChange = (text: string): void => {
+    const previousLength = inputText.length;
     setInputText(text);
-    
-    // Send typing indicator
+
     if (text.length > 0) {
-      sendTypingIndicator();
-      
+      // Start typing if we weren't typing before
+      if (previousLength === 0) {
+        sendTypingStart();
+      }
+
       // Clear previous timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
-      
-      // Set timeout to stop typing indicator
+
+      // Set timeout to stop typing indicator after 3 seconds of inactivity
       typingTimeoutRef.current = setTimeout(() => {
-        // Typing indicator will auto-expire on backend
-      }, 1000) as NodeJS.Timeout;
+        sendTypingStop();
+      }, 3000) as unknown as NodeJS.Timeout;
+    } else if (previousLength > 0) {
+      // Stop typing when input becomes empty
+      sendTypingStop();
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
     }
   };
 
-  const handleSend = () => {
-    if (inputText.trim() === "") return;
+  // Handle send message
+  const handleSend = (): void => {
+    if (inputText.trim() === "" || !chatRoom?.id || !user?.id) return;
 
-    const messageId = Date.now().toString();
-    const newMessage: Message = {
-      id: messageId,
-      text: inputText.trim(),
-      senderId: currentUser.id,
-      senderName: currentUser.name,
-      timestamp: Date.now(),
-      status: "sending"
+    // Create a temporary ID for tracking the message before backend assigns real ID
+    const tempId = `temp_${Date.now()}_${user.id}`;
+
+    const newMessage: ChatMessage = {
+      id: tempId, // Use temporary ID instead of null
+      chatRoomId: chatRoom.id,
+      senderId: user.id,
+      messageType: "TEXT" as ChatMessageType,
+      content: inputText.trim(),
+      sentAt: new Date().toISOString(),
+      replyToMessageId: null,
+      serviceCardId: null,
+      serviceCard: null,
+      files: null,
+      readBy: undefined,
     };
 
-    setMessages(prev => [...prev, newMessage]);
+    setMessages((prev) => [...prev, newMessage]);
     const messageText = inputText.trim();
     setInputText("");
 
-    // Send message via WebSocket
-    sendMessage(messageText, messageId);
+    // Stop typing when sending message
+    sendTypingStop();
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
 
-    // Scroll to bottom
+    sendMessage(messageText, tempId); // Use temp ID for tracking
+
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
     }, 100);
   };
 
-  const retryMessage = (message: Message) => {
-    setMessages(prev => 
-      prev.map(msg => 
-        msg.id === message.id 
-          ? { ...msg, status: 'sending' }
-          : msg
-      )
-    );
-    sendMessage(message.text, message.id);
+  // Retry failed message
+  const retryMessage = (message: ChatMessage): void => {
+    if (!message.content || !message.id) return;
+
+    sendMessage(message.content, message.id);
   };
 
-  const renderMessage = ({ item }: { item: Message }) => {
-    const isCurrentUser = item.senderId === currentUser.id;
-    
+  // Render individual message
+  const renderMessage = ({ item }: { item: ChatMessage }) => {
+    const isCurrentUser = item.senderId === user?.id;
+
+    // Get user info from chat room participants
+    const userInfo = getUserInfo(item.senderId);
+
     return (
-      <View style={[styles.messageWrapper, isCurrentUser ? styles.currentUserWrapper : styles.otherUserWrapper]}>
-        <Text style={[styles.senderName, isCurrentUser ? styles.currentUserSenderName : styles.otherUserSenderName]}>
-          {item.senderName}
+      <View
+        style={[
+          styles.messageWrapper,
+          isCurrentUser ? styles.currentUserWrapper : styles.otherUserWrapper,
+        ]}
+      >
+        <Text
+          style={[
+            styles.senderName,
+            isCurrentUser
+              ? styles.currentUserSenderName
+              : styles.otherUserSenderName,
+          ]}
+        >
+          {userInfo.name}
         </Text>
         <View
           style={[
@@ -550,161 +745,103 @@ export default function Chat() {
             isCurrentUser ? styles.currentUserMessage : styles.otherUserMessage,
           ]}
         >
-          <Text style={isCurrentUser ? styles.currentUserText : styles.otherUserText}>{item.text}</Text>
+          <Text
+            style={
+              isCurrentUser ? styles.currentUserText : styles.otherUserText
+            }
+          >
+            {item.content}
+          </Text>
           {isCurrentUser && (
             <View style={styles.messageStatus}>
-              {item.status === 'sending' && (
-                <Ionicons name="time-outline" size={12} color="#ffffff80" />
-              )}
-              {item.status === 'sent' && (
-                <Ionicons name="checkmark" size={12} color="#ffffff80" />
-              )}
-              {item.status === 'failed' && (
-                <TouchableOpacity onPress={() => retryMessage(item)}>
-                  <Ionicons name="refresh" size={12} color="#ff6b6b" />
-                </TouchableOpacity>
-              )}
+              <Ionicons name="paper-plane" size={12} color="#ffffff60" />
             </View>
           )}
         </View>
         <Text style={styles.messageTime}>
-          {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          {new Date(item.sentAt).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
         </Text>
       </View>
     );
   };
 
+  // Render typing indicator
   const renderTypingIndicator = () => {
     const typingUserNames = Object.values(typingUsers);
     if (typingUserNames.length === 0) return null;
-    
-    const typingText = typingUserNames.length === 1 
-      ? `${typingUserNames[0]} is typing...`
-      : typingUserNames.length === 2
-      ? `${typingUserNames[0]} and ${typingUserNames[1]} are typing...`
-      : `${typingUserNames[0]} and ${typingUserNames.length - 1} others are typing...`;
-    
+
+    const typingText =
+      typingUserNames.length === 1
+        ? `${typingUserNames[0]} is typing...`
+        : `${typingUserNames[0]} and ${
+            typingUserNames.length - 1
+          } others are typing...`;
+
     return (
       <View style={[styles.messageWrapper, styles.otherUserWrapper]}>
-        <View style={[styles.messageContainer, styles.otherUserMessage, styles.typingContainer]}>
-          <Text style={[styles.otherUserText, styles.typingText]}>{typingText}</Text>
-          <View style={styles.typingDots}>
-            <View style={styles.typingDot} />
-            <View style={styles.typingDot} />
-            <View style={styles.typingDot} />
-          </View>
+        <View
+          style={[
+            styles.messageContainer,
+            styles.otherUserMessage,
+            styles.typingContainer,
+          ]}
+        >
+          <Text style={[styles.otherUserText, styles.typingText]}>
+            {typingText}
+          </Text>
         </View>
       </View>
     );
   };
 
-  const renderGroupMembers = () => {
-    const onlineMembers = groupMembers.filter(member => member.isOnline);
-    const offlineMembers = groupMembers.filter(member => !member.isOnline);
-    
-    return (
-      <View style={styles.membersContainer}>
-        <Text style={styles.membersTitle}>
-          Group Members ({groupMembers.length})
-        </Text>
-        
-        {onlineMembers.length > 0 && (
-          <View style={styles.membersList}>
-            <Text style={styles.membersSubtitle}>Online ({onlineMembers.length})</Text>
-            {onlineMembers.map(member => (
-              <View key={member.id} style={styles.memberItem}>
-                <View style={[styles.memberStatus, styles.memberOnline]} />
-                <Text style={styles.memberName}>
-                  {member.name} {member.id === currentUser.id ? '(You)' : ''}
-                </Text>
-              </View>
-            ))}
-          </View>
-        )}
-        
-        {offlineMembers.length > 0 && (
-          <View style={styles.membersList}>
-            <Text style={styles.membersSubtitle}>Offline ({offlineMembers.length})</Text>
-            {offlineMembers.map(member => (
-              <View key={member.id} style={styles.memberItem}>
-                <View style={[styles.memberStatus, styles.memberOffline]} />
-                <Text style={[styles.memberName, styles.memberOfflineName]}>
-                  {member.name}
-                </Text>
-              </View>
-            ))}
-          </View>
-        )}
-      </View>
-    );
-  };
-
-  const renderEmptyState = () => (
-    <View style={styles.emptyStateContainer}>
-      <View style={styles.emptyStateCard}>
-        <Ionicons
-          name="people-outline"
-          size={48}
-          color="#008080"
-          style={styles.emptyStateIcon}
-        />
-        <Text style={styles.emptyStateTitle}>Welcome to the Group Chat</Text>
-        <Text style={styles.emptyStateDescription}>
-          Start chatting with your group about the trip
-        </Text>
-        
-        {groupMembers.length > 0 && renderGroupMembers()}
-        
-        {!isConnected && (
-          <View style={styles.connectionStatus}>
-            <Ionicons name="wifi-outline" size={16} color="#ef4444" />
-            <Text style={styles.connectionStatusText}>
-              {isReconnecting ? 'Connecting...' : 'Disconnected'}
-            </Text>
-          </View>
-        )}
-      </View>
-    </View>
-  );
-
+  // Render connection status
   const renderConnectionStatus = () => {
     if (isLoadingChatRoom) {
       return (
         <View style={styles.connectionBanner}>
           <Ionicons name="sync-outline" size={16} color="#3b82f6" />
-          <Text style={styles.connectionBannerText}>Initializing chat room...</Text>
+          <Text style={styles.connectionBannerText}>
+            Initializing chat room...
+          </Text>
         </View>
       );
     }
-    
+
     if (!chatRoom) {
       return (
         <View style={styles.connectionBanner}>
           <Ionicons name="warning-outline" size={16} color="#f59e0b" />
-          <Text style={styles.connectionBannerText}>Chat room not connected</Text>
+          <Text style={styles.connectionBannerText}>
+            Chat room not connected
+          </Text>
         </View>
       );
     }
-    
+
     if (isConnected) {
       return (
-        <View style={styles.connectionBanner}>
+        <View style={[styles.connectionBanner, { backgroundColor: "#f0fdf4" }]}>
           <Ionicons name="checkmark-circle-outline" size={16} color="#10b981" />
-          <Text style={[styles.connectionBannerText, { color: '#10b981' }]}>
+          <Text style={[styles.connectionBannerText, { color: "#10b981" }]}>
             Connected to chat room {chatRoom.id}
           </Text>
         </View>
       );
     }
-    
+
     return (
       <View style={styles.connectionBanner}>
         <Ionicons name="wifi-outline" size={16} color="#ef4444" />
         <Text style={styles.connectionBannerText}>
-          {isReconnecting ? 'Reconnecting...' : 'Disconnected'}
+          {isReconnecting ? "Reconnecting..." : "Disconnected"}
         </Text>
         {!isReconnecting && (
-          <TouchableOpacity onPress={connectWebSocket}>
+          <TouchableOpacity
+            onPress={() => chatRoom?.id && connectChat(chatRoom.id)}
+          >
             <Text style={styles.reconnectButton}>Retry</Text>
           </TouchableOpacity>
         )}
@@ -712,63 +849,51 @@ export default function Chat() {
     );
   };
 
-  // Initialize WebSocket connection and chat room
+  // Initialize chat room and connect STOMP
   useEffect(() => {
-    // Test connectivity first
-    console.log('Chat component mounted, attempting to connect...');
-    
-    // Load authentication and initialize chat room first
-    const initializeChat = async () => {
+    const initialize = async () => {
       try {
-        // Load auth token
-        const token = await loadAuthToken();
-        if (!token) {
-          console.error('No authentication token available');
-          return;
-        }
-        
-        const exampleProviderId = 3; 
-        console.log(`About to initialize chat room with provider ID: ${exampleProviderId}`);
-        const chatRoomData = await initializeChatRoom(exampleProviderId);
-        
-        if (chatRoomData) {
-          console.log('Chat room initialized successfully, connecting WebSocket...');
-          // Connect WebSocket after chat room is initialized
-          setTimeout(() => {
-            connectWebSocket();
-          }, 1000); // Small delay to ensure chat room is set
-        } else {
-          console.error('Failed to initialize chat room');
-        }
+        await initializeChatRoom();
       } catch (error) {
-        console.error('Error during chat initialization:', error);
-        // Don't connect WebSocket if initialization failed
+        console.error("Failed to initialize chat room:", error);
       }
     };
-    
-    initializeChat();
-    
+
+    initialize();
+
     return () => {
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
-      if (ws.current) {
-        // Send leave group message
-        const leaveMessage = {
-          type: 'leave_group',
-          data: {
-            groupId: GROUP_ID,
-            user: currentUser
-          }
-        };
-        ws.current.send(JSON.stringify(leaveMessage));
-        ws.current.close(1000, 'Component unmounted');
-      }
+      disconnectChat();
     };
-  }, [connectWebSocket, initializeChatRoom, loadAuthToken, GROUP_ID, currentUser]);
+  }, [initializeChatRoom, disconnectChat]);
+
+  // Connect STOMP when chat room is ready
+  useEffect(() => {
+    if (chatRoom?.id && !isConnected) {
+      console.log(`🔌 Attempting to connect to chat room ${chatRoom.id}`);
+      connectChat(chatRoom.id);
+    }
+  }, [chatRoom?.id, isConnected, connectChat]);
+
+  // Mark all messages as read when chat room is loaded and connected
+  useEffect(() => {
+    if (isConnected && chatRoom?.id && messages.length > 0) {
+      console.log(`📖 Marking all messages as read for room ${chatRoom.id}`);
+      markAsRead(); // Mark all messages in the room as read
+    }
+  }, [isConnected, chatRoom?.id, messages.length, markAsRead]);
+
+  // Debug messages state changes
+  useEffect(() => {
+    console.log(
+      `📊 Messages state updated. Total messages: ${messages.length}`
+    );
+    if (messages.length > 0) {
+      console.log("Latest message:", messages[messages.length - 1]);
+    }
+  }, [messages]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -788,11 +913,40 @@ export default function Chat() {
       <View style={styles.header}>
         <BackButton />
         <View style={styles.headerText}>
-          {isConnected && groupMembers.length > 0 && (
+          <Text style={styles.headerTitle}>{getChatRoomTitle()}</Text>
+          {isConnected && isSubscribed && (
             <View style={styles.onlineIndicator}>
               <View style={styles.onlineDot} />
-              <Text style={styles.onlineText}>
-                {groupMembers.filter(m => m.isOnline).length} online
+              <Text style={styles.onlineText}>Live</Text>
+            </View>
+          )}
+          {isConnected && !isSubscribed && (
+            <View style={styles.onlineIndicator}>
+              <View
+                style={[styles.onlineDot, { backgroundColor: "#FFA500" }]}
+              />
+              <Text style={[styles.onlineText, { color: "#FFA500" }]}>
+                Connecting...
+              </Text>
+            </View>
+          )}
+          {!isConnected && isReconnecting && (
+            <View style={styles.onlineIndicator}>
+              <View
+                style={[styles.onlineDot, { backgroundColor: "#FFA500" }]}
+              />
+              <Text style={[styles.onlineText, { color: "#FFA500" }]}>
+                Reconnecting...
+              </Text>
+            </View>
+          )}
+          {!isConnected && !isReconnecting && (
+            <View style={styles.onlineIndicator}>
+              <View
+                style={[styles.onlineDot, { backgroundColor: "#FF4444" }]}
+              />
+              <Text style={[styles.onlineText, { color: "#FF4444" }]}>
+                Offline
               </Text>
             </View>
           )}
@@ -804,12 +958,13 @@ export default function Chat() {
       <View style={styles.chatContainer}>
         <FlatList
           ref={flatListRef}
-          data={[...messages]}
+          data={messages}
           renderItem={renderMessage}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item, index) =>
+            item.id || `msg-${index}-${item.senderId}-${Date.now()}`
+          }
           contentContainerStyle={styles.messagesList}
           showsVerticalScrollIndicator={false}
-          ListEmptyComponent={renderEmptyState}
           ListFooterComponent={renderTypingIndicator}
           onContentSizeChange={() =>
             flatListRef.current?.scrollToEnd({ animated: true })
@@ -819,10 +974,7 @@ export default function Chat() {
 
       <View style={styles.inputContainer}>
         <TextInput
-          style={[
-            styles.input,
-            !isConnected && styles.inputDisabled
-          ]}
+          style={[styles.input, !isConnected && styles.inputDisabled]}
           placeholder={isConnected ? "Type a message..." : "Connecting..."}
           value={inputText}
           onChangeText={handleInputChange}
@@ -831,18 +983,19 @@ export default function Chat() {
           onSubmitEditing={handleSend}
           editable={isConnected}
         />
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[
             styles.sendButton,
-            (!isConnected || inputText.trim() === "") && styles.sendButtonDisabled
-          ]} 
+            (!isConnected || inputText.trim() === "") &&
+              styles.sendButtonDisabled,
+          ]}
           onPress={handleSend}
           disabled={!isConnected || inputText.trim() === ""}
         >
-          <Ionicons 
-            name="send" 
-            size={20} 
-            color={(!isConnected || inputText.trim() === "") ? "#9ca3af" : "#fff"} 
+          <Ionicons
+            name="send"
+            size={20}
+            color={!isConnected || inputText.trim() === "" ? "#9ca3af" : "#fff"}
           />
         </TouchableOpacity>
       </View>
@@ -856,14 +1009,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#f9fafb",
   },
   header: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: 15,
     paddingVertical: 16,
-    flexDirection: 'row',
+    flexDirection: "row",
     borderRadius: 30,
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
     marginTop: 40,
   },
   headerText: {
@@ -876,48 +1029,42 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#111827",
   },
-  headerTitleLong: {
-    fontSize: 20,
-  },
-  headerTitleVeryLong: {
-    fontSize: 16,
-  },
   onlineIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 4,
   },
   onlineDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#10b981',
+    backgroundColor: "#10b981",
     marginRight: 6,
   },
   onlineText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: "#6b7280",
   },
   connectionBanner: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: "#fef2f2",
     paddingHorizontal: 16,
     paddingVertical: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     borderBottomWidth: 1,
-    borderBottomColor: '#fecaca',
+    borderBottomColor: "#fecaca",
   },
   connectionBannerText: {
     marginLeft: 8,
     fontSize: 14,
-    color: '#dc2626',
-    marginRight: 'auto',
+    color: "#dc2626",
+    marginRight: "auto",
   },
   reconnectButton: {
-    color: '#2563eb',
+    color: "#2563eb",
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   chatContainer: {
     flex: 1,
@@ -927,7 +1074,7 @@ const styles = StyleSheet.create({
     marginBottom: 25,
     borderRadius: 16,
     elevation: 4,
-    maxHeight: '70%',
+    maxHeight: "70%",
   },
   messagesList: {
     paddingHorizontal: 16,
@@ -948,7 +1095,7 @@ const styles = StyleSheet.create({
   },
   senderName: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
     marginBottom: 4,
     paddingHorizontal: 4,
   },
@@ -963,7 +1110,7 @@ const styles = StyleSheet.create({
   messageContainer: {
     padding: 12,
     borderRadius: 16,
-    position: 'relative',
+    position: "relative",
   },
   currentUserMessage: {
     backgroundColor: "#008080",
@@ -988,76 +1135,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   messageStatus: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 4,
     right: 8,
   },
   typingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   typingText: {
-    fontStyle: 'italic',
-  },
-  typingDots: {
-    flexDirection: 'row',
-    marginLeft: 8,
-  },
-  typingDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#6b7280',
-    marginHorizontal: 1,
-    opacity: 0.6,
-  },
-  membersContainer: {
-    marginTop: 20,
-    padding: 16,
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    width: '100%',
-    maxWidth: 300,
-  },
-  membersTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1e293b',
-    marginBottom: 12,
-  },
-  membersList: {
-    marginBottom: 12,
-  },
-  membersSubtitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#64748b',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-  },
-  memberItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  memberStatus: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  memberOnline: {
-    backgroundColor: '#10b981',
-  },
-  memberOffline: {
-    backgroundColor: '#9ca3af',
-  },
-  memberName: {
-    fontSize: 14,
-    color: '#374151',
-  },
-  memberOfflineName: {
-    color: '#9ca3af',
+    fontStyle: "italic",
   },
   inputContainer: {
     flexDirection: "row",
@@ -1069,7 +1156,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#e5e7eb",
     elevation: 8,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -1092,55 +1179,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#008080",
     padding: 12,
     borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   sendButtonDisabled: {
     backgroundColor: "#d1d5db",
-  },
-  // Empty State Styles
-  emptyStateContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 40,
-  },
-  emptyStateCard: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: theme.colors.lightPrimary,
-    maxWidth: 300,
-  },
-  emptyStateIcon: {
-    fontSize: 48,
-    marginBottom: 16,
-  },
-  emptyStateTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1e293b',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  emptyStateDescription: {
-    fontSize: 14,
-    color: '#64748b',
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 20,
-  },
-  connectionStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  connectionStatusText: {
-    marginLeft: 6,
-    fontSize: 12,
-    color: '#ef4444',
   },
 });

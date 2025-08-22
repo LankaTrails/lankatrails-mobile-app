@@ -1,19 +1,40 @@
+import { PriceType, ServiceType } from "./serviceTypes";
+
 export type ChatRoomType = 'GROUP' | 'DIRECT';
 
 export type ChatMessageType = 'TEXT' | 'IMAGE' | 'FILE' | 'SERVICE_CARD' | 'SYSTEM' | 'REPLY';
 
-export type ServiceDTO = {
+export interface LocationDTO {
+    // Define location properties as needed
+    [key: string]: any;
+}
+
+export interface TouristDto {
+    id: number;
+    firstName: string;
+    lastName: string;
+    country: string;
+    profilePictureUrl: string;
+}
+
+export interface ProviderDto {
+    id: number;
+    businessName: string;
+    profilePictureUrl: string;
+}
+
+export interface ServiceDTO {
     serviceId: number;
     serviceName: string;
-    serviceCategory: string;
-    //LocationDTO:
+    Category: ServiceType;
+    locations: LocationDTO[];
     price: number;
-    priceType: string;
+    priceType: PriceType;
     mainImageUrl: string;
 }
 
 export interface ChatFilesDto {
-    id: number;
+    id: string; // MongoDB document ID
     fileName: string;
     fileType: string;
     fileUrl: string;
@@ -36,11 +57,13 @@ export interface ChatRoom {
 export interface DirectChatRoom extends ChatRoom {
     providerId: number | null;
     touristId: number | null;
+    provider?: ProviderDto;
+    tourist?: TouristDto;
 }
 
 export interface GroupChatRoom extends ChatRoom {
     tripId: number | null;
-    participantIds: number[];
+    participants: TouristDto[];
 }
 
 export interface ChatMessage {
@@ -49,10 +72,10 @@ export interface ChatMessage {
     senderId: number;
     messageType: ChatMessageType;
     content: string;
-    sentAt: string;
+    sentAt: string; // ISO string representation of Instant
     replyToMessageId?: string | null;
     serviceCardId?: number | null;
     serviceCard?: ServiceDTO | null;
     files?: ChatFilesDto | null;
-    readBy?: Record<number, string>;
+    readBy?: Record<number, string>; // userId -> timestamp when read
 }
