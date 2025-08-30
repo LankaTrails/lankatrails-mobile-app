@@ -202,6 +202,18 @@ export default function TripDetailsModal({
             },
           ]}
         >
+          {/* Header with back button */}
+          <View style={styles.headerRow}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={onClose}
+            >
+              <Ionicons name="arrow-back" size={24} color="#008080" />
+            </TouchableOpacity>
+            <Text style={[styles.modalTitle, styles.headerTitle]}>Trip Details</Text>
+            <View style={styles.headerSpacer} />
+          </View>
+          
           <ScrollView
             style={styles.content}
             showsVerticalScrollIndicator={false}
@@ -726,5 +738,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
     color: "#6B7280",
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  headerTitle: {
+    flex: 1,
+    marginBottom: 0,
+    fontSize: 20,
+    fontWeight: "600",
+    textAlign: "center",
+    color: "#111827",
+  },
+  headerSpacer: {
+    width: 24,
   },
 });

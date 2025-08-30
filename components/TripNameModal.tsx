@@ -13,6 +13,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import LongButton from "./LongButton";
 
 interface TripNameModalProps {
@@ -173,7 +174,17 @@ export default function TripNameModal({
             }
           ]}
         >
-          <Text style={styles.modalTitle}>Name your trip</Text>
+          {/* Header with back button */}
+          <View style={styles.headerRow}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={onClose}
+            >
+              <Ionicons name="arrow-back" size={24} color="#008080" />
+            </TouchableOpacity>
+            <Text style={[styles.modalTitle, styles.headerTitle]}>Name your trip</Text>
+            <View style={styles.headerSpacer} />
+          </View>
 
           <TextInput
             style={styles.inputField}
@@ -288,5 +299,21 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     marginTop: "auto",
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  headerTitle: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  headerSpacer: {
+    width: 24,
   },
 });

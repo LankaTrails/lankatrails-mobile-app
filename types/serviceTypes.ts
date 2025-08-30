@@ -135,8 +135,8 @@ export interface BaseServiceDetail {
     locationBased: Location;
     contactNo: string;
     status: string | null;
-    price: number | null;
-    priceType: PriceType | null;
+    price: number;
+    priceType: PriceType;
     tabsSection: TabSection[];
     policySection: PolicySection[];
     images: ServiceImage[] | null;

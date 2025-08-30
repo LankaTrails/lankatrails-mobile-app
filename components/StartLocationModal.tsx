@@ -21,6 +21,8 @@ import {
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
 import LongButton from "./LongButton";
+import { BlurView } from 'expo-blur';
+import { Animated as RNAnimated } from 'react-native';
 
 interface StartLocationModalProps {
   visible: boolean;
@@ -36,6 +38,8 @@ export default function StartLocationModal({
   onLocationSelect,
   onClose,
 }: StartLocationModalProps) {
+  // Blur animation
+  const blurAnim = useRef(new RNAnimated.Value(0)).current;
   // Modal animation
   const slideAnim = useRef(new Animated.Value(0)).current;
 
@@ -67,13 +71,23 @@ export default function StartLocationModal({
     if (visible) {
       Animated.timing(slideAnim, {
         toValue: 1,
-        duration: 300,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+      RNAnimated.timing(blurAnim, {
+        toValue: 1,
+        duration: 250,
         useNativeDriver: true,
       }).start();
     } else {
       Animated.timing(slideAnim, {
         toValue: 0,
-        duration: 300,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+      RNAnimated.timing(blurAnim, {
+        toValue: 0,
+        duration: 250,
         useNativeDriver: true,
       }).start();
     }
@@ -338,22 +352,43 @@ export default function StartLocationModal({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
+
+        {/* Blur background with fade-in animation */}
         <TouchableWithoutFeedback
           onPress={() => {
             Keyboard.dismiss();
             onClose();
           }}
         >
-          <View style={styles.backdrop} />
+          <RNAnimated.View style={[StyleSheet.absoluteFill, { opacity: blurAnim }]}> 
+            <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
+          </RNAnimated.View>
         </TouchableWithoutFeedback>
 
         <Animated.View
           style={[
             styles.modal,
-            { transform: [{ translateY: modalTranslateY }] },
+            { 
+              transform: [{ translateY: modalTranslateY }],
+              height: selectedLocation ? "80%" : "70%" // Increase height when location is selected
+            },
           ]}
         >
-          <Text style={styles.modalTitle}>Choose Start Location</Text>
+          {!showMap ? (
+            <Text style={styles.modalTitle}>Choose Start Location</Text>
+          ) : (
+            // Header with back button for map view
+            <View style={styles.mapHeaderRow}>
+              <TouchableOpacity
+                style={styles.mapBackButton}
+                onPress={() => setShowMap(false)}
+              >
+                <Ionicons name="arrow-back" size={24} color="#008080" />
+              </TouchableOpacity>
+              <Text style={[styles.modalTitle, styles.mapHeaderTitle]}>Choose Start Location</Text>
+              <View style={styles.mapHeaderSpacer} />
+            </View>
+          )}
 
           {!showMap ? (
             // Main selection screen
@@ -362,43 +397,38 @@ export default function StartLocationModal({
                 How would you like to set your start location?
               </Text>
 
-              {/* Current Location Button */}
-              <TouchableOpacity
-                style={styles.optionButton}
-                onPress={getCurrentLocation}
-                disabled={isLoadingLocation}
-              >
-                <Ionicons name="location" size={24} color="#008080" />
-                <View style={styles.optionTextContainer}>
-                  <Text style={styles.optionTitle}>Use Current Location</Text>
-                  <Text style={styles.optionSubtitle}>
-                    Automatically detect your GPS location
-                  </Text>
-                </View>
-                {isLoadingLocation && (
-                  <ActivityIndicator size="small" color="#008080" />
-                )}
-              </TouchableOpacity>
 
-              {/* Map Selection Button */}
-              <TouchableOpacity
-                style={styles.optionButton}
-                onPress={() => setShowMap(true)}
-              >
-                <Ionicons name="map" size={24} color="#008080" />
-                <View style={styles.optionTextContainer}>
-                  <Text style={styles.optionTitle}>Select on Map</Text>
-                  <Text style={styles.optionSubtitle}>
-                    Choose location visually with search
-                  </Text>
-                </View>
-              </TouchableOpacity>
+              {/* Row of location selection buttons */}
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  style={[styles.optionButton, styles.optionButtonRow]}
+                  onPress={getCurrentLocation}
+                  disabled={isLoadingLocation}
+                >
+                  <Ionicons name="location" size={24} color="#008080" />
+                  <View style={styles.optionTextContainer}>
+                    <Text style={styles.optionTitle}>Use Current Location</Text>
+                  </View>
+                  {isLoadingLocation && (
+                    <ActivityIndicator size="small" color="#008080" />
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.optionButton, styles.optionButtonRow]}
+                  onPress={() => setShowMap(true)}
+                >
+                  <Ionicons name="map" size={24} color="#008080" />
+                  <View style={styles.optionTextContainer}>
+                    <Text style={styles.optionTitle}>Select on Map</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
 
               {/* Popular Locations */}
               <Text style={styles.sectionTitle}>Popular Start Locations</Text>
               <FlatList
                 data={popularLocations}
-                keyExtractor={(item, index) => index.toString()}
+                keyExtractor={(item, index) => `${item.name}-${item.city}-${index}`}
                 style={styles.popularLocationsList}
                 renderItem={({ item }) => (
                   <TouchableOpacity
@@ -432,25 +462,6 @@ export default function StartLocationModal({
           ) : (
             // Map interface
             <View style={styles.mapContainer}>
-              {/* Map Header */}
-              <View style={styles.mapHeader}>
-                <TouchableOpacity
-                  style={styles.backButton}
-                  onPress={() => setShowMap(false)}
-                >
-                  <Ionicons name="arrow-back" size={24} color="#008080" />
-                  <Text style={styles.backText}>Back</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.coordinateButton}
-                  onPress={handleCoordinateInput}
-                >
-                  <Ionicons name="pin" size={20} color="#008080" />
-                  <Text style={styles.coordinateButtonText}>Coordinates</Text>
-                </TouchableOpacity>
-              </View>
-
               {/* Search Bar */}
               <View style={styles.searchContainer}>
                 <Ionicons
@@ -587,9 +598,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: "#F9FAFB",
     borderRadius: 20,
-    marginBottom: 12,
     borderWidth: 1,
     borderColor: "#E5E7EB",
+    flex: 1,
+    marginRight: 8,
+    marginBottom: 0,
+  },
+  optionButtonRow: {
+    marginBottom: 0,
+    marginRight: 0,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
   },
   optionTextContainer: {
     flex: 1,
@@ -746,5 +768,45 @@ const styles = StyleSheet.create({
   buttonContainer: {
     marginTop: 16,
     paddingHorizontal: 0,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  headerTitle: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  headerSpacer: {
+    width: 24,
+  },
+  mapHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+    position: "relative",
+    height: 24, // Reduced height to match main title
+  },
+  mapBackButton: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
+    zIndex: 2,
+  },
+  mapHeaderTitle: {
+    flex: 1,
+    marginBottom: 0,
+    textAlign: "center",
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    zIndex: 1,
+  },
+  mapHeaderSpacer: {
+    width: 24,
   },
 });
