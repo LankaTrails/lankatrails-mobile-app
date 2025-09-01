@@ -25,24 +25,31 @@ import {
   fetchActivityService,
   isActivityService,
 } from "@/services/serviceDetail";
-import type {
-  ActivityServiceDetail,
-  ServiceDetailResponse,
-} from "@/types/serviceTypes";
-import { ServiceDTO } from "@/types/triptypes";
+import type { ActivityServiceDetail } from "@/types/serviceTypes";
+import { ApiResponse } from "@/types/commonTypes";
+import { Service } from "@/types/serviceTypes";
 
 const BASE_URL = process.env.EXPO_PUBLIC_URL;
 
-// Convert ActivityServiceDetail to ServiceDTO for AddToTripButton
-const convertToServiceDTO = (detail: ActivityServiceDetail): ServiceDTO => ({
+// Convert ActivityServiceDetail to Service for AddToTripButton
+const convertToService = (detail: ActivityServiceDetail): Service => ({
   serviceId: detail.serviceId || 0,
   serviceName: detail.serviceName,
   category: "ACTIVITY" as const,
-  locationBased: detail.locationBased,
+  locations: detail.locations,
+  prices: detail.priceConfig
+    ? [
+        {
+          priceType: detail.priceConfig.priceType,
+          amount:
+            detail.priceConfig.fixedPrice ||
+            detail.priceConfig.pricePerUnit ||
+            0,
+        },
+      ]
+    : [],
   mainImageUrl:
-    detail.images && detail.images.length > 0
-      ? detail.images[0].imageUrl
-      : null,
+    detail.images && detail.images.length > 0 ? detail.images[0].imageUrl : "",
 });
 
 const ActivityServiceDetailPage = () => {
@@ -51,20 +58,6 @@ const ActivityServiceDetailPage = () => {
     useState<ActivityServiceDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Convert service detail to ServiceDTO format
-  const convertToServiceDTO = (detail: ActivityServiceDetail): ServiceDTO => {
-    return {
-      serviceId: detail.serviceId!,
-      serviceName: detail.serviceName,
-      category: "ACTIVITY",
-      locationBased: detail.locationBased,
-      mainImageUrl:
-        detail.images && detail.images.length > 0
-          ? detail.images[0].imageUrl
-          : undefined,
-    };
-  };
   const [isFavourite, setIsFavourite] = useState(false);
   const [userRating, setUserRating] = useState(0);
   const [userReview, setUserReview] = useState("");
@@ -99,9 +92,8 @@ const ActivityServiceDetailPage = () => {
         setLoading(true);
         setError(null);
 
-        const response: ServiceDetailResponse = await fetchActivityService(
-          parseInt(serviceId)
-        );
+        const response: ApiResponse<ActivityServiceDetail> =
+          await fetchActivityService(parseInt(serviceId));
 
         if (response.success && isActivityService(response.data)) {
           setServiceDetail(response.data);
@@ -268,8 +260,10 @@ const ActivityServiceDetailPage = () => {
           <View className="flex-row items-start mt-1">
             <Ionicons name="location" size={24} color="#008080" />
             <Text className="ml-2 text-gray-700 w-[85%]">
-              {serviceDetail.locationBased.formattedAddress ||
-                `${serviceDetail.locationBased.city}, ${serviceDetail.locationBased.district}`}
+              {serviceDetail.locationBased?.formattedAddress ||
+                (serviceDetail.locationBased
+                  ? `${serviceDetail.locationBased.city}, ${serviceDetail.locationBased.district}`
+                  : "Location not available")}
             </Text>
           </View>
 
@@ -290,7 +284,10 @@ const ActivityServiceDetailPage = () => {
         </View>
 
         <View className="px-4 mt-6 mb-6">
-          <AddToTripButton service={convertToServiceDTO(serviceDetail)} />
+          <AddToTripButton
+            service={convertToService(serviceDetail)}
+            serviceDetail={serviceDetail}
+          />
         </View>
 
         {/* Activity Details */}

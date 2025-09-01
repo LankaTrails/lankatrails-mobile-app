@@ -2,12 +2,11 @@ import { ServiceGrid } from "@/app/(tabs)/explore/services/components/ServiceGri
 import HeaderSection from "@/components/explorer-components/HeaderSection";
 import { searchProvider } from "@/services/serviceSearch";
 import {
-  ApiResponse,
   ProviderDetailRequest,
   ProviderDetailResponse,
   Service,
-  ServiceCategory,
 } from "@/types/serviceTypes";
+import { ApiResponse, ServiceCategory, ServiceType } from "@/types/commonTypes";
 import { navigateToServiceDetail } from "@/utils/navigationHelpers";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
@@ -37,13 +36,16 @@ const isValidServiceCategory = (
 };
 
 // Helper function to format category names nicely
-const formatCategoryName = (category: ServiceCategory): string => {
-  const categoryMap: Record<ServiceCategory, string> = {
-    [ServiceCategory.ACCOMMODATION]: "Accommodation",
-    [ServiceCategory.FOOD_BEVERAGE]: "Food & Beverage",
-    [ServiceCategory.TRANSPORT]: "Transport",
-    [ServiceCategory.ACTIVITY]: "Activity",
-    [ServiceCategory.TOUR_GUIDE]: "Tour Guide",
+const formatCategoryName = (
+  category: ServiceType | ServiceCategory
+): string => {
+  // Map ServiceType to ServiceCategory for display purposes
+  const categoryMap: Record<string, string> = {
+    ACCOMMODATION: "Accommodation",
+    FOOD_BEVERAGE: "Food & Beverage",
+    TRANSPORT: "Transport",
+    ACTIVITY: "Activity",
+    TOUR_GUIDE: "Tour Guide",
   };
   return categoryMap[category] || category.replace("_", " ");
 };

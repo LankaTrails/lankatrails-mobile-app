@@ -28,16 +28,18 @@ const convertServiceToCardItem = (service: Service): CardItem => {
     serviceId: service?.serviceId,
     serviceName: service?.serviceName,
     category: service?.category,
-    locationBased: service?.locationBased,
+    locations: service?.locations,
     mainImageUrl: service?.mainImageUrl,
-    price: service?.price,
-    priceType: service?.priceType,
+    prices: service?.prices,
   });
 
   // Format price display
   let priceAmount = undefined;
   let priceTypeText = undefined;
-  if (service?.price && service?.priceType) {
+  const servicePrice = service?.prices?.[0]?.amount;
+  const servicePriceType = service?.prices?.[0]?.priceType;
+
+  if (servicePrice && servicePriceType) {
     const priceTypeMap: Record<string, string> = {
       FIXED: "Fixed",
       PER_PERSON: "per person",
@@ -49,11 +51,11 @@ const convertServiceToCardItem = (service: Service): CardItem => {
       PER_MONTH: "per month",
     };
     const typeDisplay =
-      priceTypeMap[service.priceType] ||
-      service.priceType.toLowerCase().replace("_", " ");
+      priceTypeMap[servicePriceType] ||
+      servicePriceType.toLowerCase().replace("_", " ");
 
-    priceAmount = `LKR ${service.price}`;
-    priceTypeText = service.priceType === "FIXED" ? "" : typeDisplay;
+    priceAmount = `LKR ${servicePrice}`;
+    priceTypeText = servicePriceType === "FIXED" ? "" : typeDisplay;
   }
 
   const cardItem = {
@@ -63,8 +65,8 @@ const convertServiceToCardItem = (service: Service): CardItem => {
         : Number(service?.serviceId || 0),
     title: service?.serviceName || "Unknown Service",
     subtitle:
-      service?.locationBased?.city ||
-      service?.locationBased?.formattedAddress ||
+      service?.locations?.[0]?.city ||
+      service?.locations?.[0]?.formattedAddress ||
       service?.category?.replace("_", " ") ||
       "Service",
     rating: 4.5, // Default rating

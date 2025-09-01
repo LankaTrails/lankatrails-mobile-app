@@ -1,11 +1,11 @@
 import { createTrip, fetchAllCities } from "@/services/tripService";
 import {
-  ApiResponse,
   Location,
   Trip,
   tripRequest,
   TripTagType,
 } from "@/types/triptypes";
+import { ApiResponse } from "@/types/commonTypes";
 import { BlurView } from "expo-blur";
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, Animated, StyleSheet, View } from "react-native";
@@ -87,75 +87,74 @@ export default function TripCreationFlow({
     setLoadingCities(true);
     try {
       const response = await fetchAllCities();
-      console.log("Cities response:", response);
       if (response.success && response.data) {
         console.log("Cities loaded:", response.data.length, "cities");
         setCities(response.data);
       } else {
         console.error("Failed to fetch cities:", response.message);
         // Fallback to some sample cities for testing
-        const fallbackCities: Location[] = [
-          {
-            formattedAddress: "Colombo, Western Province, Sri Lanka",
-            city: "Colombo",
-            district: "Colombo",
-            province: "Western",
-            country: "Sri Lanka",
-            postalCode: "00100",
-            latitude: 6.9271,
-            longitude: 79.8612,
-          },
-          {
-            formattedAddress: "Kandy, Central Province, Sri Lanka",
-            city: "Kandy",
-            district: "Kandy",
-            province: "Central",
-            country: "Sri Lanka",
-            postalCode: "20000",
-            latitude: 7.2906,
-            longitude: 80.6337,
-          },
-          {
-            formattedAddress: "Galle, Southern Province, Sri Lanka",
-            city: "Galle",
-            district: "Galle",
-            province: "Southern",
-            country: "Sri Lanka",
-            postalCode: "80000",
-            latitude: 6.0535,
-            longitude: 80.221,
-          },
-        ];
-        setCities(fallbackCities);
-        console.log("Using fallback cities");
+        // const fallbackCities: Location[] = [
+        //   {
+        //     formattedAddress: "Colombo, Western Province, Sri Lanka",
+        //     city: "Colombo",
+        //     district: "Colombo",
+        //     province: "Western",
+        //     country: "Sri Lanka",
+        //     postalCode: "00100",
+        //     latitude: 6.9271,
+        //     longitude: 79.8612,
+        //   },
+        //   {
+        //     formattedAddress: "Kandy, Central Province, Sri Lanka",
+        //     city: "Kandy",
+        //     district: "Kandy",
+        //     province: "Central",
+        //     country: "Sri Lanka",
+        //     postalCode: "20000",
+        //     latitude: 7.2906,
+        //     longitude: 80.6337,
+        //   },
+        //   {
+        //     formattedAddress: "Galle, Southern Province, Sri Lanka",
+        //     city: "Galle",
+        //     district: "Galle",
+        //     province: "Southern",
+        //     country: "Sri Lanka",
+        //     postalCode: "80000",
+        //     latitude: 6.0535,
+        //     longitude: 80.221,
+        //   },
+        // ];
+        // setCities(fallbackCities);
+        // console.log("Using fallback cities");
       }
     } catch (error) {
       console.error("Error fetching cities:", error);
       // Fallback cities in case of network error
-      const fallbackCities: Location[] = [
-        {
-          formattedAddress: "Colombo, Western Province, Sri Lanka",
-          city: "Colombo",
-          district: "Colombo",
-          province: "Western",
-          country: "Sri Lanka",
-          postalCode: "00100",
-          latitude: 6.9271,
-          longitude: 79.8612,
-        },
-        {
-          formattedAddress: "Kandy, Central Province, Sri Lanka",
-          city: "Kandy",
-          district: "Kandy",
-          province: "Central",
-          country: "Sri Lanka",
-          postalCode: "20000",
-          latitude: 7.2906,
-          longitude: 80.6337,
-        },
-      ];
-      setCities(fallbackCities);
-      console.log("Using fallback cities due to error");
+      // const fallbackCities: Location[] = [
+      //   {
+      //     formattedAddress: "Colombo, Western Province, Sri Lanka",
+      //     city: "Colombo",
+      //     district: "Colombo",
+      //     province: "Western",
+      //     country: "Sri Lanka",
+      //     postalCode: "00100",
+      //     latitude: 6.9271,
+      //     longitude: 79.8612,
+      //   },
+      //   {
+      //     formattedAddress: "Kandy, Central Province, Sri Lanka",
+      //     city: "Kandy",
+      //     district: "Kandy",
+      //     province: "Central",
+      //     country: "Sri Lanka",
+      //     postalCode: "20000",
+      //     latitude: 7.2906,
+      //     longitude: 80.6337,
+      //   },
+      // ];
+      // setCities(fallbackCities);
+      // console.log("Using fallback cities due to error");
     } finally {
       setLoadingCities(false);
     }

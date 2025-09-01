@@ -1,5 +1,6 @@
 import api from '@/api/axiosInstance';
-import { ApiResponse, Location, Trip, TripInvitationRequest, TripItem, tripRequest } from '@/types/triptypes';
+import { Trip, TripInvitationRequest, TripItem, tripRequest, AvailabilityDto, TimeSlotsResponseDTO } from '@/types/triptypes';
+import type { ApiResponse, Location } from '@/types/commonTypes';
 
 /**
  * Creates a new trip
@@ -58,13 +59,14 @@ export const getTripItemsByTripId = async (tripId: number): Promise<ApiResponse<
 };
 
 /**
- * Creates a new trip
- * @param tripData The trip data to create
- * @returns Promise containing the API response with the created trip
+ * Adds an item to a trip
+ * @param tripId The ID of the trip
+ * @param tripitem The trip item to add
+ * @returns Promise containing the API response with the success status
  */
-export const addToTrip = async (tripId: number, tripitem: TripItem): Promise<ApiResponse<Trip>> => {
+export const addToTrip = async (tripId: number, tripitem: TripItem): Promise<ApiResponse<string>> => {
     try {
-        const response = await api.post<ApiResponse<Trip>>(`/trips/add-trip-item/${tripId}`, tripitem);
+        const response = await api.post<ApiResponse<string>>(`/trips/add-trip-item/${tripId}`, tripitem);
         return response.data;
     } catch (error) {
         throw error;
@@ -98,6 +100,21 @@ export const generateTripInvitation = async (tripId: number, invitationData: Tri
 export const acceptTripInvitation = async (token: string): Promise<ApiResponse<Trip>> => {
     try {
         const response = await api.post<ApiResponse<Trip>>(`/trips/invitations/${token}/accept`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+/**
+ * Gets available time slots for a service
+ * @param availabilityDto The availability criteria
+ * @param serviceId The ID of the service
+ * @returns Promise containing the API response with available time slots
+ */
+export const getAvailableTimeSlots = async (availabilityDto: AvailabilityDto, serviceId: number): Promise<ApiResponse<TimeSlotsResponseDTO>> => {
+    try {
+        const response = await api.post<ApiResponse<TimeSlotsResponseDTO>>(`/tourist/booking/available-slots/${serviceId}`, availabilityDto);
         return response.data;
     } catch (error) {
         throw error;
