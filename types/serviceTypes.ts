@@ -62,6 +62,13 @@ export interface Service {
     locations: Location[] | null;
     prices: Price[] | null;
     mainImageUrl: string | null;
+    provider : Provider | null;
+}
+
+export type Provider = {
+    id: number;
+    businessName: string | null;
+    profilePictureUrl: string | null;
 }
 
 export interface Price {

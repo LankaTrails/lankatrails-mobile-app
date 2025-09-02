@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,375 +7,621 @@ import {
   StyleSheet,
   Animated,
   Alert,
-} from 'react-native';
-import Theme, { theme } from '../../../theme';
-
-interface BookingService {
-  id: string;
-  name: string;
-  description: string;
-  time: string;
-  duration: string;
-  cost: number;
-  location: string;
-  date: string;
-  dayName: string;
-  isBooked: boolean;
-  isAvailable: boolean;
-  bookingReference?: string;
-  providerName: string;
-  maxCapacity: number;
-  currentBookings: number;
-  weather?: 'sunny' | 'cloudy' | 'rainy';
-}
+  ActivityIndicator,
+} from "react-native";
+import { useLocalSearchParams } from "expo-router";
+import { theme } from "../../../theme";
+import { getAllBookings } from "@/services/bookingService";
+import type { BookingItem, BookingStatus } from "@/types/bookingTypes";
+import { usePaymentGateway } from "@/components/PaymentGateway";
 
 interface TripBookingsProps {
   onBack?: () => void;
 }
 
+// Use BookingItem directly with some computed display properties
+interface BookingUIData extends BookingItem {
+  // Computed display properties
+  displayTime: string;
+  displayDate: string;
+  displayDayName: string;
+  displayDuration: string;
+  displayLocation: string;
+  displayProviderName: string;
+  weather: "sunny" | "cloudy" | "rainy"; // Keep hardcoded for now
+}
+
 const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
-  const [viewMode, setViewMode] = useState<'overview' | 'details'>('overview');
-  const [selectedService, setSelectedService] = useState<BookingService | null>(null);
+  const { id: tripId } = useLocalSearchParams();
+  const [viewMode, setViewMode] = useState<"overview" | "details">("overview");
+  const [selectedService, setSelectedService] = useState<BookingUIData | null>(
+    null
+  );
   const [fadeAnim] = useState(new Animated.Value(1));
-  const [expandedServiceId, setExpandedServiceId] = useState<string | null>(null);
-  const [bookingServices, setBookingServices] = useState<BookingService[]>([
-    {
-      id: '1',
-      name: 'Galle Fort Walking Tour',
-      description: 'Explore the historic Dutch fort with a local guide',
-      time: '09:00 AM',
-      duration: '3 hours',
-      cost: 350,
-      location: 'Galle Fort',
-      date: 'Dec 15',
-      dayName: 'Saturday',
-      isBooked: true,
-      isAvailable: true,
-      bookingReference: 'GF-2024-001',
-      providerName: 'Galle Heritage Tours',
-      maxCapacity: 15,
-      currentBookings: 8,
-      weather: 'sunny'
-    },
-    {
-      id: '2',
-      name: 'Lighthouse Visit',
-      description: 'Climb the iconic Galle Lighthouse for panoramic views',
-      time: '02:00 PM',
-      duration: '1 hour',
-      cost: 150,
-      location: 'Galle Lighthouse',
-      date: 'Dec 15',
-      dayName: 'Saturday',
-      isBooked: false,
-      isAvailable: true,
-      providerName: 'Maritime Heritage Site',
-      maxCapacity: 20,
-      currentBookings: 12,
-      weather: 'sunny'
-    },
-    {
-      id: '3',
-      name: 'Whale Watching',
-      description: 'Deep sea whale and dolphin watching expedition',
-      time: '06:00 AM',
-      duration: '4 hours',
-      cost: 650,
-      location: 'Mirissa Harbor',
-      date: 'Dec 16',
-      dayName: 'Sunday',
-      isBooked: false,
-      isAvailable: true,
-      providerName: 'Ocean Safari Lanka',
-      maxCapacity: 25,
-      currentBookings: 18,
-      weather: 'cloudy'
-    },
-    {
-      id: '4',
-      name: 'Beach Relaxation',
-      description: 'Unwind at the pristine Unawatuna Beach',
-      time: '02:00 PM',
-      duration: '3 hours',
-      cost: 200,
-      location: 'Unawatuna Beach',
-      date: 'Dec 16',
-      dayName: 'Sunday',
-      isBooked: true,
-      isAvailable: true,
-      bookingReference: 'UB-2024-045',
-      providerName: 'Beach Resort Unawatuna',
-      maxCapacity: 50,
-      currentBookings: 23,
-      weather: 'cloudy'
-    },
-    {
-      id: '5',
-      name: 'Spice Garden Tour',
-      description: 'Learn about traditional Sri Lankan spices and herbs',
-      time: '10:00 AM',
-      duration: '2 hours',
-      cost: 300,
-      location: 'Ahangama Spice Garden',
-      date: 'Dec 17',
-      dayName: 'Monday',
-      isBooked: false,
-      isAvailable: false,
-      providerName: 'Spice Island Tours',
-      maxCapacity: 12,
-      currentBookings: 12,
-      weather: 'rainy'
-    },
-    {
-      id: '6',
-      name: 'Cooking Class',
-      description: 'Traditional Sri Lankan cooking experience',
-      time: '03:00 PM',
-      duration: '2.5 hours',
-      cost: 450,
-      location: 'Local Family Home',
-      date: 'Dec 17',
-      dayName: 'Monday',
-      isBooked: false,
-      isAvailable: true,
-      providerName: 'Authentic Lanka Cooking',
-      maxCapacity: 8,
-      currentBookings: 3,
-      weather: 'rainy'
-    },
-    {
-      id: '7',
-      name: 'Stilt Fishing Experience',
-      description: 'Try the traditional stilt fishing method',
-      time: '07:00 AM',
-      duration: '2 hours',
-      cost: 400,
-      location: 'Koggala Beach',
-      date: 'Dec 18',
-      dayName: 'Tuesday',
-      isBooked: true,
-      isAvailable: true,
-      bookingReference: 'SF-2024-078',
-      providerName: 'Traditional Fishing Co.',
-      maxCapacity: 6,
-      currentBookings: 4,
-      weather: 'sunny'
-    }
-  ]);
+  const [expandedServiceId, setExpandedServiceId] = useState<string | null>(
+    null
+  );
+  const [bookingServices, setBookingServices] = useState<BookingUIData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [processingPayment, setProcessingPayment] = useState(false);
+  const [currentPaymentTripItemId, setCurrentPaymentTripItemId] = useState<
+    number | null
+  >(null);
 
+  // Payment gateway hook for handling payments
+  const paymentGateway = usePaymentGateway({
+    onPaymentStart: () => {
+      setProcessingPayment(true);
+    },
+    onPaymentSuccess: (bookingId, paymentAmount, currency) => {
+      if (currentPaymentTripItemId) {
+        // Update UI to show booking as confirmed
+        setBookingServices((prev) =>
+          prev.map((s) =>
+            s.tripItemId === currentPaymentTripItemId
+              ? { ...s, status: "CONFIRMED" as BookingStatus }
+              : s
+          )
+        );
+        console.log(
+          `Payment successful for service ${currentPaymentTripItemId}, booking ${bookingId}`
+        );
+      }
+      setProcessingPayment(false);
+      setCurrentPaymentTripItemId(null); // Reset after success
+    },
+    onPaymentFailure: (error) => {
+      if (currentPaymentTripItemId) {
+        // Revert booking status on failure
+        setBookingServices((prev) =>
+          prev.map((s) =>
+            s.tripItemId === currentPaymentTripItemId
+              ? { ...s, status: "CANCELED" as BookingStatus }
+              : s
+          )
+        );
+        console.error(
+          `Payment failed for service ${currentPaymentTripItemId}:`,
+          error
+        );
+      }
+      setProcessingPayment(false);
+      setCurrentPaymentTripItemId(null); // Reset after failure
+    },
+    onPaymentCancel: () => {
+      if (currentPaymentTripItemId) {
+        // Revert booking status on cancellation
+        setBookingServices((prev) =>
+          prev.map((s) =>
+            s.tripItemId === currentPaymentTripItemId
+              ? { ...s, status: "CANCELED" as BookingStatus }
+              : s
+          )
+        );
+        console.log(`Payment canceled for service ${currentPaymentTripItemId}`);
+      }
+      setProcessingPayment(false);
+      setCurrentPaymentTripItemId(null); // Reset after cancellation
+    },
+  });
 
-  const getStatusText = (service: BookingService) => {
-    if (service.isBooked) return 'Booked';
-    if (!service.isAvailable) return 'Not Available';
-    return 'Available';
+  // Transform BookingItem to BookingUIData with computed display properties
+  const transformBookingToUI = (booking: BookingItem): BookingUIData => {
+    const startDate = new Date(booking.startTime);
+    const endDate = new Date(booking.endTime);
+
+    return {
+      ...booking, // Spread all BookingItem properties
+      displayTime: startDate.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }),
+      displayDuration: `${Math.ceil(
+        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)
+      )} hours`,
+      displayDate: startDate.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }),
+      displayDayName: startDate.toLocaleDateString("en-US", {
+        weekday: "long",
+      }),
+      displayLocation: booking.service?.locations?.[0]?.city || "Location",
+      displayProviderName:
+        booking.service?.provider?.businessName || "Service Provider",
+      weather: (["sunny", "cloudy", "rainy"] as const)[
+        Math.floor(Math.random() * 3)
+      ], // Random weather for variety
+    };
   };
 
-  const getStatusColor = (service: BookingService) => {
-    if (service.isBooked) return '#10B981';
-    if (!service.isAvailable) return '#EF4444';
-    return '#F59E0B';
-  };
+  // Fetch bookings from API
+  useEffect(() => {
+    const fetchBookings = async () => {
+      if (!tripId) {
+        setError("Trip ID not found");
+        setLoading(false);
+        return;
+      }
 
-  const handleBookService = (serviceId: string) => {
-    Alert.alert(
-      "Confirm Booking",
-      "Are you sure you want to book this service?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Book Now",
-          onPress: () => {
-            setBookingServices(prev => prev.map(service => 
-              service.id === serviceId 
-                ? { 
-                    ...service, 
-                    isBooked: true, 
-                    bookingReference: `BK-${Date.now()}`,
-                    currentBookings: service.currentBookings + 1
-                  }
-                : service
-            ));
-            Alert.alert("Success", "Service booked successfully!");
-          }
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await getAllBookings(Number(tripId));
+
+        if (response.success && response.data) {
+          console.log("Fetched bookings successfully:", response.data);
+          const transformedBookings = response.data.map(transformBookingToUI);
+          setBookingServices(transformedBookings);
+        } else {
+          setError(response.message || "Failed to load bookings");
         }
-      ]
-    );
+      } catch (err: any) {
+        setError(err.message || "Failed to load bookings");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBookings();
+  }, [tripId]);
+
+  const getStatusText = (service: BookingUIData) => {
+    switch (service.status) {
+      case "CONFIRMED":
+        return "Booked";
+      case "PENDING":
+        return "Pending";
+      case "CANCELED":
+        return "Canceled";
+      case "PAYMENT_FAILED":
+        return "Payment Failed";
+      case "NOT_AVAILABLE":
+        return "Not Available";
+      default:
+        return "Available";
+    }
   };
 
-  const handleBookAll = () => {
-    const availableServices = bookingServices.filter(s => !s.isBooked && s.isAvailable);
-    if (availableServices.length === 0) {
-      Alert.alert("No Services", "No available services to book.");
+  const getStatusColor = (service: BookingUIData) => {
+    switch (service.status) {
+      case "CONFIRMED":
+        return "#10B981";
+      case "PENDING":
+        return "#F59E0B";
+      case "CANCELED":
+      case "PAYMENT_FAILED":
+      case "NOT_AVAILABLE":
+        return "#EF4444";
+      default:
+        return "#F59E0B";
+    }
+  };
+
+  const getWeatherIcon = (weather: "sunny" | "cloudy" | "rainy") => {
+    switch (weather) {
+      case "sunny":
+        return "☀️";
+      case "cloudy":
+        return "☁️";
+      case "rainy":
+        return "🌧️";
+      default:
+        return "☀️";
+    }
+  };
+
+  // Handle payment processing with Payment Gateway
+  const handlePayment = async (tripItemId: number) => {
+    const service = bookingServices.find((s) => s.tripItemId === tripItemId);
+    if (!service) return;
+
+    if (processingPayment) {
+      Alert.alert("Processing", "Please wait, payment is being processed...");
+      return;
+    }
+
+    // Set the current trip item ID for payment processing (for UI state management)
+    setCurrentPaymentTripItemId(tripItemId);
+
+    // Update UI to show booking as pending
+    setBookingServices((prev) =>
+      prev.map((s) =>
+        s.tripItemId === tripItemId
+          ? { ...s, status: "PENDING" as BookingStatus }
+          : s
+      )
+    );
+
+    // Trigger payment process with the correct tripItemId
+    await paymentGateway.processPayment(tripItemId);
+  };
+
+  const handleBookService = async (serviceId: number) => {
+    const service = bookingServices.find((s) => s.tripItemId === serviceId);
+    if (!service) return;
+
+    if (processingPayment) {
+      Alert.alert("Processing", "Please wait, payment is being processed...");
       return;
     }
 
     Alert.alert(
-      "Book All Available",
-      `Book ${availableServices.length} available services for LKR ${availableServices.reduce((sum, s) => sum + s.cost, 0)}?`,
+      "Confirm Booking",
+      `Are you sure you want to book "${
+        service.service?.serviceName || "this service"
+      }"?\n\nYou will be redirected to payment after confirmation.`,
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Book All",
-          onPress: () => {
-            setBookingServices(prev => prev.map(service => 
-              !service.isBooked && service.isAvailable
-                ? { 
-                    ...service, 
-                    isBooked: true, 
-                    bookingReference: `BK-${Date.now()}-${service.id}`,
-                    currentBookings: service.currentBookings + 1
-                  }
-                : service
-            ));
-            Alert.alert("Success", `${availableServices.length} services booked successfully!`);
-          }
-        }
+          text: "Proceed to Payment",
+          onPress: () => handlePayment(service.tripItemId),
+        },
       ]
     );
   };
 
-  const handleViewServiceDetails = (serviceId: string) => {
-    // Navigate to service details screen or open modal
-    console.log('Viewing service details:', serviceId);
-    // You can implement navigation to a service details screen here
-  };
+  // Handle multiple bookings with individual payments
+  const handleBookAllPayments = async (services: BookingUIData[]) => {
+    if (processingPayment) {
+      Alert.alert("Processing", "Please wait, payment is being processed...");
+      return;
+    }
 
-  const handleRemoveService = (serviceId: string) => {
     Alert.alert(
-      'Remove Service',
-      'Are you sure you want to remove this service from your trip?',
+      "Bulk Booking Notice",
+      `Due to payment processing requirements, each service will be booked and paid for individually. You will see ${services.length} payment screens.\n\nProceed?`,
       [
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () => {
-            setBookingServices(prev => prev.filter(service => service.id !== serviceId));
-            console.log('Removing service:', serviceId);
+          text: "Continue",
+          onPress: async () => {
+            for (let i = 0; i < services.length; i++) {
+              const service = services[i];
+              try {
+                await handlePayment(service.tripItemId);
+                // Small delay between payments to prevent overwhelming the user
+                if (i < services.length - 1) {
+                  await new Promise((resolve) => setTimeout(resolve, 1000));
+                }
+              } catch (error) {
+                console.error(
+                  `Failed to process payment for service ${service.tripItemId}:`,
+                  error
+                );
+                // Continue with next service even if one fails
+              }
+            }
           },
         },
       ]
     );
   };
 
-  const toggleServiceOptions = (serviceId: string) => {
-    setExpandedServiceId(expandedServiceId === serviceId ? null : serviceId);
+  const handleBookAll = () => {
+    const availableServices = bookingServices.filter(
+      (s) => s.status !== "CONFIRMED" && s.status !== "NOT_AVAILABLE"
+    );
+    if (availableServices.length === 0) {
+      Alert.alert("No Services", "No available services to book.");
+      return;
+    }
+
+    const totalCost = availableServices.reduce(
+      (sum, s) => sum + (s.totalPrice || 0),
+      0
+    );
+    Alert.alert(
+      "Book All Available",
+      `Book ${availableServices.length} available services for LKR ${totalCost}?\n\nNote: Each service will require separate payment processing.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Book All",
+          onPress: () => handleBookAllPayments(availableServices),
+        },
+      ]
+    );
   };
 
-  const handleServiceClick = (service: BookingService) => {
+  const handleViewServiceDetails = (serviceId: number) => {
+    // Navigate to service details screen or open modal
+    console.log("Viewing service details:", serviceId);
+    // You can implement navigation to a service details screen here
+  };
+
+  const handleRemoveService = (serviceId: number) => {
+    Alert.alert(
+      "Remove Service",
+      "Are you sure you want to remove this service from your trip?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: () => {
+            setBookingServices((prev) =>
+              prev.filter((service) => service.tripItemId !== serviceId)
+            );
+            console.log("Removing service:", serviceId);
+          },
+        },
+      ]
+    );
+  };
+
+  const toggleServiceOptions = (serviceId: number) => {
+    const serviceIdString = serviceId.toString();
+    setExpandedServiceId(
+      expandedServiceId === serviceIdString ? null : serviceIdString
+    );
+  };
+
+  const handleServiceClick = (service: BookingUIData) => {
     setSelectedService(service);
-    setViewMode('details');
+    setViewMode("details");
   };
 
   const handleBackToOverview = () => {
-    setViewMode('overview');
+    setViewMode("overview");
     setSelectedService(null);
   };
 
+  // Calculate counts for UI
+  const bookedCount = bookingServices.filter(
+    (s) => s.status === "CONFIRMED"
+  ).length;
+  const availableCount = bookingServices.filter(
+    (s) => s.status !== "CONFIRMED" && s.status !== "NOT_AVAILABLE"
+  ).length;
 
+  const OverviewView = () => {
+    if (loading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#008080" />
+          <Text style={styles.loadingText}>Loading bookings...</Text>
+        </View>
+      );
+    }
 
-  const OverviewView = () => (
-    <Animated.View style={[styles.animatedContainer, { opacity: fadeAnim }]}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {availableCount > 0 && (
-          <TouchableOpacity style={styles.bookAllButton} onPress={handleBookAll}>
-            <Text style={styles.bookAllText}>Book All Available ({availableCount})</Text>
-          </TouchableOpacity>
-        )}
-
-        {bookingServices.map((service) => (
-          <View
-            key={service.id}
-            style={styles.serviceCard}
+    if (error) {
+      return (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>⚠️ {error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => {
+              if (tripId) {
+                // Retry fetching
+                const fetchBookings = async () => {
+                  try {
+                    setLoading(true);
+                    setError(null);
+                    const response = await getAllBookings(Number(tripId));
+                    if (response.success && response.data) {
+                      const transformedBookings =
+                        response.data.map(transformBookingToUI);
+                      setBookingServices(transformedBookings);
+                    } else {
+                      setError(response.message || "Failed to load bookings");
+                    }
+                  } catch (err: any) {
+                    setError(err.message || "Failed to load bookings");
+                  } finally {
+                    setLoading(false);
+                  }
+                };
+                fetchBookings();
+              }
+            }}
           >
-            <View style={styles.serviceHeader}>
-              <View style={styles.serviceInfo}>
-                <View style={styles.serviceMainInfo}>
-                  <Text style={styles.serviceName}>{service.name}</Text>
-                  <Text style={styles.serviceDateTime}>{service.date} • {service.time}</Text>
-                  <Text style={styles.serviceLocation}>📍 {service.location}</Text>
-                </View>
-                <View style={styles.serviceStatus}>
-                  {/* Status-based button in top right */}
-                  {service.isBooked ? (
-                    <TouchableOpacity style={styles.bookedButton} disabled>
-                      <Text style={styles.bookedButtonText}>Booked</Text>
-                    </TouchableOpacity>
-                  ) : service.isAvailable ? (
-                    <TouchableOpacity
-                      style={styles.bookButton}
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        handleBookService(service.id);
-                      }}
-                    >
-                      <Text style={styles.bookButtonText}>Book Now</Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity style={styles.unavailableButton} disabled>
-                      <Text style={styles.unavailableButtonText}>Not Available</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            </View>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
 
-            <View style={styles.serviceDetails}>
-              <View style={styles.serviceDetailRow}>
-                <Text style={styles.serviceDetailLabel}>Provider:</Text>
-                <Text style={styles.serviceDetailValue}>{service.providerName}</Text>
+    if (bookingServices.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>
+            📅 No bookings found for this trip
+          </Text>
+          <Text style={styles.emptySubtext}>
+            Add services to your trip to see bookings here
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <Animated.View style={[styles.animatedContainer, { opacity: fadeAnim }]}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {availableCount > 0 && (
+            <TouchableOpacity
+              style={[
+                styles.bookAllButton,
+                processingPayment && styles.bookAllButtonDisabled,
+              ]}
+              onPress={handleBookAll}
+              disabled={processingPayment}
+            >
+              {processingPayment ? (
+                <View style={styles.bookAllButtonContent}>
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <Text style={[styles.bookAllText, { marginLeft: 8 }]}>
+                    Processing...
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.bookAllText}>
+                  Book All Available ({availableCount})
+                </Text>
+              )}
+            </TouchableOpacity>
+          )}
+
+          {bookingServices.map((service) => (
+            <View key={service.tripItemId} style={styles.serviceCard}>
+              <View style={styles.serviceHeader}>
+                <View style={styles.serviceInfo}>
+                  <View style={styles.serviceMainInfo}>
+                    <Text style={styles.serviceName}>
+                      {service.service?.serviceName || "Service"}
+                    </Text>
+                    <Text style={styles.serviceDateTime}>
+                      {service.displayDate} • {service.displayTime}
+                    </Text>
+                    <Text style={styles.serviceLocation}>
+                      📍 {service.displayLocation}{" "}
+                      {getWeatherIcon(service.weather)}
+                    </Text>
+                  </View>
+                  <View style={styles.serviceStatus}>
+                    {/* Status-based button in top right */}
+                    {service.status === "CONFIRMED" ? (
+                      <TouchableOpacity style={styles.bookedButton} disabled>
+                        <Text style={styles.bookedButtonText}>Booked</Text>
+                      </TouchableOpacity>
+                    ) : service.status === "NOT_AVAILABLE" ? (
+                      <TouchableOpacity
+                        style={styles.unavailableButton}
+                        disabled
+                      >
+                        <Text style={styles.unavailableButtonText}>
+                          Not Available
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        style={[
+                          styles.bookButton,
+                          processingPayment && styles.bookButtonDisabled,
+                        ]}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          if (!processingPayment) {
+                            handleBookService(service.tripItemId);
+                          }
+                        }}
+                        disabled={processingPayment}
+                      >
+                        {processingPayment ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <Text style={styles.bookButtonText}>Book Now</Text>
+                        )}
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
               </View>
-              <View style={styles.serviceDetailRow}>
-                <Text style={styles.serviceDetailLabel}>Capacity:</Text>
-                <Text style={styles.serviceDetailValue}>{service.currentBookings}/{service.maxCapacity}</Text>
-              </View>
-              {service.isBooked && service.bookingReference && (
+
+              <View style={styles.serviceDetails}>
                 <View style={styles.serviceDetailRow}>
-                  <Text style={styles.serviceDetailLabel}>Reference:</Text>
-                  <Text style={styles.serviceDetailValue}>{service.bookingReference}</Text>
+                  <Text style={styles.serviceDetailLabel}>Provider:</Text>
+                  <Text style={styles.serviceDetailValue}>
+                    {service.displayProviderName}
+                  </Text>
+                </View>
+                <View style={styles.serviceDetailRow}>
+                  <Text style={styles.serviceDetailLabel}>
+                    Adults/Children:
+                  </Text>
+                  <Text style={styles.serviceDetailValue}>
+                    {service.numberOfAdults}/{service.numberOfChildren}
+                  </Text>
+                </View>
+                {service.status === "CONFIRMED" && (
+                  <View style={styles.serviceDetailRow}>
+                    <Text style={styles.serviceDetailLabel}>Reference:</Text>
+                    <Text style={styles.serviceDetailValue}>
+                      BK-{service.tripItemId}
+                    </Text>
+                  </View>
+                )}
+                {service.totalPrice && (
+                  <View style={styles.serviceDetailRow}>
+                    <Text style={styles.serviceDetailLabel}>Total Price:</Text>
+                    <Text style={styles.serviceDetailValue}>
+                      LKR {service.totalPrice}
+                    </Text>
+                  </View>
+                )}
+                {service.paidAmount && (
+                  <View style={styles.serviceDetailRow}>
+                    <Text style={styles.serviceDetailLabel}>Paid:</Text>
+                    <Text style={styles.serviceDetailValue}>
+                      LKR {service.paidAmount}
+                    </Text>
+                  </View>
+                )}
+                {service.dueAmount && (
+                  <View style={styles.serviceDetailRow}>
+                    <Text style={styles.serviceDetailLabel}>Due:</Text>
+                    <Text style={styles.serviceDetailValue}>
+                      LKR {service.dueAmount}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.serviceFooter}>
+                <View style={styles.servicePriceContainer}>
+                  <Text style={styles.servicePrice}>
+                    LKR {service.totalPrice || 0}
+                  </Text>
+                  <Text style={styles.serviceDuration}>
+                    {service.displayDuration}
+                  </Text>
+                </View>
+                <View style={styles.serviceActions}>
+                  <TouchableOpacity
+                    onPress={() => toggleServiceOptions(service.tripItemId)}
+                  >
+                    <Text style={styles.editDetailsButton}>
+                      {expandedServiceId === service.tripItemId.toString()
+                        ? "Close"
+                        : "Options"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Expanded Options */}
+              {expandedServiceId === service.tripItemId.toString() && (
+                <View style={styles.expandedOptions}>
+                  <TouchableOpacity
+                    style={styles.optionButton}
+                    onPress={() => handleViewServiceDetails(service.tripItemId)}
+                  >
+                    <Text style={styles.optionButtonText}>View Details</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.optionButton, styles.removeButton]}
+                    onPress={() => handleRemoveService(service.tripItemId)}
+                  >
+                    <Text
+                      style={[styles.optionButtonText, styles.removeButtonText]}
+                    >
+                      Remove
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               )}
             </View>
-
-            <View style={styles.serviceFooter}>
-              <View style={styles.servicePriceContainer}>
-                <Text style={styles.servicePrice}>LKR {service.cost}</Text>
-                <Text style={styles.serviceDuration}>{service.duration}</Text>
-              </View>
-              <View style={styles.serviceActions}>
-                <TouchableOpacity onPress={() => toggleServiceOptions(service.id)}>
-                  <Text style={styles.editDetailsButton}>
-                    {expandedServiceId === service.id ? 'Close' : 'Options'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Expanded Options */}
-            {expandedServiceId === service.id && (
-              <View style={styles.expandedOptions}>
-                <TouchableOpacity 
-                  style={styles.optionButton}
-                  onPress={() => handleViewServiceDetails(service.id)}
-                >
-                  <Text style={styles.optionButtonText}>View Details</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.optionButton, styles.removeButton]}
-                  onPress={() => handleRemoveService(service.id)}
-                >
-                  <Text style={[styles.optionButtonText, styles.removeButtonText]}>Remove</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        ))}
-      </ScrollView>
-    </Animated.View>
-  );
+          ))}
+        </ScrollView>
+      </Animated.View>
+    );
+  };
 
   const DetailsView = () => {
     if (!selectedService) return null;
@@ -383,15 +629,27 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
     return (
       <Animated.View style={[styles.animatedContainer, { opacity: fadeAnim }]}>
         <View style={styles.detailsHeader}>
-          <TouchableOpacity style={styles.backButton} onPress={handleBackToOverview}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={handleBackToOverview}
+          >
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <View style={styles.detailsHeaderText}>
-            <Text style={styles.detailsTitle}>{selectedService.name}</Text>
-            <Text style={styles.detailsSubtitle}>{selectedService.date} • {selectedService.dayName}</Text>
+            <Text style={styles.detailsTitle}>
+              {selectedService.service?.serviceName || "Service"}
+            </Text>
+            <Text style={styles.detailsSubtitle}>
+              {selectedService.displayDate} • {selectedService.displayDayName}
+            </Text>
           </View>
           <View style={styles.detailsStatus}>
-            <Text style={[styles.statusText, { color: getStatusColor(selectedService) }]}>
+            <Text
+              style={[
+                styles.statusText,
+                { color: getStatusColor(selectedService) },
+              ]}
+            >
               {getStatusText(selectedService)}
             </Text>
           </View>
@@ -400,16 +658,11 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
     );
   };
 
-  const bookedCount = bookingServices.filter(s => s.isBooked).length;
-  const availableCount = bookingServices.filter(s => !s.isBooked && s.isAvailable).length;
-
   return (
     <View style={styles.container}>
-     
-      
       <View style={styles.viewContainer}>
-        {viewMode === 'overview' && <OverviewView />}
-        {viewMode === 'details' && selectedService && <DetailsView />}
+        {viewMode === "overview" && <OverviewView />}
+        {viewMode === "details" && selectedService && <DetailsView />}
       </View>
     </View>
   );
@@ -425,26 +678,88 @@ const styles = StyleSheet.create({
   viewContainer: {
     flex: 1,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 60,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#6B7280",
+    marginTop: 12,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 60,
+    paddingHorizontal: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: "#DC2626",
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: "#008080",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 26,
+  },
+  retryButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 60,
+    paddingHorizontal: 20,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#6B7280",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: "#9CA3AF",
+    textAlign: "center",
+  },
   bookAllButton: {
-    backgroundColor: '#008080',
+    backgroundColor: "#008080",
     borderRadius: 26,
     padding: 16,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 16,
   },
   bookAllText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  bookAllButtonDisabled: {
+    backgroundColor: "#9CA3AF",
+  },
+  bookAllButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   serviceCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 14,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -454,9 +769,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   serviceInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
   },
   serviceMainInfo: {
     flex: 1,
@@ -464,134 +779,161 @@ const styles = StyleSheet.create({
   },
   serviceName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: "600",
+    color: "#111827",
     marginBottom: 4,
   },
   serviceDateTime: {
     fontSize: 14,
-    color: '#6B7280',
+    color: "#6B7280",
     marginBottom: 2,
   },
   serviceLocation: {
     fontSize: 14,
-    color: '#6B7280',
+    color: "#6B7280",
   },
   serviceStatus: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   statusText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   serviceDetails: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: "#F9FAFB",
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
   },
   serviceDetailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 4,
   },
   serviceDetailLabel: {
     fontSize: 14,
-    color: '#6B7280',
+    color: "#6B7280",
   },
   serviceDetailValue: {
     fontSize: 14,
-    color: '#111827',
-    fontWeight: '500',
+    color: "#111827",
+    fontWeight: "500",
   },
   serviceFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   servicePriceContainer: {
     flex: 1,
   },
   servicePrice: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
+    fontWeight: "bold",
+    color: "#111827",
   },
   serviceDuration: {
     fontSize: 12,
-    color: '#6B7280',
+    color: "#6B7280",
   },
   bookButton: {
-    backgroundColor: '#008080',
+    backgroundColor: "#008080",
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 26,
   },
   bookButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  bookButtonDisabled: {
+    backgroundColor: "#9CA3AF",
+  },
+  bookedButton: {
+    backgroundColor: "#10B981",
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 26,
+    opacity: 0.8,
+  },
+  bookedButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  unavailableButton: {
+    backgroundColor: "#EF4444",
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 26,
+    opacity: 0.8,
+  },
+  unavailableButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   bookedIndicator: {
-    backgroundColor: '#10B981',
+    backgroundColor: "#10B981",
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 8,
   },
   bookedText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   fullIndicator: {
-    backgroundColor: '#EF4444',
+    backgroundColor: "#EF4444",
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 8,
   },
   fullText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   detailsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 20,
   },
   backButton: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#F3F4F6",
     width: 40,
     height: 40,
     borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
   backIcon: {
     fontSize: 18,
-    color: '#6B7280',
+    color: "#6B7280",
   },
   detailsHeaderText: {
     flex: 1,
   },
   detailsTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
+    fontWeight: "bold",
+    color: "#111827",
   },
   detailsSubtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: "#6B7280",
   },
   detailsStatus: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   detailsCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 20,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -599,7 +941,7 @@ const styles = StyleSheet.create({
   },
   detailsDescription: {
     fontSize: 16,
-    color: '#6B7280',
+    color: "#6B7280",
     lineHeight: 24,
     marginBottom: 24,
   },
@@ -608,13 +950,13 @@ const styles = StyleSheet.create({
   },
   detailsSectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: "600",
+    color: "#111827",
     marginBottom: 12,
   },
   detailsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 12,
   },
   detailsIcon: {
@@ -627,65 +969,65 @@ const styles = StyleSheet.create({
   },
   detailsLabel: {
     fontSize: 14,
-    color: '#6B7280',
+    color: "#6B7280",
     marginBottom: 2,
   },
   detailsValue: {
     fontSize: 14,
-    color: '#111827',
-    fontWeight: '500',
+    color: "#111827",
+    fontWeight: "500",
   },
   bookedSection: {
-    backgroundColor: '#F0FDF4',
+    backgroundColor: "#F0FDF4",
     borderRadius: 8,
     padding: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#10B981',
+    borderLeftColor: "#10B981",
   },
   priceSection: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: "#F9FAFB",
     borderRadius: 8,
     padding: 16,
     marginBottom: 20,
   },
   priceSectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 4,
   },
   priceSectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: "600",
+    color: "#111827",
   },
   priceSectionAmount: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#111827',
+    fontWeight: "bold",
+    color: "#111827",
   },
   priceSectionSubtext: {
     fontSize: 14,
-    color: '#6B7280',
+    color: "#6B7280",
   },
   detailsBookButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: "#3B82F6",
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   detailsBookButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   unavailableNotice: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: "#FEF2F2",
     borderRadius: 8,
     padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   unavailableIcon: {
     fontSize: 20,
@@ -693,25 +1035,25 @@ const styles = StyleSheet.create({
   },
   unavailableText: {
     fontSize: 16,
-    color: '#DC2626',
-    fontWeight: '500',
+    color: "#DC2626",
+    fontWeight: "500",
   },
   serviceActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   editDetailsButton: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#008080',
+    fontWeight: "600",
+    color: "#008080",
   },
   expandedOptions: {
     paddingTop: 12,
     marginTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    flexDirection: 'row',
+    borderTopColor: "#F3F4F6",
+    flexDirection: "row",
     gap: 12,
   },
   optionButton: {
@@ -721,44 +1063,20 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: theme.colors.lightPrimary,
     borderWidth: 1,
-    borderColor: '#008080',
-    alignItems: 'center',
+    borderColor: "#008080",
+    alignItems: "center",
   },
   removeButton: {
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FECACA',
+    backgroundColor: "#FEF2F2",
+    borderColor: "#FECACA",
   },
   optionButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#008080',
+    fontWeight: "600",
+    color: "#008080",
   },
   removeButtonText: {
-    color: '#DC2626',
-  },
-  bookedButton: {
-    backgroundColor: '#10B981',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 26,
-    opacity: 0.8,
-  },
-  bookedButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  unavailableButton: {
-    backgroundColor: '#EF4444',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 26,
-    opacity: 0.8,
-  },
-  unavailableButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    color: "#DC2626",
   },
 });
 
