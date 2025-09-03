@@ -108,128 +108,91 @@ const TripDetails = () => {
 
   // Trip details state for the SummaryCard
   const [tripDetails, setTripDetails] = useState<TripDetailsType>({
-    budget: "45000",
-    startDate: new Date("2024-06-22"),
-    endDate: new Date("2024-06-26"),
+    budget: "0",
+    startDate: new Date(),
+    endDate: new Date(),
     currency: "LKR",
-    distance: "120km",
-    title: "Galle Adventure",
-    numberOfAdults: 2,
-    numberOfChildren: 1,
+    distance: "0km",
+    title: "Loading...",
+    numberOfAdults: 1,
+    numberOfChildren: 0,
   });
 
-  // Fetch trip and trip days from API or hardcoded
+  // Fetch trip and trip days from API
   React.useEffect(() => {
     const fetchTrip = async () => {
       setLoading(true);
       setError(null);
       try {
-        if (tripID === "hardcoded") {
-          // Use the same hardcoded trip as ScheduleView
-          const hardcodedTrip = {
-            tripId: 999,
-            tripName: "Sample Adventure",
-            days: [
-              {
-                date: "2025-07-22",
-                dayName: "Tuesday",
-                weather: "sunny",
-                services: [
-                  {
-                    id: "1",
-                    name: "Sigiriya Rock Climb",
-                    description: "Climb the famous Sigiriya Rock Fortress",
-                    time: "08:00",
-                    duration: "2 hours",
-                    cost: 2500,
-                    location: "Sigiriya",
-                    weather: "sunny",
-                  },
-                  {
-                    id: "2",
-                    name: "Village Lunch",
-                    description: "Traditional lunch in a local village",
-                    time: "12:30",
-                    duration: "1 hour",
-                    cost: 1200,
-                    location: "Habarana",
-                    weather: "sunny",
-                  },
-                ],
-              },
-              {
-                date: "2025-07-23",
-                dayName: "Wednesday",
-                weather: "cloudy",
-                services: [
-                  {
-                    id: "3",
-                    name: "Safari at Minneriya",
-                    description: "Wildlife safari in Minneriya National Park",
-                    time: "15:00",
-                    duration: "3 hours",
-                    cost: 3500,
-                    location: "Minneriya",
-                    weather: "cloudy",
-                  },
-                ],
-              },
-            ],
-          };
-          setTrip(hardcodedTrip);
-          setTripDays(hardcodedTrip.days);
-        } else {
-          const tripRes = await getTripById(Number(tripID));
-          if (tripRes.success && tripRes.data) {
-            setTrip(tripRes.data);
-            // Fetch trip items and group by day
-            const itemsRes = await getTripItemsByTripId(Number(tripID));
-            if (itemsRes.success && itemsRes.data) {
-              // Group items by date (assuming item has startTime)
-              const grouped: { [date: string]: any } = {};
-              itemsRes.data.forEach((item: any) => {
-                const date = item.startTime.split("T")[0];
-                if (!grouped[date]) {
-                  grouped[date] = {
-                    date,
-                    dayName: new Date(date).toLocaleDateString("en-US", {
-                      weekday: "long",
-                    }),
-                    weather: "sunny",
-                    services: [],
-                  };
-                }
-                grouped[date].services.push({
-                  id:
-                    item.service?.serviceId?.toString() ||
-                    item.place?.placeId?.toString() ||
-                    item.id?.toString() ||
-                    "",
-                  name:
-                    item.service?.serviceName ||
-                    item.place?.placeName ||
-                    "Unknown",
-                  description:
-                    item.service?.description || item.place?.description || "",
-                  time: item.startTime
-                    ? item.startTime.split("T")[1]?.slice(0, 5)
-                    : "",
-                  duration: item.duration || "",
-                  cost: item.price || 0,
-                  location:
-                    item.service?.locationBased?.city ||
-                    item.place?.location?.city ||
-                    "",
+        // Validate tripID
+        if (!tripID || isNaN(Number(tripID))) {
+          setError("Invalid trip ID");
+          return;
+        }
+
+        const tripRes = await getTripById(Number(tripID));
+        if (tripRes.success && tripRes.data) {
+          setTrip(tripRes.data);
+
+          // Update tripDetails state with real data
+          setTripDetails({
+            budget: tripRes.data.totalBudget?.toString() || "0",
+            startDate: new Date(tripRes.data.startDate),
+            endDate: new Date(tripRes.data.endDate),
+            currency: "LKR", // You can make this dynamic if currency is in the API
+            distance: tripRes.data.totalDistance?.toString() + "km" || "0km",
+            title: tripRes.data.tripName || "Trip",
+            numberOfAdults: tripRes.data.numberOfAdults || 1,
+            numberOfChildren: tripRes.data.numberOfChildren || 0,
+          });
+
+          // Fetch trip items and group by day
+          const itemsRes = await getTripItemsByTripId(Number(tripID));
+          if (itemsRes.success && itemsRes.data) {
+            // Group items by date (assuming item has startTime)
+            const grouped: { [date: string]: any } = {};
+            itemsRes.data.forEach((item: any) => {
+              const date = item.startTime.split("T")[0];
+              if (!grouped[date]) {
+                grouped[date] = {
+                  date,
+                  dayName: new Date(date).toLocaleDateString("en-US", {
+                    weekday: "long",
+                  }),
                   weather: "sunny",
-                });
+                  services: [],
+                };
+              }
+              grouped[date].services.push({
+                id:
+                  item.service?.serviceId?.toString() ||
+                  item.place?.placeId?.toString() ||
+                  item.id?.toString() ||
+                  "",
+                name:
+                  item.service?.serviceName ||
+                  item.place?.placeName ||
+                  "Unknown",
+                description:
+                  item.service?.description || item.place?.description || "",
+                time: item.startTime
+                  ? item.startTime.split("T")[1]?.slice(0, 5)
+                  : "",
+                duration: item.duration || "",
+                cost: item.price || 0,
+                location:
+                  item.service?.locationBased?.city ||
+                  item.place?.location?.city ||
+                  "",
+                weather: "sunny",
               });
-              setTripDays(Object.values(grouped));
-            } else {
-              setTripDays([]);
-            }
+            });
+            setTripDays(Object.values(grouped));
           } else {
-            setError("Trip not found");
+            setTripDays([]);
           }
+        } else {
+          setError("Trip not found");
         }
       } catch (err) {
         setError("Failed to load trip");
@@ -478,12 +441,14 @@ const TripDetails = () => {
         >
           <BackButton />
           <View style={styles.headerText}>
-            <Text 
+            <Text
               style={[
                 styles.headerTitle,
                 // Dynamically adjust font size based on title length
-                (trip?.tripName || tripDetails.title).length > 15 && styles.headerTitleLong,
-                (trip?.tripName || tripDetails.title).length > 25 && styles.headerTitleVeryLong
+                (trip?.tripName || tripDetails.title).length > 15 &&
+                  styles.headerTitleLong,
+                (trip?.tripName || tripDetails.title).length > 25 &&
+                  styles.headerTitleVeryLong,
               ]}
               numberOfLines={1}
               ellipsizeMode="tail"
@@ -536,7 +501,7 @@ const TripDetails = () => {
         {/* Floating Action Button positioned absolutely */}
       </SafeAreaView>
       <View style={styles.fabContainer}>
-        <FloatingActionButton />
+        <FloatingActionButton tripId={tripID} />
       </View>
 
       <TripDetailsModal
