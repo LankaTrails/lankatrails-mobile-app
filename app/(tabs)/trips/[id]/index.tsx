@@ -389,12 +389,14 @@ const TripDetails = () => {
         >
           <BackButton />
           <View style={styles.headerText}>
-            <Text 
+            <Text
               style={[
                 styles.headerTitle,
                 // Dynamically adjust font size based on title length
-                (trip?.tripName || tripDetails.title).length > 15 && styles.headerTitleLong,
-                (trip?.tripName || tripDetails.title).length > 25 && styles.headerTitleVeryLong
+                (trip?.tripName || tripDetails.title).length > 15 &&
+                  styles.headerTitleLong,
+                (trip?.tripName || tripDetails.title).length > 25 &&
+                  styles.headerTitleVeryLong,
               ]}
               numberOfLines={1}
               ellipsizeMode="tail"
@@ -447,7 +449,7 @@ const TripDetails = () => {
         {/* Floating Action Button positioned absolutely */}
       </SafeAreaView>
       <View style={styles.fabContainer}>
-        <FloatingActionButton />
+        <FloatingActionButton tripId={Number(tripID)} tripName={trip?.tripName || tripDetails.title} />
       </View>
 
       <TripDetailsModal
