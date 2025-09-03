@@ -24,6 +24,11 @@ import BackButton from "../../../../components/BackButton";
 import TripMapMarker from "../../../../components/TripMapMarker";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useNavigation } from "@react-navigation/native";
+import {
+  getDirections,
+  DirectionsRoute,
+  DirectionsWaypoint,
+} from "@/services/googleDirectionsService";
 
 const { width, height } = Dimensions.get("window");
 
@@ -56,7 +61,9 @@ const TripMapView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
   const [showLegend, setShowLegend] = useState(false);
-  const [showRoutes, setShowRoutes] = useState(false);
+  const [showRoutes, setShowRoutes] = useState(true); // Enable routes by default
+  const [routeSegments, setRouteSegments] = useState<DirectionsRoute[]>([]);
+  const [loadingRoutes, setLoadingRoutes] = useState(false);
   const [routeCoordinates, setRouteCoordinates] = useState<
     { latitude: number; longitude: number }[]
   >([]);
@@ -103,24 +110,94 @@ const TripMapView: React.FC = () => {
     }, [navigation])
   );
 
-  // Create route coordinates from markers (chronological order)
+  // Create driving routes between trip items using Google Directions API
   useEffect(() => {
-    if (markers.length > 1 && showRoutes) {
-      // Sort markers by time (start location first, then by startTime)
-      const sortedMarkers = [...markers].sort((a, b) => {
-        if (a.type === "start_location") return -1;
-        if (b.type === "start_location") return 1;
-        if (!a.startTime || !b.startTime) return 0;
-        return (
-          new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-        );
-      });
+    const fetchRoutes = async () => {
+      if (markers.length > 1 && showRoutes) {
+        setLoadingRoutes(true);
+        setRouteSegments([]);
 
-      const coordinates = sortedMarkers.map((marker) => marker.coordinate);
-      setRouteCoordinates(coordinates);
-    } else {
-      setRouteCoordinates([]);
-    }
+        try {
+          // Sort markers by time (start location first, then by startTime)
+          const sortedMarkers = [...markers].sort((a, b) => {
+            if (a.type === "start_location") return -1;
+            if (b.type === "start_location") return 1;
+            if (!a.startTime || !b.startTime) return 0;
+            return (
+              new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+            );
+          });
+
+          console.log("Creating routes for", sortedMarkers.length, "markers");
+
+          const routes: DirectionsRoute[] = [];
+
+          // Create route segments between consecutive markers
+          for (let i = 0; i < sortedMarkers.length - 1; i++) {
+            const origin: DirectionsWaypoint = {
+              latitude: sortedMarkers[i].coordinate.latitude,
+              longitude: sortedMarkers[i].coordinate.longitude,
+            };
+
+            const destination: DirectionsWaypoint = {
+              latitude: sortedMarkers[i + 1].coordinate.latitude,
+              longitude: sortedMarkers[i + 1].coordinate.longitude,
+            };
+
+            console.log(
+              `Getting route ${i + 1}/${sortedMarkers.length - 1}: ${
+                sortedMarkers[i].title
+              } → ${sortedMarkers[i + 1].title}`
+            );
+
+            const route = await getDirections(
+              origin,
+              destination,
+              [],
+              "driving"
+            );
+
+            if (route) {
+              routes.push(route);
+              console.log(
+                `Route ${i + 1} found: ${route.distance}, ${route.duration}, ${
+                  route.coordinates.length
+                } points`
+              );
+            } else {
+              console.warn(
+                `No route found between ${sortedMarkers[i].title} and ${
+                  sortedMarkers[i + 1].title
+                }`
+              );
+            }
+
+            // Add small delay to avoid rate limiting
+            await new Promise((resolve) => setTimeout(resolve, 200));
+          }
+
+          setRouteSegments(routes);
+
+          // Also set the basic coordinates for fallback polyline
+          const coordinates = sortedMarkers.map((marker) => marker.coordinate);
+          setRouteCoordinates(coordinates);
+
+          console.log("All routes fetched:", routes.length, "segments");
+        } catch (error) {
+          console.error("Error fetching routes:", error);
+          // Fallback to simple straight lines
+          const coordinates = markers.map((marker) => marker.coordinate);
+          setRouteCoordinates(coordinates);
+        } finally {
+          setLoadingRoutes(false);
+        }
+      } else {
+        setRouteSegments([]);
+        setRouteCoordinates([]);
+      }
+    };
+
+    fetchRoutes();
   }, [markers, showRoutes]);
   const getMarkerColor = (type: string): string => {
     if (type === "start_location") {
@@ -501,15 +578,30 @@ const TripMapView: React.FC = () => {
             </Marker>
           ))}
 
-          {/* Route polyline */}
-          {showRoutes && routeCoordinates.length > 1 && (
-            <Polyline
-              coordinates={routeCoordinates}
-              strokeColor="#008080"
-              strokeWidth={3}
-              lineDashPattern={[10, 10]}
-            />
-          )}
+          {/* Google Directions Routes */}
+          {showRoutes &&
+            routeSegments.map((route, index) => (
+              <Polyline
+                key={`route-${index}`}
+                coordinates={route.coordinates}
+                strokeColor="#008080"
+                strokeWidth={4}
+                lineCap="round"
+                lineJoin="round"
+              />
+            ))}
+
+          {/* Fallback route polyline for simple connections */}
+          {showRoutes &&
+            routeSegments.length === 0 &&
+            routeCoordinates.length > 1 && (
+              <Polyline
+                coordinates={routeCoordinates}
+                strokeColor="#008080"
+                strokeWidth={3}
+                lineDashPattern={[10, 10]}
+              />
+            )}
         </MapView>
 
         {/* Floating Controls */}
@@ -529,12 +621,20 @@ const TripMapView: React.FC = () => {
               showRoutes && styles.activeFloatingButton,
             ]}
             onPress={toggleRoutes}
+            disabled={loadingRoutes}
           >
-            <Icon
-              name="git-branch"
-              size={20}
-              color={showRoutes ? "#ffffff" : "#008080"}
-            />
+            {loadingRoutes ? (
+              <ActivityIndicator
+                size={16}
+                color={showRoutes ? "#ffffff" : "#008080"}
+              />
+            ) : (
+              <Icon
+                name="git-branch"
+                size={20}
+                color={showRoutes ? "#ffffff" : "#008080"}
+              />
+            )}
           </TouchableOpacity>
           <TouchableOpacity
             style={[
@@ -615,6 +715,50 @@ const TripMapView: React.FC = () => {
                 </View>
               ))}
             </ScrollView>
+          </View>
+        )}
+
+        {/* Route Information */}
+        {showRoutes && routeSegments.length > 0 && (
+          <View style={styles.routeInfoPanel}>
+            <View style={styles.routeInfoHeader}>
+              <Icon name="car" size={16} color="#008080" />
+              <Text style={styles.routeInfoTitle}>Driving Route</Text>
+            </View>
+            <View style={styles.routeStats}>
+              <View style={styles.routeStat}>
+                <Text style={styles.routeStatValue}>
+                  {routeSegments
+                    .reduce((total, segment) => {
+                      const distance = parseFloat(
+                        segment.distance.replace(/[^\d.]/g, "")
+                      );
+                      return total + (isNaN(distance) ? 0 : distance);
+                    }, 0)
+                    .toFixed(1)}{" "}
+                  km
+                </Text>
+                <Text style={styles.routeStatLabel}>Total Distance</Text>
+              </View>
+              <View style={styles.routeStat}>
+                <Text style={styles.routeStatValue}>
+                  {routeSegments.reduce((total, segment) => {
+                    const duration = parseInt(
+                      segment.duration.replace(/[^\d]/g, "")
+                    );
+                    return total + (isNaN(duration) ? 0 : duration);
+                  }, 0)}{" "}
+                  min
+                </Text>
+                <Text style={styles.routeStatLabel}>Driving Time</Text>
+              </View>
+              <View style={styles.routeStat}>
+                <Text style={styles.routeStatValue}>
+                  {routeSegments.length}
+                </Text>
+                <Text style={styles.routeStatLabel}>Route Segments</Text>
+              </View>
+            </View>
           </View>
         )}
 
@@ -794,7 +938,7 @@ const styles = StyleSheet.create({
   },
   legend: {
     position: "absolute",
-    top: 160, // Position below floating controls
+    top: 200, // Position below floating controls
     left: 20,
     backgroundColor: "white",
     padding: 16,
@@ -804,8 +948,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 5,
-    maxWidth: 200,
-    maxHeight: 300,
+    maxWidth: 300,
+    maxHeight: 400,
   },
   legendHeader: {
     flexDirection: "row",
@@ -914,6 +1058,51 @@ const styles = StyleSheet.create({
     color: "#008080",
     marginLeft: 4,
     fontWeight: "500",
+  },
+  // Route Information Styles
+  routeInfoPanel: {
+    position: "absolute",
+    bottom: 20,
+    left: 20,
+    right: 20,
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  routeInfoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  routeInfoTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#111827",
+    marginLeft: 8,
+  },
+  routeStats: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  routeStat: {
+    alignItems: "center",
+    flex: 1,
+  },
+  routeStatValue: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#008080",
+    marginBottom: 4,
+  },
+  routeStatLabel: {
+    fontSize: 12,
+    color: "#6B7280",
+    textAlign: "center",
   },
 });
 
