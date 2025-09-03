@@ -226,6 +226,7 @@ const OptionsButton: React.FC<OptionsButtonProps> = ({ tripId }) => {
               ]}
             />
 
+
             {/* Options Container */}
             <View style={styles.optionsContainer}>
               {options.map((option, index) => (
