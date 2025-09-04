@@ -50,28 +50,6 @@ export default function ExploreLayout() {
           title: "Components",
         }}
       />
-      {/* Legacy routes - to be removed after migration */}
-      <Stack.Screen
-        name="accommodation-foods-transport"
-        options={{
-          headerShown: false,
-          title: "Services",
-        }}
-      />
-      <Stack.Screen
-        name="FoodItemView"
-        options={{
-          headerShown: false,
-          title: "Food Item",
-        }}
-      />
-      <Stack.Screen
-        name="ServiceViewCopy"
-        options={{
-          headerShown: false,
-          title: "Service View",
-        }}
-      />
     </Stack>
   );
 }

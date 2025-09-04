@@ -1,4 +1,4 @@
-import { ServiceCategory } from '@/types/serviceTypes';
+import { ServiceCategory } from '@/types/commonTypes';
 import { router } from 'expo-router';
 
 /**

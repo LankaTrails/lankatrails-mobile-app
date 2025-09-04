@@ -25,26 +25,31 @@ import {
   fetchAccommodationService,
   isAccommodationService,
 } from "@/services/serviceDetail";
-import type {
-  AccommodationServiceDetail,
-  ServiceDetailResponse,
-} from "@/types/serviceTypes";
-import { ServiceDTO } from "@/types/triptypes";
+import type { AccommodationServiceDetail } from "@/types/serviceTypes";
+import { ApiResponse } from "@/types/commonTypes";
+import { Service } from "@/types/serviceTypes";
 
 const BASE_URL = process.env.EXPO_PUBLIC_URL;
 
-// Convert AccommodationServiceDetail to ServiceDTO for AddToTripButton
-const convertToServiceDTO = (
-  detail: AccommodationServiceDetail
-): ServiceDTO => ({
+// Convert AccommodationServiceDetail to Service for AddToTripButton
+const convertToService = (detail: AccommodationServiceDetail): Service => ({
   serviceId: detail.serviceId || 0,
   serviceName: detail.serviceName,
   category: "ACCOMMODATION" as const,
-  locationBased: detail.locationBased,
+  locations: detail.locations,
+  prices: detail.priceConfig
+    ? [
+        {
+          priceType: detail.priceConfig.priceType,
+          amount:
+            detail.priceConfig.fixedPrice ||
+            detail.priceConfig.pricePerUnit ||
+            0,
+        },
+      ]
+    : [],
   mainImageUrl:
-    detail.images && detail.images.length > 0
-      ? detail.images[0].imageUrl
-      : null,
+    detail.images && detail.images.length > 0 ? detail.images[0].imageUrl : "",
 });
 
 const AccommodationServiceDetailPage = () => {
@@ -61,22 +66,6 @@ const AccommodationServiceDetailPage = () => {
   const [expandedTabs, setExpandedTabs] = useState<{ [key: number]: boolean }>(
     {}
   );
-
-  // Convert service detail to ServiceDTO format
-  const convertToServiceDTO = (
-    detail: AccommodationServiceDetail
-  ): ServiceDTO => {
-    return {
-      serviceId: detail.serviceId!,
-      serviceName: detail.serviceName,
-      category: "ACCOMMODATION",
-      locationBased: detail.locationBased,
-      mainImageUrl:
-        detail.images && detail.images.length > 0
-          ? detail.images[0].imageUrl
-          : undefined,
-    };
-  };
 
   // Toggle function for individual tabs
   const toggleTab = (tabId: number) => {
@@ -95,9 +84,8 @@ const AccommodationServiceDetailPage = () => {
         setLoading(true);
         setError(null);
 
-        const response: ServiceDetailResponse = await fetchAccommodationService(
-          parseInt(serviceId)
-        );
+        const response: ApiResponse<AccommodationServiceDetail> =
+          await fetchAccommodationService(parseInt(serviceId));
 
         if (response.success && isAccommodationService(response.data)) {
           setServiceDetail(response.data);
@@ -261,8 +249,10 @@ const AccommodationServiceDetailPage = () => {
           <View className="flex-row items-start mt-1">
             <Ionicons name="location" size={24} color="#008080" />
             <Text className="ml-2 text-gray-700 w-[85%]">
-              {serviceDetail.locationBased.formattedAddress ||
-                `${serviceDetail.locationBased.city}, ${serviceDetail.locationBased.district}`}
+              {serviceDetail.locationBased?.formattedAddress ||
+                (serviceDetail.locationBased
+                  ? `${serviceDetail.locationBased.city}, ${serviceDetail.locationBased.district}`
+                  : "Location not available")}
             </Text>
           </View>
 
@@ -283,7 +273,7 @@ const AccommodationServiceDetailPage = () => {
         </View>
 
         <View className="px-4 mt-6 mb-6">
-          <AddToTripButton service={convertToServiceDTO(serviceDetail)} />
+          <AddToTripButton service={convertToService(serviceDetail)} />
         </View>
 
         {/* Accommodation Details */}
@@ -516,7 +506,7 @@ const AccommodationServiceDetailPage = () => {
 
       {/* Floating Add to Trip Button */}
       {/* {serviceDetail && (
-        <AddToTripButton service={convertToServiceDTO(serviceDetail)} />
+        <AddToTripButton service={convertToService(serviceDetail)} />
       )} */}
     </>
   );

@@ -1,6 +1,7 @@
 import api from '@/api/axiosInstance';
-import type { ApiResponse, ProviderDetailRequest, ProviderDetailResponse, SearchResponse, ServiceSearchRequest } from '@/types/serviceTypes';
-import { ServiceCategory } from '@/types/serviceTypes';
+import type { ProviderDetailRequest, ProviderDetailResponse, SearchResponse, ServiceSearchRequest } from '@/types/serviceTypes';
+import type { ApiResponse } from '@/types/commonTypes';
+import { ServiceCategory } from '@/types/commonTypes';
 
 export async function searchProvider(
     request: ProviderDetailRequest

@@ -25,24 +25,31 @@ import {
   fetchTransportService,
   isTransportService,
 } from "@/services/serviceDetail";
-import type {
-  ServiceDetailResponse,
-  TransportServiceDetail,
-} from "@/types/serviceTypes";
-import { ServiceDTO } from "@/types/triptypes";
+import type { TransportServiceDetail } from "@/types/serviceTypes";
+import { ApiResponse } from "@/types/commonTypes";
+import { Service } from "@/types/serviceTypes";
 
 const BASE_URL = process.env.EXPO_PUBLIC_URL;
 
-// Convert TransportServiceDetail to ServiceDTO for AddToTripButton
-const convertToServiceDTO = (detail: TransportServiceDetail): ServiceDTO => ({
+// Convert TransportServiceDetail to Service for AddToTripButton
+const convertToService = (detail: TransportServiceDetail): Service => ({
   serviceId: detail.serviceId || 0,
   serviceName: detail.serviceName,
   category: "TRANSPORT" as const,
-  locationBased: detail.locationBased,
+  locations: detail.locations,
+  prices: detail.priceConfig
+    ? [
+        {
+          priceType: detail.priceConfig.priceType,
+          amount:
+            detail.priceConfig.fixedPrice ||
+            detail.priceConfig.pricePerUnit ||
+            0,
+        },
+      ]
+    : [],
   mainImageUrl:
-    detail.images && detail.images.length > 0
-      ? detail.images[0].imageUrl
-      : null,
+    detail.images && detail.images.length > 0 ? detail.images[0].imageUrl : "",
 });
 
 const TransportServiceDetailPage = () => {
@@ -85,9 +92,8 @@ const TransportServiceDetailPage = () => {
         setLoading(true);
         setError(null);
 
-        const response: ServiceDetailResponse = await fetchTransportService(
-          parseInt(serviceId)
-        );
+        const response: ApiResponse<TransportServiceDetail> =
+          await fetchTransportService(parseInt(serviceId));
 
         if (response.success && isTransportService(response.data)) {
           setServiceDetail(response.data);
@@ -270,8 +276,10 @@ const TransportServiceDetailPage = () => {
           <View className="flex-row items-start mt-1">
             <Ionicons name="location" size={24} color="#008080" />
             <Text className="ml-2 text-gray-700 w-[85%]">
-              {serviceDetail.locationBased.formattedAddress ||
-                `${serviceDetail.locationBased.city}, ${serviceDetail.locationBased.district}`}
+              {serviceDetail.locationBased?.formattedAddress ||
+                (serviceDetail.locationBased
+                  ? `${serviceDetail.locationBased.city}, ${serviceDetail.locationBased.district}`
+                  : "Location not available")}
             </Text>
           </View>
 
@@ -292,7 +300,7 @@ const TransportServiceDetailPage = () => {
         </View>
 
         <View className="px-4 mt-6 mb-6">
-          <AddToTripButton service={convertToServiceDTO(serviceDetail)} />
+          <AddToTripButton service={convertToService(serviceDetail)} />
         </View>
 
         {/* Vehicle Specifications */}
