@@ -14,11 +14,11 @@ import { router } from "expo-router";
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 interface OptionsButtonProps {
-  tripId?: number;
+  tripId?: string;
   tripName?: string;
 }
 
-const OptionsButton = ({ tripId, tripName }: OptionsButtonProps) => {
+const OptionsButton: React.FC<OptionsButtonProps> = ({ tripId, tripName }) => {
   const [isVisible, setIsVisible] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -112,25 +112,33 @@ const OptionsButton = ({ tripId, tripName }: OptionsButtonProps) => {
   };
 
   const handleOptionPress = (option: string) => {
-    console.log(`${option} pressed`);
+    console.log(`${option} pressed, tripId:`, tripId);
     toggleMenu();
-    // Add your navigation logic here
-    if (option === "Budget") router.push("./{id}/BudgetView");
-    else if (option === "Map") alert("Route -> map view!");
-    else if (option === "Chat") {
-      // Navigate to group chat for the trip
+
+    // Add your navigation logic here with proper tripId
+    if (option === "Budget") {
+      router.push(`/(tabs)/trips/${tripId}/BudgetView`);
+    } else if (option === "Map") {
       if (tripId) {
+        router.push(`/(tabs)/trips/${tripId}/MapView`);
+      } else {
+        console.error("Trip ID is required for map navigation");
+      }
+    } else if (option === "Chat") {
+      if (tripId) {
+        // Navigate to group chat for the trip
         router.push({
-          pathname: "../../../screens/Chat",
+          pathname: "/screens/Chat",
           params: {
-            tripId: tripId.toString(),
             chatType: "group",
-            tripName: tripName || "Trip Chat",
+            tripId: tripId,
+            tripName: tripName || `Trip ${tripId}`, // Use actual trip name if provided
           },
         });
       } else {
-        // Fallback to general chat if no tripId
-        router.push("../../../screens/Chat");
+        console.error("Trip ID is required for group chat navigation");
+        // Could show an alert or navigate to a chat list instead
+        router.push("/screens/Chat");
       }
     }
   };

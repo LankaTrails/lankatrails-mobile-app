@@ -49,6 +49,7 @@ import {
   getTripById,
   getTripItemsByTripId,
 } from "@/services/tripService";
+import { TripInvitationRequest } from "@/types/triptypes";
 
 const TripDetails = () => {
   const tripID = useLocalSearchParams().id as string;
@@ -56,6 +57,10 @@ const TripDetails = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [currentInvitationLink, setCurrentInvitationLink] =
+    useState<string>("");
+  const [currentInvitationRole, setCurrentInvitationRole] =
+    useState<string>("");
+  const [currentInvitationType, setCurrentInvitationType] =
     useState<string>("");
   const [trip, setTrip] = useState<any>(null);
   const [tripDays, setTripDays] = useState<any[]>([]);
@@ -103,128 +108,91 @@ const TripDetails = () => {
 
   // Trip details state for the SummaryCard
   const [tripDetails, setTripDetails] = useState<TripDetailsType>({
-    budget: "45000",
-    startDate: new Date("2024-06-22"),
-    endDate: new Date("2024-06-26"),
+    budget: "0",
+    startDate: new Date(),
+    endDate: new Date(),
     currency: "LKR",
-    distance: "120km",
-    title: "Galle Adventure",
-    numberOfAdults: 2,
-    numberOfChildren: 1,
+    distance: "0km",
+    title: "Loading...",
+    numberOfAdults: 1,
+    numberOfChildren: 0,
   });
 
-  // Fetch trip and trip days from API or hardcoded
+  // Fetch trip and trip days from API
   React.useEffect(() => {
     const fetchTrip = async () => {
       setLoading(true);
       setError(null);
       try {
-        if (tripID === "hardcoded") {
-          // Use the same hardcoded trip as ScheduleView
-          const hardcodedTrip = {
-            tripId: 999,
-            tripName: "Sample Adventure",
-            days: [
-              {
-                date: "2025-07-22",
-                dayName: "Tuesday",
-                weather: "sunny",
-                services: [
-                  {
-                    id: "1",
-                    name: "Sigiriya Rock Climb",
-                    description: "Climb the famous Sigiriya Rock Fortress",
-                    time: "08:00",
-                    duration: "2 hours",
-                    cost: 2500,
-                    location: "Sigiriya",
-                    weather: "sunny",
-                  },
-                  {
-                    id: "2",
-                    name: "Village Lunch",
-                    description: "Traditional lunch in a local village",
-                    time: "12:30",
-                    duration: "1 hour",
-                    cost: 1200,
-                    location: "Habarana",
-                    weather: "sunny",
-                  },
-                ],
-              },
-              {
-                date: "2025-07-23",
-                dayName: "Wednesday",
-                weather: "cloudy",
-                services: [
-                  {
-                    id: "3",
-                    name: "Safari at Minneriya",
-                    description: "Wildlife safari in Minneriya National Park",
-                    time: "15:00",
-                    duration: "3 hours",
-                    cost: 3500,
-                    location: "Minneriya",
-                    weather: "cloudy",
-                  },
-                ],
-              },
-            ],
-          };
-          setTrip(hardcodedTrip);
-          setTripDays(hardcodedTrip.days);
-        } else {
-          const tripRes = await getTripById(Number(tripID));
-          if (tripRes.success && tripRes.data) {
-            setTrip(tripRes.data);
-            // Fetch trip items and group by day
-            const itemsRes = await getTripItemsByTripId(Number(tripID));
-            if (itemsRes.success && itemsRes.data) {
-              // Group items by date (assuming item has startTime)
-              const grouped: { [date: string]: any } = {};
-              itemsRes.data.forEach((item: any) => {
-                const date = item.startTime.split("T")[0];
-                if (!grouped[date]) {
-                  grouped[date] = {
-                    date,
-                    dayName: new Date(date).toLocaleDateString("en-US", {
-                      weekday: "long",
-                    }),
-                    weather: "sunny",
-                    services: [],
-                  };
-                }
-                grouped[date].services.push({
-                  id:
-                    item.service?.serviceId?.toString() ||
-                    item.place?.placeId?.toString() ||
-                    item.id?.toString() ||
-                    "",
-                  name:
-                    item.service?.serviceName ||
-                    item.place?.placeName ||
-                    "Unknown",
-                  description:
-                    item.service?.description || item.place?.description || "",
-                  time: item.startTime
-                    ? item.startTime.split("T")[1]?.slice(0, 5)
-                    : "",
-                  duration: item.duration || "",
-                  cost: item.price || 0,
-                  location:
-                    item.service?.locationBased?.city ||
-                    item.place?.location?.city ||
-                    "",
+        // Validate tripID
+        if (!tripID || isNaN(Number(tripID))) {
+          setError("Invalid trip ID");
+          return;
+        }
+
+        const tripRes = await getTripById(Number(tripID));
+        if (tripRes.success && tripRes.data) {
+          setTrip(tripRes.data);
+
+          // Update tripDetails state with real data
+          setTripDetails({
+            budget: tripRes.data.totalBudget?.toString() || "0",
+            startDate: new Date(tripRes.data.startDate),
+            endDate: new Date(tripRes.data.endDate),
+            currency: "LKR", // You can make this dynamic if currency is in the API
+            distance: tripRes.data.totalDistance?.toString() + "km" || "0km",
+            title: tripRes.data.tripName || "Trip",
+            numberOfAdults: tripRes.data.numberOfAdults || 1,
+            numberOfChildren: tripRes.data.numberOfChildren || 0,
+          });
+
+          // Fetch trip items and group by day
+          const itemsRes = await getTripItemsByTripId(Number(tripID));
+          if (itemsRes.success && itemsRes.data) {
+            // Group items by date (assuming item has startTime)
+            const grouped: { [date: string]: any } = {};
+            itemsRes.data.forEach((item: any) => {
+              const date = item.startTime.split("T")[0];
+              if (!grouped[date]) {
+                grouped[date] = {
+                  date,
+                  dayName: new Date(date).toLocaleDateString("en-US", {
+                    weekday: "long",
+                  }),
                   weather: "sunny",
-                });
+                  services: [],
+                };
+              }
+              grouped[date].services.push({
+                id:
+                  item.service?.serviceId?.toString() ||
+                  item.place?.placeId?.toString() ||
+                  item.id?.toString() ||
+                  "",
+                name:
+                  item.service?.serviceName ||
+                  item.place?.placeName ||
+                  "Unknown",
+                description:
+                  item.service?.description || item.place?.description || "",
+                time: item.startTime
+                  ? item.startTime.split("T")[1]?.slice(0, 5)
+                  : "",
+                duration: item.duration || "",
+                cost: item.price || 0,
+                location:
+                  item.service?.locationBased?.city ||
+                  item.place?.location?.city ||
+                  "",
+                weather: "sunny",
               });
-              setTripDays(Object.values(grouped));
-            } else {
-              setTripDays([]);
-            }
+            });
+            setTripDays(Object.values(grouped));
           } else {
-            setError("Trip not found");
+            setTripDays([]);
           }
+        } else {
+          setError("Trip not found");
         }
       } catch (err) {
         setError("Failed to load trip");
@@ -262,8 +230,81 @@ const TripDetails = () => {
         return;
       }
 
+      // First, ask user what type of invitation they want to create
+      Alert.alert(
+        "Invitation Type",
+        "What type of invitation do you want to create?\n\n• Individual: Single-use invitation for one person\n• Group: Reusable invitation link for multiple people",
+        [
+          {
+            text: "Individual Invitation",
+            onPress: () => selectRole(false),
+          },
+          {
+            text: "Group Invitation",
+            onPress: () => selectRole(true),
+          },
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+        ]
+      );
+    } catch (error: any) {
+      console.error("Failed to show invitation type selection:", error);
+      Alert.alert("Error", "Failed to initiate invitation process");
+    }
+  };
+
+  const selectRole = (isGroupInvitation: boolean) => {
+    // Second, ask user what role they want to assign to the invitee(s)
+    const invitationType = isGroupInvitation ? "group" : "individual";
+    Alert.alert(
+      "Invitation Role",
+      `What role should the invited ${
+        isGroupInvitation ? "people" : "person"
+      } have?\n\n• Member: Can view and join trip\n• Editor: Can modify trip details\n• Admin: Full trip management access`,
+      [
+        {
+          text: "Member (View Only)",
+          onPress: () => generateInvitation("MEMBER", isGroupInvitation),
+        },
+        {
+          text: "Editor (Can Modify)",
+          onPress: () => generateInvitation("EDITOR", isGroupInvitation),
+        },
+        {
+          text: "Admin (Full Access)",
+          onPress: () => generateInvitation("ADMIN", isGroupInvitation),
+        },
+        {
+          text: "Back",
+          onPress: () => handleShare(), // Go back to invitation type selection
+        },
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+      ]
+    );
+  };
+  const generateInvitation = async (
+    role: "MEMBER" | "EDITOR" | "ADMIN",
+    isGroupInvitation: boolean
+  ) => {
+    try {
       setLoading(true);
-      const response = await generateTripInvitation(Number(tripID));
+
+      // Prepare invitation data
+      const invitationData: TripInvitationRequest = {
+        tripId: Number(tripID),
+        role: role,
+        isGroupInvitation: isGroupInvitation,
+      };
+
+      const response = await generateTripInvitation(
+        Number(tripID),
+        invitationData
+      );
 
       if (response.success && response.data) {
         const invitationToken = response.data;
@@ -272,14 +313,19 @@ const TripDetails = () => {
         const invitationLink = `${prefix}invite/${invitationToken}`;
 
         // Show options to user
+        const invitationType = isGroupInvitation ? "group" : "individual";
         Alert.alert(
           "Share Trip Invitation",
-          "Choose how you'd like to share this trip invitation:",
+          `Share this ${invitationType} ${role.toLowerCase()} invitation for "${
+            trip?.tripName || tripDetails.title
+          }":`,
           [
             {
               text: "Show QR Code",
               onPress: () => {
                 setCurrentInvitationLink(invitationLink);
+                setCurrentInvitationRole(role);
+                setCurrentInvitationType(invitationType);
                 setShowQRModal(true);
               },
             },
@@ -302,10 +348,16 @@ const TripDetails = () => {
               text: "Share",
               onPress: async () => {
                 try {
+                  const inviteMessage = isGroupInvitation
+                    ? `You're invited to join our trip "${
+                        trip?.tripName || tripDetails.title
+                      }" with ${role.toLowerCase()} access! This group invitation can be used by multiple people. Click this link to join: ${invitationLink}`
+                    : `You're invited to join our trip "${
+                        trip?.tripName || tripDetails.title
+                      }" with ${role.toLowerCase()} access! Click this link to join: ${invitationLink}`;
+
                   await Share.share({
-                    message: `Join my trip "${
-                      trip?.tripName || tripDetails.title
-                    }"! Click this link to join: ${invitationLink}`,
+                    message: inviteMessage,
                     title: `Join ${trip?.tripName || tripDetails.title}`,
                   });
                 } catch (error) {
@@ -449,7 +501,10 @@ const TripDetails = () => {
         {/* Floating Action Button positioned absolutely */}
       </SafeAreaView>
       <View style={styles.fabContainer}>
-        <FloatingActionButton tripId={Number(tripID)} tripName={trip?.tripName || tripDetails.title} />
+        <FloatingActionButton
+          tripId={tripID}
+          tripName={trip?.tripName || tripDetails.title}
+        />
       </View>
 
       <TripDetailsModal
@@ -465,6 +520,8 @@ const TripDetails = () => {
         onClose={() => setShowQRModal(false)}
         invitationLink={currentInvitationLink}
         tripName={trip?.tripName || tripDetails.title}
+        role={currentInvitationRole}
+        invitationType={currentInvitationType}
       />
     </>
   );

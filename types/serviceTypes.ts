@@ -1,6 +1,20 @@
-export type ServiceType = 'ACTIVITY' | 'TOUR_GUIDE' | 'TRANSPORT' | 'ACCOMMODATION' | 'FOOD_BEVERAGE';
+import { Location, ApiResponse } from "./commonTypes";
+import type { ServiceType, ServiceCategory } from "./commonTypes";
 
-export type PriceType = 'FIXED' | 'PER_PERSON' | 'PER_KM' | 'PER_HOUR' | 'PER_DAY' | 'PER_NIGHT' | 'PER_WEEK' | 'PER_MONTH';
+// Re-export commonly used types
+export { ServiceCategory, ApiResponse };
+
+export type PriceType = 'FIXED' | 'PER_PERSON' | 'PER_UNIT' | 'HYBRID' | 'PER_HOUR' | 'PER_DAY' | 'PER_NIGHT' | 'PER_KM';
+
+export type BookingType =
+    | 'TIME_SLOTS'     // Bookings are made for specific time slots
+    | 'MULTI_DAY'      // Bookings can span multiple days
+    | 'WHOLE_DAY'      // Bookings are for the entire day
+    | 'FIXED_TIME'     // Bookings are made for a fixed duration
+    | 'FLEXIBLE_HOURS' // Bookings allow customers to choose start and end times
+    | 'EVENT_BASED';   // Bookings are tied to specific events
+
+export type ServiceStatus = 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'SUSPENDED';
 
 export type ActivityType = 'ADVENTURE' | 'CULTURAL' | 'NATURE' | 'RELAXATION' | 'SPORTS' | 'WATER_SPORTS' | 'WELLNESS' | 'EDUCATIONAL' | 'NIGHTLIFE';
 
@@ -22,7 +36,7 @@ export interface ServiceSearchRequest {
     radiusKm?: number;
 
     city?: string;
-    category?: ServiceCategory;
+    category?: ServiceType;
     accommodationType?: AccommodationType;
     activityType?: ActivityType;
     vehicleType?: VehicleType;
@@ -32,7 +46,7 @@ export interface ServiceSearchRequest {
 
 export interface ProviderDetailRequest {
     providerId: number;
-    category: ServiceCategory;
+    category: ServiceType;
 
     // Location is required - either city OR coordinates with radius
     city?: string;
@@ -41,43 +55,34 @@ export interface ProviderDetailRequest {
     radiusKm?: number;
 }
 
-export enum ServiceCategory {
-    ACCOMMODATION = "ACCOMMODATION",
-    ACTIVITY = "ACTIVITY",
-    TOUR_GUIDE = "TOUR_GUIDE",
-    TRANSPORT = "TRANSPORT",
-    FOOD_BEVERAGE = "FOOD_BEVERAGE",
-}
-
-export interface Location {
-    formattedAddress: string;
-    city: string;
-    district: string;
-    province: string;
-    country: string;
-    postalCode: string;
-    latitude: number;
-    longitude: number;
-}
-
 export interface Service {
     serviceId: number;
-    serviceName: string;
-    mainImageUrl: string;
-    locationBased: Location;
-    category: ServiceCategory;
-    priceType?: PriceType;
-    price?: number; // Optional price field
+    serviceName: string | null;
+    category: ServiceType | null;
+    locations: Location[] | null;
+    prices: Price[] | null;
+    mainImageUrl: string | null;
+    provider : Provider | null;
+}
+
+export type Provider = {
+    id: number;
+    businessName: string | null;
+    profilePictureUrl: string | null;
+}
+
+export interface Price {
+    priceType: PriceType;
+    amount: number;
 }
 
 export interface ServiceSearchResponse {
     serviceId: number;
     serviceName: string;
     mainImageUrl: string;
-    locationBased: Location;
-    category: ServiceCategory;
-    priceType?: PriceType;
-    price?: number; // Optional price field
+    locations: Location[];
+    category: ServiceType;
+    prices: Price[];
 }
 
 export interface ProviderSearchResponse {
@@ -85,19 +90,12 @@ export interface ProviderSearchResponse {
     businessName: string;
     coverImageUrl: string;
     location: Location;
-    category: ServiceCategory;
+    category: ServiceType;
 }
 
 export interface SearchResponse {
     providers: ProviderSearchResponse[] | null;
     services: ServiceSearchResponse[] | null;
-}
-
-export interface ApiResponse<T> {
-    success: boolean;
-    data: T;
-    message?: string;
-    details?: string;
 }
 
 export interface ProviderDetailResponse {
@@ -106,7 +104,7 @@ export interface ProviderDetailResponse {
     businessDescription: string;
     coverImageUrl: string;
     location: Location;
-    category: ServiceCategory;
+    category: ServiceType;
     services: Service[];
 }
 
@@ -132,14 +130,20 @@ export interface ServiceImage {
 export interface BaseServiceDetail {
     serviceId: number | null;
     serviceName: string;
-    locationBased: Location;
+    locationBased?: Location; // Add this property for backward compatibility
+    locations: Location[];
     contactNo: string;
-    status: string | null;
-    price: number;
-    priceType: PriceType;
+    status: ServiceStatus | null;
     tabsSection: TabSection[];
     policySection: PolicySection[];
     images: ServiceImage[] | null;
+    availableTimeDTOS: AvailableTimeDTO[];
+    priceConfig?: PriceConfigDTO;
+    bookingConfig?: BookingConfigDTO;
+
+    // Legacy properties for backward compatibility
+    price?: number;
+    priceType?: PriceType;
 }
 
 // Tour Guide specific service detail
@@ -151,7 +155,6 @@ export interface TourGuideServiceDetail extends BaseServiceDetail {
 
 // Food & Beverage specific service detail
 export interface FoodBeverageServiceDetail extends BaseServiceDetail {
-    openHours: string;
     foodAndBeverageType: FoodBeverageType;
     vegetarianOptions: boolean;
     halalCertified: boolean;
@@ -159,13 +162,14 @@ export interface FoodBeverageServiceDetail extends BaseServiceDetail {
     outdoorSeating: boolean;
     liveMusic: boolean;
     cuisineType: string;
+
+    // Additional properties that might be used in UI
+    openHours?: string;
 }
 
 // Accommodation specific service detail
 export interface AccommodationServiceDetail extends BaseServiceDetail {
     accommodationType: AccommodationType;
-    maxGuests: number;
-    numberOfRooms: number | null;
     freeWifi: boolean;
     parkingAvailable: boolean;
     breakfastIncluded: boolean;
@@ -176,6 +180,10 @@ export interface AccommodationServiceDetail extends BaseServiceDetail {
     roomService: boolean;
     gymAccess: boolean;
     spaServices: boolean;
+
+    // Additional properties that might be used in UI
+    maxGuests?: number;
+    numberOfRooms?: number;
 }
 
 // Activity specific service detail
@@ -187,23 +195,82 @@ export interface ActivityServiceDetail extends BaseServiceDetail {
 
 // Transport specific service detail
 export interface TransportServiceDetail extends BaseServiceDetail {
-    vehicleCapacity: number;
-    vehicleQty: number;
     vehicleCategory: VehicleType;
     driverIncluded: boolean;
     airConditioned: boolean;
     transmissionType: TransmissionType;
     fuelType: FuelType;
+
+    // Additional properties that might be used in UI
+    vehicleCapacity?: number;
+    vehicleQty?: number;
+}
+
+
+export interface BreakTimeDTO {
+    breakStart: string; // Format: "HH:mm"
+    breakEnd: string;   // Format: "HH:mm"
+}
+
+export interface AvailableTimeDTO {
+    dayOfWeek: string;
+    openTime: string;     // Format: "HH:mm"
+    closeTime: string;    // Format: "HH:mm"
+    is24Hours: boolean;
+    isClosed: boolean;
+    breakTimes: BreakTimeDTO[];
+}
+
+export interface BookingConfigDTO {
+    bookingType: BookingType;
+
+    // Capacity and unit management
+    totalUnits?: number;
+    manageCapacity?: boolean;
+    unitAdultCapacity?: number;
+    unitChildCapacity?: number;
+    minUnitsPerBooking?: number;
+    maxUnitsPerBooking?: number;
+    allowExtraCapacity?: boolean;
+    extraAdultCapacity?: number;
+    extraChildCapacity?: number;
+    extraAdultCapacityLimit?: number;
+    extraChildCapacityLimit?: number;
+
+    // For time-based bookings
+    slotDuration?: number; // in minutes
+    bufferTime?: number;   // in minutes
+    allowBackToBackBookings?: boolean;
+
+    // For date-based bookings
+    minimumBookingDays?: number;
+    maximumBookingDays?: number;
+    defaultCheckInTime?: string; // Format: "HH:mm"
+    defaultCheckOutTime?: string; // Format: "HH:mm"
+
+    // Common fields
+    advanceBookingPeriod?: number; // in days
+    lastMinuteBookingPeriod?: number; // in hours
+}
+
+export interface PriceConfigDTO {
+    fixedPrice?: number;
+    pricePerUnit?: number;
+    pricePerAdult?: number;
+    pricePerChild?: number;
+    priceType: PriceType;
+    extraChargePerUnit?: number;
+    extraPerAdult?: number;
+    extraPerChild?: number;
+    extraChargeType?: PriceType;
+    allowAdvancePayment?: boolean;
+    advancePaymentPercentage?: number;
+    advancePaymentFixedAmount?: number;
+    requiresDeposit?: boolean;
+    depositAmount?: number;
 }
 
 // Union type for all service details
 export type ServiceDetail = TourGuideServiceDetail | FoodBeverageServiceDetail | AccommodationServiceDetail | ActivityServiceDetail | TransportServiceDetail;
 
-// Service detail response wrapper
-export interface ServiceDetailResponse {
-    success: boolean;
-    message: string;
-    data: ServiceDetail;
-    details: string | null;
-}
 

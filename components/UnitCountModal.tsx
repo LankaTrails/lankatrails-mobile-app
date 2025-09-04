@@ -12,26 +12,33 @@ import {
 } from "react-native";
 import LongButton from "./LongButton";
 
-interface PersonCountModalProps {
+interface UnitCountModalProps {
   visible: boolean;
   onClose: () => void;
-  onConfirm: (adults: number, children: number) => void;
-  initialAdults?: number;
-  initialChildren?: number;
+  onConfirm: (units: number) => void;
+  initialUnits?: number;
+  unitType?: string; // e.g., "rooms", "vehicles", "tables"
+  unitCapacity?: number; // How many people per unit
+  totalTravelers?: number; // Total number of travelers
+  minUnits?: number;
+  maxUnits?: number;
 }
 
-const PERSON_COUNT_MODAL_HEIGHT = 0.7; // 70% of screen
+const UNIT_COUNT_MODAL_HEIGHT = 0.5; // 50% of screen
 const screenHeight = Dimensions.get("window").height;
 
-export default function PersonCountModal({
+export default function UnitCountModal({
   visible,
   onClose,
   onConfirm,
-  initialAdults = 1,
-  initialChildren = 0,
-}: PersonCountModalProps) {
-  const [adults, setAdults] = useState(initialAdults);
-  const [children, setChildren] = useState(initialChildren);
+  initialUnits = 1,
+  unitType = "units",
+  unitCapacity = 4,
+  totalTravelers = 1,
+  minUnits = 1,
+  maxUnits = 10,
+}: UnitCountModalProps) {
+  const [units, setUnits] = useState(initialUnits);
 
   // Modal animation
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -43,6 +50,12 @@ export default function PersonCountModal({
         duration: 300,
         useNativeDriver: true,
       }).start();
+      // Auto-calculate recommended units based on travelers
+      const recommendedUnits = Math.max(
+        minUnits,
+        Math.ceil(totalTravelers / unitCapacity)
+      );
+      setUnits(Math.min(recommendedUnits, maxUnits));
     } else {
       Animated.timing(slideAnim, {
         toValue: 0,
@@ -50,34 +63,38 @@ export default function PersonCountModal({
         useNativeDriver: true,
       }).start();
     }
-  }, [visible]);
+  }, [visible, totalTravelers, unitCapacity, minUnits, maxUnits]);
 
-  const handleAdultsChange = (increment: boolean) => {
+  const handleUnitsChange = (increment: boolean) => {
     if (increment) {
-      setAdults((prev) => prev + 1);
+      setUnits((prev) => Math.min(maxUnits, prev + 1));
     } else {
-      setAdults((prev) => Math.max(1, prev - 1)); // Minimum 1 adult
-    }
-  };
-
-  const handleChildrenChange = (increment: boolean) => {
-    if (increment) {
-      setChildren((prev) => prev + 1);
-    } else {
-      setChildren((prev) => Math.max(0, prev - 1)); // Minimum 0 children
+      setUnits((prev) => Math.max(minUnits, prev - 1));
     }
   };
 
   const handleConfirm = () => {
-    console.log("PersonCountModal - Confirming with:", { adults, children });
-    onConfirm(adults, children);
+    onConfirm(units);
   };
 
-  const getTotalCount = () => adults + children;
+  const getCapacityInfo = () => {
+    const totalCapacity = units * unitCapacity;
+    if (totalCapacity >= totalTravelers) {
+      return `${totalCapacity} capacity (${totalTravelers} needed)`;
+    } else {
+      return `${totalCapacity} capacity (${
+        totalTravelers - totalCapacity
+      } over capacity)`;
+    }
+  };
+
+  const isOverCapacity = () => {
+    return units * unitCapacity < totalTravelers;
+  };
 
   const modalTranslateY = slideAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [screenHeight * PERSON_COUNT_MODAL_HEIGHT, 0],
+    outputRange: [screenHeight * UNIT_COUNT_MODAL_HEIGHT, 0],
   });
 
   return (
@@ -96,106 +113,119 @@ export default function PersonCountModal({
               <Ionicons name="arrow-back" size={24} color="#008080" />
             </TouchableOpacity>
             <View style={styles.headerTitleContainer}>
-              <Text style={styles.modalTitle}>Number of Travelers</Text>
+              <Text style={styles.modalTitle}>Number of {unitType}</Text>
             </View>
           </View>
           <Text style={styles.subtitle}>
-            Select the number of adults and children for your trip
+            Select the number of {unitType} you need for your group
           </Text>
         </View>
 
         <View style={styles.content}>
-          {/* Adults Section */}
-          <View style={styles.personSection}>
-            <View style={styles.personInfo}>
-              <Text style={styles.personTitle}>Adults</Text>
-              <Text style={styles.personSubtitle}>Age 18+</Text>
+          {/* Units Section */}
+          <View style={styles.unitSection}>
+            <View style={styles.unitInfo}>
+              <Text style={styles.unitTitle}>
+                {unitType.charAt(0).toUpperCase() + unitType.slice(1)}
+              </Text>
+              <Text style={styles.unitSubtitle}>
+                Up to {unitCapacity} people per {unitType.slice(0, -1)}
+              </Text>
             </View>
             <View style={styles.counterContainer}>
               <TouchableOpacity
                 style={[
                   styles.counterButton,
-                  adults <= 1 && styles.counterButtonDisabled,
+                  units <= minUnits && styles.counterButtonDisabled,
                 ]}
-                onPress={() => handleAdultsChange(false)}
-                disabled={adults <= 1}
+                onPress={() => handleUnitsChange(false)}
+                disabled={units <= minUnits}
               >
                 <Ionicons
                   name="remove"
                   size={20}
-                  color={adults <= 1 ? "#D1D5DB" : "#008080"}
+                  color={units <= minUnits ? "#D1D5DB" : "#008080"}
                 />
               </TouchableOpacity>
               <View style={styles.countDisplay}>
-                <Text style={styles.countNumber}>{adults}</Text>
+                <Text style={styles.countNumber}>{units}</Text>
               </View>
-              <TouchableOpacity
-                style={styles.counterButton}
-                onPress={() => handleAdultsChange(true)}
-              >
-                <Ionicons name="add" size={20} color="#008080" />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Children Section */}
-          <View style={styles.personSection}>
-            <View style={styles.personInfo}>
-              <Text style={styles.personTitle}>Children</Text>
-              <Text style={styles.personSubtitle}>Age 0-17</Text>
-            </View>
-            <View style={styles.counterContainer}>
               <TouchableOpacity
                 style={[
                   styles.counterButton,
-                  children <= 0 && styles.counterButtonDisabled,
+                  units >= maxUnits && styles.counterButtonDisabled,
                 ]}
-                onPress={() => handleChildrenChange(false)}
-                disabled={children <= 0}
+                onPress={() => handleUnitsChange(true)}
+                disabled={units >= maxUnits}
               >
                 <Ionicons
-                  name="remove"
+                  name="add"
                   size={20}
-                  color={children <= 0 ? "#D1D5DB" : "#008080"}
+                  color={units >= maxUnits ? "#D1D5DB" : "#008080"}
                 />
-              </TouchableOpacity>
-              <View style={styles.countDisplay}>
-                <Text style={styles.countNumber}>{children}</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.counterButton}
-                onPress={() => handleChildrenChange(true)}
-              >
-                <Ionicons name="add" size={20} color="#008080" />
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Summary */}
-          <View style={styles.summaryContainer}>
-            <View style={styles.summaryContent}>
-              <Ionicons name="people" size={24} color="#008080" />
-              <View style={styles.summaryTextContainer}>
-                <Text style={styles.summaryTitle}>Total Travelers</Text>
-                <Text style={styles.summarySubtitle}>
-                  {adults} adult{adults > 1 ? "s" : ""}
-                  {children > 0 &&
-                    `, ${children} child${children > 1 ? "ren" : ""}`}
+          {/* Capacity Information */}
+          <View style={styles.capacityContainer}>
+            <View
+              style={[
+                styles.capacityContent,
+                isOverCapacity() && styles.capacityContentWarning,
+              ]}
+            >
+              <Ionicons
+                name={isOverCapacity() ? "warning" : "checkmark-circle"}
+                size={24}
+                color={isOverCapacity() ? "#F59E0B" : "#008080"}
+              />
+              <View style={styles.capacityTextContainer}>
+                <Text style={styles.capacityTitle}>
+                  {isOverCapacity() ? "Over Capacity" : "Capacity Check"}
                 </Text>
+                <Text style={styles.capacitySubtitle}>{getCapacityInfo()}</Text>
               </View>
-              <Text style={styles.totalCount}>{getTotalCount()}</Text>
+              <Text
+                style={[
+                  styles.totalCount,
+                  isOverCapacity() && styles.totalCountWarning,
+                ]}
+              >
+                {units}
+              </Text>
             </View>
           </View>
+
+          {/* Recommendation */}
+          {totalTravelers > 0 && (
+            <View style={styles.recommendationContainer}>
+              <Text style={styles.recommendationTitle}>Recommendation</Text>
+              <Text style={styles.recommendationText}>
+                For {totalTravelers} traveler{totalTravelers > 1 ? "s" : ""}, we
+                recommend {Math.ceil(totalTravelers / unitCapacity)}{" "}
+                {unitType.slice(0, -1)}
+                {Math.ceil(totalTravelers / unitCapacity) > 1 ? "s" : ""} to
+                ensure everyone has comfortable space.
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Confirm Button */}
         <View style={styles.buttonContainer}>
           <LongButton
-            label={`Continue with ${getTotalCount()} traveler${
-              getTotalCount() > 1 ? "s" : ""
+            label={`Continue with ${units} ${
+              units === 1 ? unitType.slice(0, -1) : unitType
             }`}
             onPress={handleConfirm}
           />
+          {isOverCapacity() && (
+            <Text style={styles.warningText}>
+              Note: Selected {unitType} may not accommodate all travelers
+              comfortably
+            </Text>
+          )}
         </View>
       </Animated.View>
     </Modal>
@@ -216,7 +246,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
     padding: 20,
-    height: "70%",
+    height: "60%",
   },
   header: {
     alignItems: "stretch",
@@ -236,7 +266,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginBottom: 20,
   },
-  personSection: {
+  unitSection: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -244,16 +274,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
   },
-  personInfo: {
+  unitInfo: {
     flex: 1,
   },
-  personTitle: {
+  unitTitle: {
     fontSize: 16,
     fontWeight: "600",
     color: "#374151",
     marginBottom: 2,
   },
-  personSubtitle: {
+  unitSubtitle: {
     fontSize: 14,
     color: "#6B7280",
   },
@@ -286,13 +316,13 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#374151",
   },
-  summaryContainer: {
+  capacityContainer: {
     marginTop: 24,
     paddingTop: 20,
     borderTopWidth: 1,
     borderTopColor: "#E5E7EB",
   },
-  summaryContent: {
+  capacityContent: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F0F8FF",
@@ -301,17 +331,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E6F7FF",
   },
-  summaryTextContainer: {
+  capacityContentWarning: {
+    backgroundColor: "#FEF3C7",
+    borderColor: "#F3E8FF",
+  },
+  capacityTextContainer: {
     flex: 1,
     marginLeft: 12,
   },
-  summaryTitle: {
+  capacityTitle: {
     fontSize: 16,
     fontWeight: "600",
     color: "#008080",
     marginBottom: 2,
   },
-  summarySubtitle: {
+  capacitySubtitle: {
     fontSize: 14,
     color: "#374151",
   },
@@ -320,8 +354,35 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#008080",
   },
+  totalCountWarning: {
+    color: "#F59E0B",
+  },
+  recommendationContainer: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: "#F3F4F6",
+    borderRadius: 12,
+  },
+  recommendationTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 4,
+  },
+  recommendationText: {
+    fontSize: 14,
+    color: "#6B7280",
+    lineHeight: 20,
+  },
   buttonContainer: {
     paddingTop: 20,
+  },
+  warningText: {
+    fontSize: 12,
+    color: "#F59E0B",
+    textAlign: "center",
+    marginTop: 8,
+    fontStyle: "italic",
   },
   headerRow: {
     flexDirection: "row",
