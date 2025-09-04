@@ -100,6 +100,14 @@ export default function TripDetailsModal({
     }
   }, [tripTitle, isEditing]);
 
+  // Update person count when props change (for trip creation flow)
+  useEffect(() => {
+    setNumberOfAdults(initialDetails?.numberOfAdults || initialAdults || 1);
+    setNumberOfChildren(
+      initialDetails?.numberOfChildren || initialChildren || 0
+    );
+  }, [initialAdults, initialChildren, initialDetails]);
+
   const currencies = [
     { code: "USD", symbol: "$", name: "US Dollar" },
     { code: "LKR", symbol: "Rs.", name: "Sri Lankan Rupee" },
@@ -151,12 +159,7 @@ export default function TripDetailsModal({
   };
 
   const handleConfirm = () => {
-    if (!budget.trim()) {
-      Alert.alert("Missing Information", "Please enter your budget");
-      return;
-    }
-
-    if (isNaN(Number(budget))) {
+    if (budget.trim() && isNaN(Number(budget))) {
       Alert.alert("Invalid Budget", "Please enter a valid number for budget");
       return;
     }
@@ -175,6 +178,12 @@ export default function TripDetailsModal({
       currency,
       title: title.trim(),
     };
+
+    console.log("TripDetailsModal - Confirming with person count:", {
+      numberOfAdults,
+      numberOfChildren,
+      tripDetails,
+    });
 
     onConfirm(tripDetails);
   };
@@ -204,16 +213,15 @@ export default function TripDetailsModal({
         >
           {/* Header with back button */}
           <View style={styles.headerRow}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={onClose}
-            >
+            <TouchableOpacity style={styles.backButton} onPress={onClose}>
               <Ionicons name="arrow-back" size={24} color="#008080" />
             </TouchableOpacity>
-            <Text style={[styles.modalTitle, styles.headerTitle]}>Trip Details</Text>
+            <Text style={[styles.modalTitle, styles.headerTitle]}>
+              Trip Details
+            </Text>
             <View style={styles.headerSpacer} />
           </View>
-          
+
           <ScrollView
             style={styles.content}
             showsVerticalScrollIndicator={false}

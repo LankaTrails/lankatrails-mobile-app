@@ -61,12 +61,13 @@ const TripMapView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
   const [showLegend, setShowLegend] = useState(false);
-  const [showRoutes, setShowRoutes] = useState(true); // Enable routes by default
+  const [showRoutes, setShowRoutes] = useState(false); // Changed to false by default
   const [routeSegments, setRouteSegments] = useState<DirectionsRoute[]>([]);
   const [loadingRoutes, setLoadingRoutes] = useState(false);
   const [routeCoordinates, setRouteCoordinates] = useState<
     { latitude: number; longitude: number }[]
   >([]);
+  const [routesLoaded, setRoutesLoaded] = useState(false); // Track if routes have been loaded
   const mapRef = useRef<MapView>(null);
 
   // Debug: Log the tripId to see what we're receiving
@@ -111,94 +112,94 @@ const TripMapView: React.FC = () => {
   );
 
   // Create driving routes between trip items using Google Directions API
-  useEffect(() => {
-    const fetchRoutes = async () => {
-      if (markers.length > 1 && showRoutes) {
-        setLoadingRoutes(true);
-        setRouteSegments([]);
+  const fetchRoutes = async () => {
+    if (markers.length > 1) {
+      setLoadingRoutes(true);
+      setRouteSegments([]);
 
-        try {
-          // Sort markers by time (start location first, then by startTime)
-          const sortedMarkers = [...markers].sort((a, b) => {
-            if (a.type === "start_location") return -1;
-            if (b.type === "start_location") return 1;
-            if (!a.startTime || !b.startTime) return 0;
-            return (
-              new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-            );
-          });
+      try {
+        // Sort markers by time (start location first, then by startTime)
+        const sortedMarkers = [...markers].sort((a, b) => {
+          if (a.type === "start_location") return -1;
+          if (b.type === "start_location") return 1;
+          if (!a.startTime || !b.startTime) return 0;
+          return (
+            new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+          );
+        });
 
-          console.log("Creating routes for", sortedMarkers.length, "markers");
+        console.log("Creating routes for", sortedMarkers.length, "markers");
 
-          const routes: DirectionsRoute[] = [];
+        const routes: DirectionsRoute[] = [];
 
-          // Create route segments between consecutive markers
-          for (let i = 0; i < sortedMarkers.length - 1; i++) {
-            const origin: DirectionsWaypoint = {
-              latitude: sortedMarkers[i].coordinate.latitude,
-              longitude: sortedMarkers[i].coordinate.longitude,
-            };
+        // Create route segments between consecutive markers
+        for (let i = 0; i < sortedMarkers.length - 1; i++) {
+          const origin: DirectionsWaypoint = {
+            latitude: sortedMarkers[i].coordinate.latitude,
+            longitude: sortedMarkers[i].coordinate.longitude,
+          };
 
-            const destination: DirectionsWaypoint = {
-              latitude: sortedMarkers[i + 1].coordinate.latitude,
-              longitude: sortedMarkers[i + 1].coordinate.longitude,
-            };
+          const destination: DirectionsWaypoint = {
+            latitude: sortedMarkers[i + 1].coordinate.latitude,
+            longitude: sortedMarkers[i + 1].coordinate.longitude,
+          };
 
+          console.log(
+            `Getting route ${i + 1}/${sortedMarkers.length - 1}: ${
+              sortedMarkers[i].title
+            } → ${sortedMarkers[i + 1].title}`
+          );
+
+          const route = await getDirections(origin, destination, [], "driving");
+
+          if (route) {
+            routes.push(route);
             console.log(
-              `Getting route ${i + 1}/${sortedMarkers.length - 1}: ${
-                sortedMarkers[i].title
-              } → ${sortedMarkers[i + 1].title}`
+              `Route ${i + 1} found: ${route.distance}, ${route.duration}, ${
+                route.coordinates.length
+              } points`
             );
-
-            const route = await getDirections(
-              origin,
-              destination,
-              [],
-              "driving"
+          } else {
+            console.warn(
+              `No route found between ${sortedMarkers[i].title} and ${
+                sortedMarkers[i + 1].title
+              }`
             );
-
-            if (route) {
-              routes.push(route);
-              console.log(
-                `Route ${i + 1} found: ${route.distance}, ${route.duration}, ${
-                  route.coordinates.length
-                } points`
-              );
-            } else {
-              console.warn(
-                `No route found between ${sortedMarkers[i].title} and ${
-                  sortedMarkers[i + 1].title
-                }`
-              );
-            }
-
-            // Add small delay to avoid rate limiting
-            await new Promise((resolve) => setTimeout(resolve, 200));
           }
 
-          setRouteSegments(routes);
-
-          // Also set the basic coordinates for fallback polyline
-          const coordinates = sortedMarkers.map((marker) => marker.coordinate);
-          setRouteCoordinates(coordinates);
-
-          console.log("All routes fetched:", routes.length, "segments");
-        } catch (error) {
-          console.error("Error fetching routes:", error);
-          // Fallback to simple straight lines
-          const coordinates = markers.map((marker) => marker.coordinate);
-          setRouteCoordinates(coordinates);
-        } finally {
-          setLoadingRoutes(false);
+          // Add small delay to avoid rate limiting
+          await new Promise((resolve) => setTimeout(resolve, 200));
         }
-      } else {
-        setRouteSegments([]);
-        setRouteCoordinates([]);
-      }
-    };
 
-    fetchRoutes();
-  }, [markers, showRoutes]);
+        setRouteSegments(routes);
+
+        // Also set the basic coordinates for fallback polyline
+        const coordinates = sortedMarkers.map((marker) => marker.coordinate);
+        setRouteCoordinates(coordinates);
+
+        console.log("All routes fetched:", routes.length, "segments");
+        setRoutesLoaded(true);
+      } catch (error) {
+        console.error("Error fetching routes:", error);
+        // Fallback to simple straight lines
+        const coordinates = markers.map((marker) => marker.coordinate);
+        setRouteCoordinates(coordinates);
+        setRoutesLoaded(true);
+      } finally {
+        setLoadingRoutes(false);
+      }
+    }
+  };
+
+  // Toggle route display and fetch routes if not already loaded
+  const toggleRoutes = async () => {
+    if (!showRoutes && !routesLoaded && markers.length > 1) {
+      // User wants to show routes but they haven't been loaded yet
+      await fetchRoutes();
+    }
+    setShowRoutes(!showRoutes);
+  };
+
   const getMarkerColor = (type: string): string => {
     if (type === "start_location") {
       return "#10B981"; // Green for start location
@@ -485,11 +486,6 @@ const TripMapView: React.FC = () => {
     }
   };
 
-  // Toggle route display
-  const toggleRoutes = () => {
-    setShowRoutes(!showRoutes);
-  };
-
   // Legend items
   const legendItems = [
     {
@@ -578,7 +574,7 @@ const TripMapView: React.FC = () => {
             </Marker>
           ))}
 
-          {/* Google Directions Routes */}
+          {/* Google Directions Routes - only show when enabled */}
           {showRoutes &&
             routeSegments.map((route, index) => (
               <Polyline
@@ -591,7 +587,7 @@ const TripMapView: React.FC = () => {
               />
             ))}
 
-          {/* Fallback route polyline for simple connections */}
+          {/* Fallback route polyline for simple connections - only show when enabled */}
           {showRoutes &&
             routeSegments.length === 0 &&
             routeCoordinates.length > 1 && (
@@ -657,68 +653,7 @@ const TripMapView: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Trip Summary Card */}
-        {/* {trip && (
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryTitle}>{trip.tripName}</Text>
-            <View style={styles.summaryStats}>
-              <View style={styles.statItem}>
-                <Icon name="calendar" size={14} color="#6B7280" />
-                <Text style={styles.statText}>
-                  {new Date(trip.startDate).toLocaleDateString()} -{" "}
-                  {new Date(trip.endDate).toLocaleDateString()}
-                </Text>
-              </View>
-              <View style={styles.statItem}>
-                <Icon name="location" size={14} color="#6B7280" />
-                <Text style={styles.statText}>{markers.length} locations</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Icon name="people" size={14} color="#6B7280" />
-                <Text style={styles.statText}>
-                  {trip.numberOfAdults} adults
-                  {trip.numberOfChildren > 0 &&
-                    `, ${trip.numberOfChildren} children`}
-                </Text>
-              </View>
-            </View>
-          </View>
-        )} */}
-
-        {/* Legend */}
-        {showLegend && (
-          <View style={styles.legend}>
-            <View style={styles.legendHeader}>
-              <Text style={styles.legendTitle}>Map Legend</Text>
-              <TouchableOpacity
-                onPress={() => setShowLegend(false)}
-                style={styles.legendClose}
-              >
-                <Icon name="close" size={16} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView
-              style={styles.legendScroll}
-              showsVerticalScrollIndicator={false}
-            >
-              {legendItems.map((item) => (
-                <View key={item.type} style={styles.legendItem}>
-                  <View
-                    style={[
-                      styles.legendColor,
-                      { backgroundColor: item.color },
-                    ]}
-                  >
-                    <Icon name={item.icon} size={12} color="white" />
-                  </View>
-                  <Text style={styles.legendText}>{item.label}</Text>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-
-        {/* Route Information */}
+        {/* Route Information - only show when routes are displayed */}
         {showRoutes && routeSegments.length > 0 && (
           <View style={styles.routeInfoPanel}>
             <View style={styles.routeInfoHeader}>
@@ -759,6 +694,39 @@ const TripMapView: React.FC = () => {
                 <Text style={styles.routeStatLabel}>Route Segments</Text>
               </View>
             </View>
+          </View>
+        )}
+
+        {/* Legend */}
+        {showLegend && (
+          <View style={styles.legend}>
+            <View style={styles.legendHeader}>
+              <Text style={styles.legendTitle}>Map Legend</Text>
+              <TouchableOpacity
+                onPress={() => setShowLegend(false)}
+                style={styles.legendClose}
+              >
+                <Icon name="close" size={16} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              style={styles.legendScroll}
+              showsVerticalScrollIndicator={false}
+            >
+              {legendItems.map((item) => (
+                <View key={item.type} style={styles.legendItem}>
+                  <View
+                    style={[
+                      styles.legendColor,
+                      { backgroundColor: item.color },
+                    ]}
+                  >
+                    <Icon name={item.icon} size={12} color="white" />
+                  </View>
+                  <Text style={styles.legendText}>{item.label}</Text>
+                </View>
+              ))}
+            </ScrollView>
           </View>
         )}
 

@@ -10,9 +10,12 @@ import type { ApiResponse, Location } from '@/types/commonTypes';
 export const createTrip = async (tripData: tripRequest): Promise<ApiResponse<Trip>> => {
     try {
         console.log('Creating trip with data:', tripData);
+        console.log('Person count - Adults:', tripData.numberOfAdults, 'Children:', tripData.numberOfChildren);
         const response = await api.post<ApiResponse<Trip>>('/trips/create', tripData);
+        console.log('Trip creation response:', response.data);
         return response.data;
     } catch (error) {
+        console.error('Error creating trip:', error);
         throw error;
     }
 };
@@ -66,9 +69,13 @@ export const getTripItemsByTripId = async (tripId: number): Promise<ApiResponse<
  */
 export const addToTrip = async (tripId: number, tripitem: TripItem): Promise<ApiResponse<string>> => {
     try {
+        console.log('Adding to trip:', tripId, tripitem);
+        console.log('Trip item details - Adults:', tripitem.numberOfAdults, 'Children:', tripitem.numberOfChildren, 'Units:', tripitem.noOfUnits);
         const response = await api.post<ApiResponse<string>>(`/trips/add-trip-item/${tripId}`, tripitem);
+        console.log('Add to trip response:', response.data);
         return response.data;
     } catch (error) {
+        console.error('Error adding to trip:', error);
         throw error;
     }
 };

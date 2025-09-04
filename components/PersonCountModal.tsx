@@ -20,7 +20,7 @@ interface PersonCountModalProps {
   initialChildren?: number;
 }
 
-const PERSON_COUNT_MODAL_HEIGHT = 0.5; // 50% of screen
+const PERSON_COUNT_MODAL_HEIGHT = 0.7; // 70% of screen
 const screenHeight = Dimensions.get("window").height;
 
 export default function PersonCountModal({
@@ -69,6 +69,7 @@ export default function PersonCountModal({
   };
 
   const handleConfirm = () => {
+    console.log("PersonCountModal - Confirming with:", { adults, children });
     onConfirm(adults, children);
   };
 
@@ -91,10 +92,7 @@ export default function PersonCountModal({
         <View style={styles.header}>
           {/* Header with back button */}
           <View style={styles.headerRow}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={onClose}
-            >
+            <TouchableOpacity style={styles.backButton} onPress={onClose}>
               <Ionicons name="arrow-back" size={24} color="#008080" />
             </TouchableOpacity>
             <View style={styles.headerTitleContainer}>
@@ -218,7 +216,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
     padding: 20,
-    height: "60%",
+    height: "70%",
   },
   header: {
     alignItems: "stretch",

@@ -923,6 +923,7 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
           locations: null,
           prices: null,
           mainImageUrl: null,
+          provider: service.provider ?? null,
         },
         place: null,
         startTime: startTime.slice(0, 16), // Format: "2025-09-04T08:00"
@@ -1947,7 +1948,7 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
   buttonContainer: {
-    paddingTop: 20,
+    paddingTop: 10,
   },
   sectionContainer: {
     marginBottom: 24,

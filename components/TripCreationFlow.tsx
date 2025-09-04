@@ -1,10 +1,5 @@
 import { createTrip, fetchAllCities } from "@/services/tripService";
-import {
-  Location,
-  Trip,
-  tripRequest,
-  TripTagType,
-} from "@/types/triptypes";
+import { Location, Trip, tripRequest, TripTagType } from "@/types/triptypes";
 import { ApiResponse } from "@/types/commonTypes";
 import { BlurView } from "expo-blur";
 import React, { useEffect, useRef, useState } from "react";
@@ -230,8 +225,13 @@ export default function TripCreationFlow({
   };
 
   const handlePersonCountConfirm = (adults: number, children: number) => {
+    console.log("TripCreationFlow - Person count received:", {
+      adults,
+      children,
+    });
     setNumberOfAdults(adults);
     setNumberOfChildren(children);
+    console.log("TripCreationFlow - State updated with person count");
 
     // Transition to trip name modal
     setTimeout(() => {
@@ -254,12 +254,50 @@ export default function TripCreationFlow({
     setIsCreating(true);
 
     try {
+      console.log("Trip details confirmed:", details);
+      console.log(
+        "Person count from details - Adults:",
+        details.numberOfAdults,
+        "Children:",
+        details.numberOfChildren
+      );
+
       // Use selected destinations directly since they are already Location objects
       const locations: Location[] = selectedDestinations;
 
-      // Ensure we have a start location
+      // Validate required fields before API call
       if (!startLocation) {
         Alert.alert("Error", "Please select a start location first.");
+        setIsCreating(false);
+        return;
+      }
+
+      if (!tripName || tripName.trim().length === 0) {
+        Alert.alert("Error", "Please enter a trip name.");
+        setIsCreating(false);
+        return;
+      }
+
+      if (locations.length === 0) {
+        Alert.alert("Error", "Please select at least one destination.");
+        setIsCreating(false);
+        return;
+      }
+
+      if (!details.startDate || !details.endDate) {
+        Alert.alert("Error", "Please select valid start and end dates.");
+        setIsCreating(false);
+        return;
+      }
+
+      if (details.startDate >= details.endDate) {
+        Alert.alert("Error", "End date must be after start date.");
+        setIsCreating(false);
+        return;
+      }
+
+      if (details.numberOfAdults < 1) {
+        Alert.alert("Error", "At least one adult is required for the trip.");
         setIsCreating(false);
         return;
       }
@@ -274,7 +312,6 @@ export default function TripCreationFlow({
         numberOfAdults: details.numberOfAdults,
         numberOfChildren: details.numberOfChildren,
         tripStatus: "PLANNING",
-        totalBudget: parseFloat(details.budget) || 0,
         totalBudgetLimit: parseFloat(details.budget) || 0,
         totalDistance: 0, // Will be calculated by backend
         accommodationLimit: 0, // Could be extended later
@@ -283,8 +320,13 @@ export default function TripCreationFlow({
         activityLimit: 0,
         shoppingLimit: 0,
         miscellaneousLimit: 0,
-        tags: selectedVibes.length > 0 ? selectedVibes : undefined, // Include selected vibes as tags
       };
+
+      console.log("Trip data being sent to API:", {
+        ...tripData,
+        numberOfAdults: tripData.numberOfAdults,
+        numberOfChildren: tripData.numberOfChildren,
+      });
 
       // Call the API service
       const response: ApiResponse<Trip> = await createTrip(tripData);
@@ -299,13 +341,36 @@ export default function TripCreationFlow({
           [{ text: "OK" }]
         );
       } else {
-        throw new Error(response.message || "Failed to create trip");
+        // Handle API error response
+        const errorMessage = response.message || "Failed to create trip";
+        console.error("API Error:", response);
+        Alert.alert("Trip Creation Failed", errorMessage, [{ text: "OK" }]);
       }
     } catch (error) {
       console.error("Error creating trip:", error);
-      Alert.alert("Error", "Failed to create trip. Please try again.", [
-        { text: "OK" },
-      ]);
+
+      // Try to extract more specific error information from backend
+      let errorMessage = "Failed to create trip. Please try again.";
+
+      if (error && typeof error === "object") {
+        // Check if it's an API error with response data
+        if ("response" in error && error.response) {
+          const response = error.response as any;
+          if (response.data && response.data.message) {
+            errorMessage = response.data.message;
+          } else if (response.data && response.data.error) {
+            errorMessage = response.data.error;
+          } else if (response.statusText) {
+            errorMessage = `Error: ${response.statusText}`;
+          }
+        }
+        // Check if it's a standard Error object with message
+        else if ("message" in error && typeof error.message === "string") {
+          errorMessage = error.message;
+        }
+      }
+
+      Alert.alert("Trip Creation Error", errorMessage, [{ text: "OK" }]);
     } finally {
       setIsCreating(false);
     }

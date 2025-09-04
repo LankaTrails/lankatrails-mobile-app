@@ -217,7 +217,7 @@ export default function DestinationModal({
             <View style={styles.headerSpacer} />
           </View>
 
-          <Text style={styles.sectionTitle}>What&apos;s Your Trip Vibe?</Text>
+          {/* <Text style={styles.sectionTitle}>What&apos;s Your Trip Vibe?</Text>
           <View style={styles.vibesScrollContainer}>
             <ScrollView
               horizontal
@@ -273,7 +273,7 @@ export default function DestinationModal({
                 </View>
               </View>
             </ScrollView>
-          </View>
+          </View> */}
 
           <Text style={styles.sectionTitle}>
             {selectedVibes.length > 0
