@@ -130,7 +130,6 @@ export interface ServiceImage {
 export interface BaseServiceDetail {
     serviceId: number | null;
     serviceName: string;
-    locationBased?: Location; // Add this property for backward compatibility
     locations: Location[];
     contactNo: string;
     status: ServiceStatus | null;

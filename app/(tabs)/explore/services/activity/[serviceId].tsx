@@ -335,9 +335,9 @@ const ActivityServiceDetailPage = () => {
         </View>
 
         {/* Location Map */}
-        {serviceDetail.locationBased &&
-          serviceDetail.locationBased.latitude &&
-          serviceDetail.locationBased.longitude && (
+        {serviceDetail.locations[0] &&
+          serviceDetail.locations[0].latitude &&
+          serviceDetail.locations[0].longitude && (
             <View className="px-4 mb-6">
               <View className="flex-row items-center justify-between mb-3">
                 <Text className="text-2xl font-semibold text-gray-500">
@@ -357,7 +357,7 @@ const ActivityServiceDetailPage = () => {
                       Address
                     </Text>
                     <Text className="text-sm text-gray-600">
-                      {serviceDetail.locationBased.formattedAddress}
+                      {serviceDetail.locations[0].formattedAddress}
                     </Text>
                   </View>
                   <Ionicons
@@ -377,8 +377,8 @@ const ActivityServiceDetailPage = () => {
                   <MapView
                     style={{ flex: 1 }}
                     initialRegion={{
-                      latitude: serviceDetail.locationBased.latitude,
-                      longitude: serviceDetail.locationBased.longitude,
+                      latitude: serviceDetail.locations[0].latitude,
+                      longitude: serviceDetail.locations[0].longitude,
                       latitudeDelta: 0.01,
                       longitudeDelta: 0.01,
                     }}
@@ -390,11 +390,11 @@ const ActivityServiceDetailPage = () => {
                   >
                     <Marker
                       coordinate={{
-                        latitude: serviceDetail.locationBased.latitude,
-                        longitude: serviceDetail.locationBased.longitude,
+                        latitude: serviceDetail.locations[0].latitude,
+                        longitude: serviceDetail.locations[0].longitude,
                       }}
                       title={serviceDetail.serviceName}
-                      description={serviceDetail.locationBased.formattedAddress}
+                      description={serviceDetail.locations[0].formattedAddress}
                     />
                   </MapView>
                 </View>
