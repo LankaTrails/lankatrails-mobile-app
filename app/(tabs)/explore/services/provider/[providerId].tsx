@@ -399,6 +399,30 @@ const ProviderDetailView = () => {
             </View>
           )}
 
+        {/* Contact Provider Section */}
+        <View className="px-4 mb-6">
+          <TouchableOpacity
+            onPress={() => {
+              // Navigate to direct chat with provider
+              router.push({
+                pathname: "/screens/Chat",
+                params: {
+                  chatType: "direct",
+                  providerId: providerId,
+                },
+              });
+            }}
+            className="bg-primary py-4 rounded-lg items-center shadow-sm"
+          >
+            <View className="flex-row items-center">
+              <Ionicons name="chatbubble-outline" size={20} color="white" />
+              <Text className="text-white text-lg font-semibold ml-2">
+                Contact Provider
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
         {/* Services Section */}
         {provider.services && provider.services.length > 0 && (
           <View className="px-4 mb-6">

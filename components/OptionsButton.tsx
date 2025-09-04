@@ -15,9 +15,10 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 interface OptionsButtonProps {
   tripId?: string;
+  tripName?: string;
 }
 
-const OptionsButton: React.FC<OptionsButtonProps> = ({ tripId }) => {
+const OptionsButton: React.FC<OptionsButtonProps> = ({ tripId, tripName }) => {
   const [isVisible, setIsVisible] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -124,7 +125,21 @@ const OptionsButton: React.FC<OptionsButtonProps> = ({ tripId }) => {
         console.error("Trip ID is required for map navigation");
       }
     } else if (option === "Chat") {
-      router.push("/screens/Chat");
+      if (tripId) {
+        // Navigate to group chat for the trip
+        router.push({
+          pathname: "/screens/Chat",
+          params: {
+            chatType: "group",
+            tripId: tripId,
+            tripName: tripName || `Trip ${tripId}`, // Use actual trip name if provided
+          },
+        });
+      } else {
+        console.error("Trip ID is required for group chat navigation");
+        // Could show an alert or navigate to a chat list instead
+        router.push("/screens/Chat");
+      }
     }
   };
 
@@ -225,7 +240,6 @@ const OptionsButton: React.FC<OptionsButtonProps> = ({ tripId }) => {
                 },
               ]}
             />
-
 
             {/* Options Container */}
             <View style={styles.optionsContainer}>

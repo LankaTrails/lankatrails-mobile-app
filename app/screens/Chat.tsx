@@ -557,6 +557,15 @@ export default function Chat() {
   // Initialize chat room based on type
   const initializeChatRoom = useCallback(async (): Promise<void> => {
     setIsLoadingChatRoom(true);
+
+    console.log("🔍 Chat initialization started with parameters:", {
+      chatType,
+      tripId,
+      providerId,
+      roomId,
+      tripName,
+    });
+
     try {
       let response;
 
@@ -572,7 +581,35 @@ export default function Chat() {
         console.log(`Initializing chat room by ID: ${roomId}`);
         response = await getChatRoomById(roomId);
       } else {
-        throw new Error("Invalid chat room parameters");
+        // Better error handling with specific messages
+        let errorMessage = "Invalid chat room parameters. ";
+
+        if (!chatType || (chatType !== "group" && chatType !== "direct")) {
+          errorMessage += "Chat type must be 'group' or 'direct'. ";
+        }
+
+        if (chatType === "group" && !tripId) {
+          errorMessage += "Trip ID is required for group chats. ";
+        }
+
+        if (chatType === "direct" && !providerId) {
+          errorMessage += "Provider ID is required for direct chats. ";
+        }
+
+        if (!tripId && !providerId && !roomId) {
+          errorMessage +=
+            "At least one of tripId, providerId, or roomId must be provided.";
+        }
+
+        console.error("Chat initialization error:", errorMessage);
+        console.error("Received parameters:", {
+          chatType,
+          tripId,
+          providerId,
+          roomId,
+        });
+
+        throw new Error(errorMessage);
       }
 
       if (response.success && response.data) {

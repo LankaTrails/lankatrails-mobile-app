@@ -501,7 +501,10 @@ const TripDetails = () => {
         {/* Floating Action Button positioned absolutely */}
       </SafeAreaView>
       <View style={styles.fabContainer}>
-        <FloatingActionButton tripId={tripID} />
+        <FloatingActionButton
+          tripId={tripID}
+          tripName={trip?.tripName || tripDetails.title}
+        />
       </View>
 
       <TripDetailsModal
