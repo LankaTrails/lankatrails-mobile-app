@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const GOOGLE_DIRECTIONS_API_KEY = 'AIzaSyBWrR4H7o9PTXVot7DQJ7woNDODNwD5LwA';
+const GOOGLE_DIRECTIONS_API_KEY = 'AIzaSyA09s82YaJw6_VmK2bCW5SkLnUXeniQgrw';
 
 export interface DirectionsWaypoint {
     latitude: number;
