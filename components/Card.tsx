@@ -1,11 +1,6 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from "@expo/vector-icons";
+import React from "react";
+import { Image, Text, TouchableOpacity, View } from "react-native";
 
 interface CardItem {
   id: number;
@@ -13,6 +8,8 @@ interface CardItem {
   subtitle: string;
   rating: number;
   image: string;
+  price?: string; // Price amount
+  priceType?: string; // Price type description
 }
 
 interface CardProps {
@@ -30,10 +27,14 @@ const Card: React.FC<CardProps> = ({ item, onPress, width = 160 }) => {
   // Provide default values for missing properties
   const cardData = {
     id: item.id || 0,
-    title: item.title || 'No title',
-    subtitle: item.subtitle || 'No subtitle',
+    title: item.title || "No title",
+    subtitle: item.subtitle || "No subtitle",
     rating: item.rating || 0,
-    image: item.image || 'https://via.placeholder.com/160x96/e2e8f0/64748b?text=No+Image'
+    image:
+      item.image ||
+      "https://via.placeholder.com/160x96/e2e8f0/64748b?text=No+Image",
+    price: item.price, // Include price from the item
+    priceType: item.priceType, // Include price type from the item
   };
 
   return (
@@ -57,9 +58,25 @@ const Card: React.FC<CardProps> = ({ item, onPress, width = 160 }) => {
         <Text className="text-sm text-gray-500" numberOfLines={1}>
           {cardData.subtitle}
         </Text>
-        <View className="flex-row items-center">
-          <Ionicons name="star" size={16} color="#FFC107" />
-          <Text className="text-sm text-gray-600 ml-1">{cardData.rating}</Text>
+        <View className="flex-row items-center justify-between">
+          <View className="flex-row items-center">
+            <Ionicons name="star" size={16} color="#FFC107" />
+            <Text className="text-sm text-gray-600 ml-1">
+              {cardData.rating}
+            </Text>
+          </View>
+          {cardData.price && (
+            <View className="items-end">
+              <Text className="text-base font-bold text-primary">
+                {cardData.price}
+              </Text>
+              {cardData.priceType && (
+                <Text className="text-sm  text-gray-500">
+                  {cardData.priceType}
+                </Text>
+              )}
+            </View>
+          )}
         </View>
       </View>
     </TouchableOpacity>
@@ -68,28 +85,27 @@ const Card: React.FC<CardProps> = ({ item, onPress, width = 160 }) => {
 
 export default Card;
 
-
-      //  <View className="px-4 mb-6">
-      //       <Text className="text-black text-lg font-semibold mb-4">Popular Places</Text>
-      //       <View className="flex-row flex-wrap justify-between">
-      //         {popularPlaces.map((place) => (
-      //           <TouchableOpacity
-      //             key={place.id}
-      //             className="w-[48%] mb-4 rounded-xl overflow-hidden shadow-sm"
-      //             style={{ elevation: 1 }}
-      //           >
-      //             <Image
-      //               source={{ uri: place.image }}
-      //               className="w-full h-32"
-      //               resizeMode="cover"
-      //             />
-      //             <View className="p-3 bg-white">
-      //               <Text className="text-black font-medium text-sm mb-1">
-      //                 {place.name}
-      //               </Text>
-      //               <Text className="text-gray-500 text-xs">{place.location}</Text>
-      //             </View>
-      //           </TouchableOpacity>
-      //         ))}
-      //       </View>
-      //     </View>
+//  <View className="px-4 mb-6">
+//       <Text className="text-black text-lg font-semibold mb-4">Popular Places</Text>
+//       <View className="flex-row flex-wrap justify-between">
+//         {popularPlaces.map((place) => (
+//           <TouchableOpacity
+//             key={place.id}
+//             className="w-[48%] mb-4 rounded-xl overflow-hidden shadow-sm"
+//             style={{ elevation: 1 }}
+//           >
+//             <Image
+//               source={{ uri: place.image }}
+//               className="w-full h-32"
+//               resizeMode="cover"
+//             />
+//             <View className="p-3 bg-white">
+//               <Text className="text-black font-medium text-sm mb-1">
+//                 {place.name}
+//               </Text>
+//               <Text className="text-gray-500 text-xs">{place.location}</Text>
+//             </View>
+//           </TouchableOpacity>
+//         ))}
+//       </View>
+//     </View>

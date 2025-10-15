@@ -4,7 +4,7 @@ import PhoneInput from "@/components/PhoneInput";
 import { signUp } from "@/services/userService";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
   Alert,
@@ -24,6 +24,8 @@ import {
 const { width, height } = Dimensions.get("window");
 
 const SignUp = () => {
+  const { redirect } = useLocalSearchParams(); // Get redirect parameter
+
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -215,7 +217,17 @@ const SignUp = () => {
         [
           {
             text: "OK",
-            onPress: () => router.replace("/signIn"),
+            onPress: () => {
+              // If there's a redirect parameter, pass it to sign-in; otherwise just go to sign-in
+              if (redirect && typeof redirect === "string") {
+                router.replace({
+                  pathname: "/(auth)/signIn" as any,
+                  params: { redirect },
+                });
+              } else {
+                router.replace("/(auth)/signIn" as any);
+              }
+            },
           },
         ]
       );
@@ -436,7 +448,19 @@ const SignUp = () => {
                   <Text style={styles.signInText}>
                     Already have an account?{" "}
                   </Text>
-                  <TouchableOpacity onPress={() => router.replace("/signIn")}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      // If there's a redirect parameter, pass it to sign-in; otherwise just go to sign-in
+                      if (redirect && typeof redirect === "string") {
+                        router.replace({
+                          pathname: "/(auth)/signIn" as any,
+                          params: { redirect },
+                        });
+                      } else {
+                        router.replace("/(auth)/signIn" as any);
+                      }
+                    }}
+                  >
                     <Text style={styles.signInLink}>Sign In</Text>
                   </TouchableOpacity>
                 </View>

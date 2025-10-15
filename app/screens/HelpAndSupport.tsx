@@ -63,16 +63,6 @@ export default function HelpAndSupport() {
 
   const supportOptions: SupportOption[] = [
     {
-      id: "chat",
-      title: "Live Chat",
-      description: "Chat with our support team in real-time",
-      icon: "chatbubble-ellipses-outline",
-      action: () => {
-        // Navigate to chat or open chat modal
-        Alert.alert("Live Chat", "Opening chat with support team...");
-      },
-    },
-    {
       id: "email",
       title: "Email Support",
       description: "Send us an email and we'll respond within 24 hours",
@@ -88,15 +78,6 @@ export default function HelpAndSupport() {
       icon: "call-outline",
       action: () => {
         Linking.openURL("tel:+94112345678");
-      },
-    },
-    {
-      id: "whatsapp",
-      title: "WhatsApp",
-      description: "Message us on WhatsApp for quick support",
-      icon: "logo-whatsapp",
-      action: () => {
-        Linking.openURL("https://wa.me/94112345678");
       },
     },
   ];
@@ -200,7 +181,7 @@ export default function HelpAndSupport() {
             ))}
           </View>
 
-          {/* FAQ Section */}
+         {/* 
           <View style={styles.faqSection}>
             <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
             {faqs.map((faq) => (
@@ -223,7 +204,7 @@ export default function HelpAndSupport() {
                 )}
               </View>
             ))}
-          </View>
+          </View> */}
 
           {/* App Info */}
           <View style={styles.appInfoSection}>
@@ -234,18 +215,18 @@ export default function HelpAndSupport() {
             </View>
             <View style={styles.appInfoItem}>
               <Text style={styles.appInfoLabel}>Build</Text>
-              <Text style={styles.appInfoValue}>2025.01.01</Text>
+              <Text style={styles.appInfoValue}>2025.05.01</Text>
             </View>
             <TouchableOpacity
               style={styles.appInfoItem}
-              onPress={() => Linking.openURL("https://lankatrails.com/privacy")}
+              //onPress={() => Linking.openURL("https://lankatrails.com/privacy")}
             >
               <Text style={styles.appInfoLabel}>Privacy Policy</Text>
               <Ionicons name="open-outline" size={16} color="#008080" />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.appInfoItem}
-              onPress={() => Linking.openURL("https://lankatrails.com/terms")}
+              //onPress={() => Linking.openURL("https://lankatrails.com/terms")}
             >
               <Text style={styles.appInfoLabel}>Terms of Service</Text>
               <Ionicons name="open-outline" size={16} color="#008080" />
@@ -259,11 +240,11 @@ export default function HelpAndSupport() {
               <Text style={styles.emergencyTitle}>Emergency Contact</Text>
             </View>
             <Text style={styles.emergencyDescription}>
-              If you&apos;re experiencing an emergency during your trip, call our 24/7 emergency hotline:
+              If you&apos;re experiencing an emergency during your trip, please contact The Sri Lanka Tourist Police (available 24/7)
             </Text>
             <TouchableOpacity
               style={styles.emergencyButton}
-              onPress={() => Linking.openURL("tel:+94112345678")}
+              onPress={() => Linking.openURL("tel:+9411-2421052")}
             >
               <Ionicons name="call" size={20} color="#ffffff" />
               <Text style={styles.emergencyButtonText}>+94 11 234 5678</Text>

@@ -1,52 +1,87 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
+  ActivityIndicator,
+  Alert,
   FlatList,
-  StyleSheet,
+  RefreshControl,
   ScrollView,
-  Animated,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
-import TripCard from "../../../components/TripCard";
+import EmptyState from "../../../components/EmptyState";
 import NewTripButton from "../../../components/FAB";
 import FilterButton from "../../../components/FilterButton";
-import EmptyState from "../../../components/EmptyState";
 import StatsHeader from "../../../components/StatsHeader";
-import DestinationModal from "../../../components/DestinationModal";
-import TripNameModal from "../../../components/TripNameModal";
-import TripDetailsModal, { TripDetails } from "../../../components/TripDetailsModal";
-import { BlurView } from "expo-blur";
-
-const dummyTrips = [
-  {
-    id: "1",
-    title: "Ella Hiking Adventure",
-    details: "3 spots | Scenic views",
-    budget: "Rs. 18,000",
-    duration: "2 Days",
-    status: "Upcoming",
-  },
-  {
-    id: "2",
-    title: "Jaffna Heritage Tour",
-    details: "5 places | Cultural",
-    budget: "Rs. 25,000",
-    duration: "3 Days",
-    status: "Upcoming",
-  },
-];
+import TripCard from "../../../components/TripCard";
+import TripCreationFlow from "../../../components/TripCreationFlow";
+import { getMyTrips } from "../../../services/tripService";
+import { Trip } from "../../../types/triptypes";
 
 export default function TripsScreen() {
-  const [trips, setTrips] = useState(dummyTrips);
+  const [trips, setTrips] = useState<any[]>([]);
   const [selectedFilter, setSelectedFilter] = useState("All");
-  const [showDestinationModal, setShowDestinationModal] = useState(false);
-  const [showTripNameModal, setShowTripNameModal] = useState(false);
-  const [selectedDestination, setSelectedDestination] = useState("");
-  const [suggestedTripName, setSuggestedTripName] = useState("");
-  const [showTripDetailsModal, setShowTripDetailsModal] = useState(false);
-  const [tripName, setTripName] = useState("");
+  const [showTripCreationFlow, setShowTripCreationFlow] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const filters = ["All", "Upcoming", "Completed"];
+
+  // Load trips when component mounts
+  useEffect(() => {
+    loadTrips();
+  }, []);
+
+  const loadTrips = async () => {
+    try {
+      setIsLoading(true);
+      const response = await getMyTrips();
+
+      if (response.success && response.data) {
+        // Convert API trips to TripCard format
+        const convertedTrips = response.data.map(convertTripToCardFormat);
+        setTrips(convertedTrips);
+        console.log(`Loaded ${convertedTrips.length} trips from API`);
+      } else {
+        console.error("Failed to load trips:", response.message);
+        // Show empty state instead of dummy data on API failure
+        setTrips([]);
+        Alert.alert("Error", response.message || "Failed to load your trips.");
+      }
+    } catch (error) {
+      console.error("Error loading trips:", error);
+      // Show empty state instead of dummy data on network error
+      setTrips([]);
+      Alert.alert(
+        "Connection Error",
+        "Failed to load your trips. Please check your internet connection and pull down to refresh.",
+        [{ text: "OK", style: "default" }]
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await loadTrips();
+    setIsRefreshing(false);
+  };
+
+  const convertTripToCardFormat = (trip: Trip) => {
+    return {
+      id: trip.tripId.toString(),
+      title: trip.tripName,
+      details: `${trip.locations.length} location${
+        trip.locations.length > 1 ? "s" : ""
+      } | ${trip.numberOfAdults + trip.numberOfChildren} traveler${
+        trip.numberOfAdults + trip.numberOfChildren > 1 ? "s" : ""
+      }`,
+      budget: `Rs. ${trip.totalBudget.toLocaleString()}`,
+      duration: calculateDurationFromDates(trip.startDate, trip.endDate),
+      status: mapTripStatus(trip.status || "PLANNING"),
+    };
+  };
 
   const filteredTrips =
     selectedFilter === "All"
@@ -54,114 +89,65 @@ export default function TripsScreen() {
       : trips.filter((trip) => trip.status === selectedFilter);
 
   const handleNewTripPress = () => {
-    setShowDestinationModal(true);
+    setShowTripCreationFlow(true);
   };
 
-  const handleDestinationSelect = (destinations: string[], selectedVibes?: string[]) => {
-    // Use the first destination for the trip name suggestion, or combine multiple
-    const primaryDestination = destinations[0];
-    
-    // Format destination text with proper truncation for many destinations
-    let destinationText;
-    if (destinations.length === 1) {
-      destinationText = primaryDestination;
-    } else if (destinations.length <= 5) {
-      // Show all destinations normally
-      destinationText = destinations.length === 2 
-        ? `${destinations[0]} & ${destinations[1]}`
-        : `${destinations.slice(0, -1).join(', ')} & ${destinations[destinations.length - 1]}`;
-    } else {
-      // Show first 5 destinations with "..." for more than 5
-      const first5 = destinations.slice(0, 5);
-      destinationText = `${first5.join(', ')}...`;
-    }
-    
-    setSelectedDestination(destinationText);
-    
-    // Generate suggested trip name based on primary destination
-    const suggestions = [
-      `${primaryDestination} Adventure`,
-      `${primaryDestination} Explorer`,
-      `${primaryDestination} Journey`,
-      `${primaryDestination} Experience`,
-      `Discover ${primaryDestination}`,
-    ];
-    setSuggestedTripName(suggestions[Math.floor(Math.random() * suggestions.length)]);
-    
-    // TODO: Use selectedVibes to influence trip suggestions and services in later steps
-    if (selectedVibes && selectedVibes.length > 0) {
-      console.log('Selected vibes for trip:', selectedVibes);
-    }
-    
-    console.log('Selected destinations:', destinations);
-    
-    // Close destination modal with animation to TripName height, then show TripName modal
+  const handleTripCreated = async (newTrip: Trip) => {
+    // Convert the Trip object from API to the format expected by TripCard
+    const tripCardData = convertTripToCardFormat(newTrip);
+
+    // Add to the beginning of the trips list
+    setTrips([tripCardData, ...trips]);
+
+    // Optionally refresh the entire list from API to ensure consistency
+    // This is helpful in case there are server-side computed fields
     setTimeout(() => {
-      setShowDestinationModal(false);
-      setShowTripNameModal(true);
-    }, 250); // Match the animation duration
-  };
-  const handleTripNameConfirm = (name: string) => {
-    setTripName(name);
-    // Close TripName modal with animation to TripDetails height, then show TripDetails modal
-    setTimeout(() => {
-      setShowTripNameModal(false);
-      setShowTripDetailsModal(true);
-    }, 250); // Match the animation duration
+      loadTrips();
+    }, 1000);
   };
 
-  const handleTripDetailsConfirm = (details: TripDetails) => {
-    const newTrip = {
-      id: (trips.length + 1).toString(),
-      title: tripName,
-      details: `${selectedDestination} | ${details.members} member${details.members > 1 ? 's' : ''}`,
-      budget: `${details.currency === 'LKR' ? 'Rs.' : details.currency === 'USD' ? '$' : details.currency === 'EUR' ? '€' : '£'} ${details.budget}`,
-      duration: `${calculateDuration(details.startDate, details.endDate)} Days`,
-      status: "Upcoming",
-    };
-    
-    setTrips([newTrip, ...trips]);
-    setShowTripDetailsModal(false);
-    handleModalClose();
-  };
-
-  const calculateDuration = (start: Date, end: Date) => {
+  const calculateDurationFromDates = (startDate: string, endDate: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+    return `${diffDays} Day${diffDays > 1 ? "s" : ""}`;
   };
 
-  const handleModalClose = () => {
-    setShowDestinationModal(false);
-    setShowTripNameModal(false);
-    setShowTripDetailsModal(false);
-    setSelectedDestination("");
-    setSuggestedTripName("");
-    setTripName("");
-  }
-
-  const blurOpacity = useRef(new Animated.Value(0)).current;
-  
-  useEffect(() => {
-    const isAnyModalVisible = showDestinationModal || showTripNameModal || showTripDetailsModal;
-    if (isAnyModalVisible) {
-      Animated.timing(blurOpacity, {
-        toValue: 1,
-        duration: 250,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(blurOpacity, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: true,
-      }).start();
+  const mapTripStatus = (status: string) => {
+    switch (status) {
+      case "PLANNING":
+        return "Upcoming";
+      case "IN_PROGRESS":
+        return "Ongoing";
+      case "COMPLETED":
+        return "Completed";
+      case "CANCELLED":
+        return "Cancelled";
+      case "ARCHIVED":
+        return "Archived";
+      default:
+        return "Upcoming";
     }
-  }, [showDestinationModal, showTripNameModal, showTripDetailsModal, blurOpacity]);
+  };
+
+  const handleTripCreationClose = () => {
+    setShowTripCreationFlow(false);
+  };
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 140 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={["#008080"]}
+            tintColor="#008080"
+          />
+        }
+      >
         <View style={styles.header}>
           <Text style={styles.heading}>Your Trips</Text>
           <StatsHeader trips={trips} />
@@ -182,7 +168,13 @@ export default function TripsScreen() {
             />
           </View>
         </View>
-        {filteredTrips.length === 0 ? (
+
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#008080" />
+            <Text style={styles.loadingText}>Loading your trips...</Text>
+          </View>
+        ) : filteredTrips.length === 0 ? (
           <EmptyState selectedFilter={selectedFilter} />
         ) : (
           <FlatList
@@ -194,47 +186,13 @@ export default function TripsScreen() {
           />
         )}
       </ScrollView>
-      
-      <NewTripButton onPress={handleNewTripPress} />
-      
-      {/* Blur Overlay */}
-      {(showDestinationModal || showTripNameModal || showTripDetailsModal) && (
-        <Animated.View
-          style={[
-            styles.blurContainer,
-            {
-              opacity: blurOpacity,
-            },
-          ]}
-          pointerEvents="none"
-        >
-          <BlurView intensity={50} style={StyleSheet.absoluteFill} />
-        </Animated.View>
-      )}
-      
-      <DestinationModal
-        visible={showDestinationModal}
-        onClose={handleModalClose}
-        onDestinationSelect={handleDestinationSelect}
-        animateToTripNameHeight={!!selectedDestination}
-      />
-      
-      <TripNameModal
-        visible={showTripNameModal}
-        destination={selectedDestination}
-        suggestedName={suggestedTripName}
-        onClose={handleModalClose}
-        onCreateTrip={handleTripNameConfirm}
-        startFromIntermediate={!!selectedDestination}
-        animateToTripDetailsHeight={!!tripName}
-      />
 
-      <TripDetailsModal
-        visible={showTripDetailsModal}
-        onClose={handleModalClose}
-        onConfirm={handleTripDetailsConfirm}
-        tripTitle={tripName}
-        startFromIntermediate={!!tripName}
+      <NewTripButton onPress={handleNewTripPress} />
+
+      <TripCreationFlow
+        visible={showTripCreationFlow}
+        onClose={handleTripCreationClose}
+        onTripCreated={handleTripCreated}
       />
     </View>
   );
@@ -243,7 +201,7 @@ export default function TripsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-        padding: 14,
+    padding: 14,
     backgroundColor: "#fff",
   },
   header: {
@@ -259,12 +217,16 @@ const styles = StyleSheet.create({
   tripList: {
     paddingHorizontal: 0,
   },
-  blurContainer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1000,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "#6B7280",
+    textAlign: "center",
   },
 });

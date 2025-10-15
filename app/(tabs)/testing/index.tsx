@@ -1,956 +1,539 @@
-
-import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, ScrollView, ActivityIndicator } from "react-native";
-import { fetchGroupedPlaces } from "../../../services/googlePlacesService";
-import Card from "../../../components/Card";
-import MapScreen from "@/app/screens/MapScreen";
-import { TouchableHighlight } from "react-native";
-import { router } from "expo-router";
-
-const GOOGLE_PLACES_API_KEY = 'AIzaSyA47Q-I515EK0DU4pvk5jgUcatYcdnf8cY';
-
-// Define types for place and group
-type Place = {
-  place_id: string;
-  name: string;
-  vicinity: string;
-  rating?: number | string;
-  photos?: { photo_reference: string }[];
-};
-
-type PlaceGroup = {
-  group: string;
-  places: Place[];
-};
-
-export default function NearbyPlacesScreen() {
-  const [groupedPlaces, setGroupedPlaces] = useState<PlaceGroup[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        const groups = await fetchGroupedPlaces(6.0329, 80.2168); // Galle coordinates
-        setGroupedPlaces(groups);
-      } catch (err) {
-        console.error("Fetch error:", err);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
-
-  if (loading) {
-    return <ActivityIndicator size="large" style={{ flex: 1 }} />;
-  }
-
-  return (
-    <>
-    <TouchableHighlight onPress={() => router.push("/screens/MapScreen")} style={{ padding: 20, backgroundColor: '#f0f0f0', borderRadius: 10, margin: 10 }}>
-        <Text>Map Screen</Text> 
-      </TouchableHighlight>
-
-
-      <ScrollView contentContainerStyle={{ padding: 10 }}>
-        {groupedPlaces.map(({ group, places }) => (
-          <View key={group} style={{ marginBottom: 20 }}>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
-              {group} ({places.length})
-            </Text>
-            {places.length > 0 ? (
-              <FlatList
-                data={places}
-                keyExtractor={(item) => item.place_id}
-                renderItem={({ item }) => (
-                  <Card
-                    item={{
-                      id: Number(item.place_id),
-                      title: item.name,
-                      subtitle: item.vicinity,
-                      rating: typeof item.rating === "number" ? item.rating : (typeof item.rating === "string" ? Number(item.rating) : 0),
-                      image: item.photos?.[0] 
-                        ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${item.photos[0].photo_reference}&key=${GOOGLE_PLACES_API_KEY}`
-                        : "",
-                    }}
-                    onPress={() => console.log("Pressed:", item.place_id)}
-                    width={180}
-                  />
-                )}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-              />
-            ) : (
-              <Text style={{ color: '#666' }}>No public places found in this category.</Text>
-            )}
-          </View>
-        ))}
-      </ScrollView>
-
-      {/* load map screen */}
-      <MapScreen />
-    </>
-  );
-}
-// this the map view
-
-
-// // // import React, { useEffect, useRef } from 'react';
-// // // import { Animated, Text, View } from 'react-native';
-// // // import Card from '@/components/Card';
-
-// // // interface FadeInViewProps {
-// // //     style?: object;
-// // //     children?: React.ReactNode;
-// // // }
-
-// // // const FadeInView: React.FC<FadeInViewProps> = (props) => {
-// // //     const fadeAnim = useRef(new Animated.Value(0)).current; // Initial value for opacity: 0
-
-// // //     useEffect(() => {
-// // //         Animated.timing(fadeAnim, {
-// // //             toValue: 1,
-// // //             duration: 1000,
-// // //             useNativeDriver: true,
-// // //         }).start();
-// // //     }, [fadeAnim]);
-
-// // //     return (
-// // //         <Animated.View // Special animatable View
-// // //             style={{
-// // //                 ...props.style,
-// // //                 opacity: fadeAnim, // Bind opacity to animated value
-// // //             }}>
-// // //             {props.children}
-// // //         </Animated.View>
-// // //     );
-// // // };
-
-// // // // You can then use your `FadeInView` in place of a `View` in your components:
-// // // export default () => {
-// // //     return (
-// // //         <View
-// // //             style={{
-// // //                 flex: 1,
-// // //                 alignItems: 'center',
-// // //                 justifyContent: 'center',
-// // //             }}>
-// // //             <FadeInView
-// // //                 >
-// // //                <Text className="text-6xl font-bold">
-// // //         <Text className="text-primary">Lanka</Text>
-// // //         <Text className="text-secondary">Trails</Text>
-// // //       </Text>
-// // //             </FadeInView>
-// // //             <Card/>
-// // //         </View>
-// // //     );
-// // // };
-
-// // import React from 'react';
-// // import {
-// //   ScrollView,
-// //   Text,
-// //   StyleSheet,
-// //   View,
-// //   ImageBackground,
-// //   Animated,
-// //   useWindowDimensions,
-// //   useAnimatedValue,
-// // } from 'react-native';
-// // import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
-
-// // const images = new Array(6).fill(
-// //   'https://images.unsplash.com/photo-1556740749-887f6717d7e4',
-// // );
-
-// // const App = () => {
-// //   const scrollX = useAnimatedValue(0);
-
-// //   const {width: windowWidth} = useWindowDimensions();
-
-// //   return (
-// //     <SafeAreaProvider>
-// //       <SafeAreaView style={styles.container}>
-// //         <View style={styles.scrollContainer}>
-// //           <ScrollView
-// //             horizontal={true}
-// //             pagingEnabled
-// //             showsHorizontalScrollIndicator={false}
-// //             onScroll={Animated.event([
-// //               {
-// //                 nativeEvent: {
-// //                   contentOffset: {
-// //                     x: scrollX,
-// //                   },
-// //                 },
-// //               },
-// //             ])}
-// //             scrollEventThrottle={1}>
-// //             {images.map((image, imageIndex) => {
-// //               return (
-// //                 <View
-// //                   style={{width: windowWidth, height: 250}}
-// //                   key={imageIndex}>
-// //                   <ImageBackground source={{uri: image}} style={styles.card}>
-// //                     <View style={styles.textContainer}>
-// //                       <Text style={styles.infoText}>
-// //                         {'Image - ' + imageIndex}
-// //                       </Text>
-// //                     </View>
-// //                   </ImageBackground>
-// //                 </View>
-// //               );
-// //             })}
-// //           </ScrollView>
-// //           <View style={styles.indicatorContainer}>
-// //             {images.map((image, imageIndex) => {
-// //               const width = scrollX.interpolate({
-// //                 inputRange: [
-// //                   windowWidth * (imageIndex - 1),
-// //                   windowWidth * imageIndex,
-// //                   windowWidth * (imageIndex + 1),
-// //                 ],
-// //                 outputRange: [8, 16, 8],
-// //                 extrapolate: 'clamp',
-// //               });
-// //               return (
-// //                 <Animated.View
-// //                   key={imageIndex}
-// //                   style={[styles.normalDot, {width}]}
-// //                 />
-// //               );
-// //             })}
-// //           </View>
-// //         </View>
-// //       </SafeAreaView>
-// //     </SafeAreaProvider>
-// //   );
-// // };
-
-// // const styles = StyleSheet.create({
-// //   container: {
-// //     flex: 1,
-// //     alignItems: 'center',
-// //     justifyContent: 'center',
-// //   },
-// //   scrollContainer: {
-// //     height: 300,
-// //     alignItems: 'center',
-// //     justifyContent: 'center',
-// //   },
-// //   card: {
-// //     flex: 1,
-// //     marginVertical: 4,
-// //     marginHorizontal: 16,
-// //     borderRadius: 5,
-// //     overflow: 'hidden',
-// //     alignItems: 'center',
-// //     justifyContent: 'center',
-// //   },
-// //   textContainer: {
-// //     backgroundColor: 'rgba(0,0,0, 0.7)',
-// //     paddingHorizontal: 24,
-// //     paddingVertical: 8,
-// //     borderRadius: 5,
-// //   },
-// //   infoText: {
-// //     color: 'white',
-// //     fontSize: 16,
-// //     fontWeight: 'bold',
-// //   },
-// //   normalDot: {
-// //     height: 8,
-// //     width: 8,
-// //     borderRadius: 4,
-// //     backgroundColor: 'silver',
-// //     marginHorizontal: 4,
-// //   },
-// //   indicatorContainer: {
-// //     flexDirection: 'row',
-// //     alignItems: 'center',
-// //     justifyContent: 'center',
-// //   },
-// // });
-
-// // export default App;
-
-// import React, { useState, useEffect } from 'react';
+// import AddToTripButton from "@/components/AddToTripButtonNew";
+// import HeaderSection from "@/components/explorer-components/HeaderSection";
+// import { Ionicons } from "@expo/vector-icons";
+// import { router, useLocalSearchParams } from "expo-router";
+// import { Star, Clock, Calendar, Users } from "lucide-react-native";
+// import React, { useEffect, useState } from "react";
 // import {
-//   View,
-//   Text,
-//   ScrollView,
+//   ActivityIndicator,
+//   Alert,
 //   Image,
+//   Linking,
+//   Platform,
+//   ScrollView,
+//   Text,
+//   TextInput,
+//   ToastAndroid,
 //   TouchableOpacity,
-//   Animated,
-//   Dimensions,
-//   StatusBar,
-// } from 'react-native';
-// import { Heart, Share, ArrowLeft, Star } from 'lucide-react-native';
+//   View,
+// } from "react-native";
+// import MapView, { Marker } from "react-native-maps";
+// import { SafeAreaView } from "react-native-safe-area-context";
 
-// const { width } = Dimensions.get('window');
+// // Import service functions and types
+// import {
+//   fetchPublicPlaceDetails,
+//   isPublicPlaceService,
+// } from "@/services/publicPlaceService";
+// import type {
+//   PublicPlaceServiceDetail,
+//   ServiceDetailResponse,
+// } from "@/types/serviceTypes";
+// import { ServiceDTO } from "@/types/triptypes";
 
-// const GalleApp = () => {
+// const BASE_URL = process.env.EXPO_PUBLIC_URL;
+
+// // Convert PublicPlaceServiceDetail to ServiceDTO for AddToTripButton
+// const convertToServiceDTO = (
+//   detail: PublicPlaceServiceDetail
+// ): ServiceDTO => ({
+//   serviceId: detail.placeId || 0,
+//   serviceName: detail.name,
+//   category: "PUBLIC_PLACE" as const,
+//   locationBased: detail.location,
+//   mainImageUrl:
+//     detail.photos && detail.photos.length > 0
+//       ? detail.photos[0]
+//       : null,
+// });
+
+// const PublicPlaceDetailPage = () => {
+//   const { placeId } = useLocalSearchParams<{ placeId: string }>();
+//   const [placeDetail, setPlaceDetail] =
+//     useState<PublicPlaceServiceDetail | null>(null);
 //   const [loading, setLoading] = useState(true);
-//   const fadeInValue = new Animated.Value(0);
-//   const slideInValue = new Animated.Value(50);
-//   const scaleValue = new Animated.Value(0.8);
-
-//   useEffect(() => {
-//     // Simulate loading
-//     setTimeout(() => {
-//       setLoading(false);
-//       startAnimations();
-//     }, 1000);
-//   }, []);
-
-//   const startAnimations = () => {
-//     Animated.parallel([
-//       Animated.timing(fadeInValue, {
-//         toValue: 1,
-//         duration: 800,
-//         useNativeDriver: true,
-//       }),
-//       Animated.timing(slideInValue, {
-//         toValue: 0,
-//         duration: 600,
-//         useNativeDriver: true,
-//       }),
-//       Animated.timing(scaleValue, {
-//         toValue: 1,
-//         duration: 700,
-//         useNativeDriver: true,
-//       }),
-//     ]).start();
-//   };
-
-//   const AnimatedCard = ({ children, delay = 0 }) => {
-//     const cardFade = new Animated.Value(0);
-//     const cardSlide = new Animated.Value(30);
-
-//     useEffect(() => {
-//       if (!loading) {
-//         setTimeout(() => {
-//           Animated.parallel([
-//             Animated.timing(cardFade, {
-//               toValue: 1,
-//               duration: 500,
-//               useNativeDriver: true,
-//             }),
-//             Animated.timing(cardSlide, {
-//               toValue: 0,
-//               duration: 400,
-//               useNativeDriver: true,
-//             }),
-//           ]).start();
-//         }, delay);
-//       }
-//     }, [loading, delay]);
-
-//     return (
-//       <Animated.View
-//         style={{
-//           opacity: cardFade,
-//           transform: [{ translateY: cardSlide }],
-//         }}
-//       >
-//         {children}
-//       </Animated.View>
-//     );
-//   };
-
-//   const RestaurantCard = ({ name, rating, location, delay }) => {
-//     const [pressed, setPressed] = useState(false);
-//     const pressScale = new Animated.Value(1);
-
-//     const handlePressIn = () => {
-//       setPressed(true);
-//       Animated.spring(pressScale, {
-//         toValue: 0.95,
-//         useNativeDriver: true,
-//       }).start();
-//     };
-
-//     const handlePressOut = () => {
-//       setPressed(false);
-//       Animated.spring(pressScale, {
-//         toValue: 1,
-//         useNativeDriver: true,
-//       }).start();
-//     };
-
-//     return (
-//       <AnimatedCard delay={delay}>
-//         <TouchableOpacity
-//           onPressIn={handlePressIn}
-//           onPressOut={handlePressOut}
-//           activeOpacity={0.9}
-//         >
-//           <Animated.View
-//             className="bg-white rounded-xl shadow-sm mr-4 w-40"
-//             style={{
-//               transform: [{ scale: pressScale }],
-//             }}
-//           >
-//             <View className="h-24 bg-gradient-to-br from-orange-200 to-pink-200 rounded-t-xl relative overflow-hidden">
-//               <View className="absolute inset-0 bg-gradient-to-br from-orange-300/30 to-pink-300/30" />
-//               <View className="absolute bottom-2 left-2">
-//                 <View className="w-8 h-8 bg-white/20 rounded-full" />
-//               </View>
-//             </View>
-//             <View className="p-3">
-//               <Text className="font-semibold text-primary text-sm mb-1">{name}</Text>
-//               <Text className="text-xs text-gray-500 mb-2">{location}</Text>
-//               <View className="flex-row items-center">
-//                 <Star size={12} color="#FBB03B" fill="#FBB03B" />
-//                 <Text className="text-xs text-gray-600 ml-1">{rating}</Text>
-//               </View>
-//             </View>
-//           </Animated.View>
-//         </TouchableOpacity>
-//       </AnimatedCard>
-//     );
-//   };
-
-//   const ReviewCard = ({ name, location, review, delay }) => (
-//     <AnimatedCard delay={delay}>
-//       <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100">
-//         <View className="flex-row items-center mb-3">
-//           <View className="w-12 h-12 bg-teal-100 rounded-full mr-3 items-center justify-center">
-//             <Text className="text-teal-600 font-semibold">{name.charAt(0)}</Text>
-//           </View>
-//           <View className="flex-1">
-//             <Text className="font-semibold text-primary">{name}</Text>
-//             <Text className="text-sm text-gray-500">{location}</Text>
-//           </View>
-//         </View>
-//         <Text className="text-gray-700 text-sm leading-5 mb-3">"{review}"</Text>
-//         <View className="flex-row">
-//           {[...Array(5)].map((_, i) => (
-//             <Star key={i} size={14} color="#FBB03B" fill="#FBB03B" />
-//           ))}
-//         </View>
-//       </View>
-//     </AnimatedCard>
+//   const [error, setError] = useState<string | null>(null);
+//   const [isFavourite, setIsFavourite] = useState(false);
+//   const [userRating, setUserRating] = useState(0);
+//   const [userReview, setUserReview] = useState("");
+//   const [showFullDescription, setShowFullDescription] = useState(false);
+//   const [showMap, setShowMap] = useState(false);
+//   const [expandedTabs, setExpandedTabs] = useState<{ [key: number]: boolean }>(
+//     {}
 //   );
 
+//   // Fetch place details on component mount
+//   useEffect(() => {
+//     const fetchPlaceDetails = async () => {
+//       if (!placeId) return;
+
+//       try {
+//         setLoading(true);
+//         setError(null);
+
+//         const response: ServiceDetailResponse = await fetchPublicPlaceDetails(
+//           placeId
+//         );
+
+//         if (response.success && isPublicPlaceService(response.data)) {
+//           setPlaceDetail(response.data);
+//         } else {
+//           setError(response.message || "Failed to load place details");
+//         }
+//       } catch (err) {
+//         setError("Network error. Please check your connection.");
+//         console.error("Error fetching place details:", err);
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     fetchPlaceDetails();
+//   }, [placeId]);
+
+//   const handleFavourite = () => {
+//     setIsFavourite((prev) => {
+//       const newState = !prev;
+//       if (Platform.OS === "android") {
+//         ToastAndroid.show(
+//           newState ? "Added to favourites" : "Removed from favourites",
+//           ToastAndroid.SHORT
+//         );
+//       } else {
+//         Alert.alert(
+//           newState ? "Added to favourites" : "Removed from favourites"
+//         );
+//       }
+//       return newState;
+//     });
+//   };
+
+//   const handleShare = () => {
+//     const message = `Check out ${placeDetail?.name} in Sri Lanka!`;
+//     if (Platform.OS === "android") {
+//       ToastAndroid.show(
+//         `Sharing ${placeDetail?.name}`,
+//         ToastAndroid.SHORT
+//       );
+//     } else {
+//       Alert.alert("Share", message);
+//     }
+//   };
+
+//   const handleSubmitReview = () => {
+//     if (userRating === 0 || userReview.trim() === "") {
+//       Alert.alert("Please add a rating and write a review.");
+//       return;
+//     }
+
+//     // TODO: Implement API call to submit review
+//     Alert.alert("Thank you!", "Your review has been submitted.");
+
+//     // Reset inputs
+//     setUserRating(0);
+//     setUserReview("");
+//   };
+
+//   const renderFeature = (icon: React.ReactNode, label: string, value: string | number) => {
+//     return (
+//       <View className="flex-row items-center bg-gray-100 rounded-lg p-3 mb-2 mr-2">
+//         {icon}
+//         <Text className="ml-2 text-gray-700 text-sm">
+//           <Text className="font-semibold">{label}:</Text> {value}
+//         </Text>
+//       </View>
+//     );
+//   };
+
+//   // Toggle function for individual tabs
+//   const toggleTab = (tabId: number) => {
+//     setExpandedTabs((prev) => ({
+//       ...prev,
+//       [tabId]: !prev[tabId],
+//     }));
+//   };
+
+//   // Loading state
 //   if (loading) {
 //     return (
-//       <View className="flex-1 bg-white items-center justify-center">
-//         <Animated.View
-//           style={{
-//             transform: [
-//               {
-//                 rotate: fadeInValue.interpolate({
-//                   inputRange: [0, 1],
-//                   outputRange: ['0deg', '360deg'],
-//                 }),
-//               },
-//             ],
-//           }}
-//         >
-//           <View className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full" />
-//         </Animated.View>
-//         <Text className="text-primary mt-4 font-medium">Loading Galle...</Text>
-//       </View>
+//       <SafeAreaView className="flex-1 bg-white">
+//         <HeaderSection title="Loading..." onBack={() => router.back()} />
+//         <View className="flex-1 justify-center items-center">
+//           <ActivityIndicator size="large" color="#008080" />
+//           <Text className="mt-4 text-gray-600">Loading place details...</Text>
+//         </View>
+//       </SafeAreaView>
 //     );
 //   }
 
-//   return (
-//     <View className="flex-1 bg-gray-50">
-//       <StatusBar barStyle="light-content" backgroundColor="#0D9488" />
-      
-//       {/* Header */}
-//       <Animated.View 
-//         className="bg-primary pt-12 pb-4"
-//         style={{
-//           opacity: fadeInValue,
-//           transform: [{ translateY: slideInValue }],
-//         }}
-//       >
-//         <View className="flex-row items-center justify-between px-4">
-//           <TouchableOpacity>
-//             <ArrowLeft size={24} color="white" />
-//           </TouchableOpacity>
-//           <Text className="text-white text-xl font-bold">Galle</Text>
-//           <View className="flex-row">
-//             <TouchableOpacity className="mr-4">
-//               <Heart size={24} color="white" />
-//             </TouchableOpacity>
-//             <TouchableOpacity>
-//               <Share size={24} color="white" />
-//             </TouchableOpacity>
-//           </View>
-//         </View>
-//       </Animated.View>
-
-//       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-//         {/* Hero Section */}
-//         <Animated.View
-//           style={{
-//             opacity: fadeInValue,
-//             transform: [{ scale: scaleValue }],
-//           }}
-//         >
-//           <View className="bg-white mx-4 mt-4 rounded-xl shadow-sm overflow-hidden">
-//             <View className="h-48 bg-gradient-to-br from-blue-400 to-primary relative">
-//               <View className="absolute inset-0 bg-gradient-to-br from-blue-500/40 to-teal-600/40" />
-//               <View className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/30 to-transparent h-20" />
-//             </View>
-//             <View className="p-4">
-//               <Text className="text-lg font-bold text-gray-800 mb-2">
-//                 A Charming Coastal Gem in Sri Lanka
-//               </Text>
-//               <Text className="text-sm text-gray-600 leading-5">
-//                 Galle, on Sri Lanka's southwest coast, is a popular tourist destination known for its historic charm and scenic beauty. The iconic Galle Fort, a UNESCO World Heritage Site, boasts colonial architecture, cobblestone streets, and ocean views. Visitors enjoy beaches like Unawatuna and Jungle Beach, whale watching, turtle hatcheries, and local cuisine. With its blend of history, culture, and seaside relaxation, Galle offers a memorable travel experience.
-//               </Text>
-//             </View>
-//           </View>
-//         </Animated.View>
-
-//         {/* Navigation Tabs */}
-//         <AnimatedCard delay={200}>
-//           <View className="flex-row justify-between px-4 my-6">
-//             {['All', 'Accommodation', 'Foods', 'Transportation', 'Activities'].map((tab, index) => (
-//               <TouchableOpacity
-//                 key={tab}
-//                 className={`py-2 px-3 rounded-full ${
-//                   index === 0 ? 'bg-teal-600' : 'bg-white'
-//                 }`}
-//               >
-//                 <Text
-//                   className={`text-sm font-medium ${
-//                     index === 0 ? 'text-white' : 'text-gray-600'
-//                   }`}
-//                 >
-//                   {tab}
-//                 </Text>
-//               </TouchableOpacity>
-//             ))}
-//           </View>
-//         </AnimatedCard>
-
-//         {/* Accommodation Section */}
-//         <View className="mb-6">
-//           <AnimatedCard delay={300}>
-//             <View className="flex-row items-center justify-between px-4 mb-4">
-//               <Text className="text-lg font-bold text-gray-800">Accommodation</Text>
-//               <TouchableOpacity>
-//                 <Text className="text-primary font-medium">See more →</Text>
-//               </TouchableOpacity>
-//             </View>
-//           </AnimatedCard>
-          
-//           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="pl-4">
-//             <RestaurantCard 
-//               name="New sigiri restaurant" 
-//               rating="4.9" 
-//               location="Near to sigiri rock"
-//               delay={400}
-//             />
-//             <RestaurantCard 
-//               name="New sigiri restaurant" 
-//               rating="4.5" 
-//               location="Near to sigiri rock"
-//               delay={500}
-//             />
-//             <RestaurantCard 
-//               name="New sigiri restaurant" 
-//               rating="4.7" 
-//               location="Near to sigiri rock"
-//               delay={600}
-//             />
-//           </ScrollView>
-//         </View>
-
-//         {/* Foods Section */}
-//         <View className="mb-6">
-//           <AnimatedCard delay={700}>
-//             <View className="flex-row items-center justify-between px-4 mb-4">
-//               <Text className="text-lg font-bold text-gray-800">Foods</Text>
-//               <TouchableOpacity>
-//                 <Text className="text-teal-600 font-medium">See more →</Text>
-//               </TouchableOpacity>
-//             </View>
-//           </AnimatedCard>
-          
-//           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="pl-4">
-//             <RestaurantCard 
-//               name="New sigiri restaurant" 
-//               rating="4.4" 
-//               location="Near to sigiri rock"
-//               delay={800}
-//             />
-//             <RestaurantCard 
-//               name="New sigiri restaurant" 
-//               rating="4.9" 
-//               location="Near to sigiri rock"
-//               delay={900}
-//             />
-//             <RestaurantCard 
-//               name="New sigiri restaurant" 
-//               rating="4.6" 
-//               location="Near to sigiri rock"
-//               delay={1000}
-//             />
-//           </ScrollView>
-//         </View>
-
-//         {/* Transport Section */}
-//         <View className="mb-6">
-//           <AnimatedCard delay={1100}>
-//             <View className="flex-row items-center justify-between px-4 mb-4">
-//               <Text className="text-lg font-bold text-gray-800">Transport</Text>
-//               <TouchableOpacity>
-//                 <Text className="text-teal-600 font-medium">See more →</Text>
-//               </TouchableOpacity>
-//             </View>
-//           </AnimatedCard>
-          
-//           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="pl-4">
-//             <RestaurantCard 
-//               name="New sigiri restaurant" 
-//               rating="4.9" 
-//               location="Near to sigiri rock"
-//               delay={1200}
-//             />
-//             <RestaurantCard 
-//               name="New sigiri restaurant" 
-//               rating="4.3" 
-//               location="Near to sigiri rock"
-//               delay={1300}
-//             />
-//           </ScrollView>
-//         </View>
-
-//         {/* Reviews Section */}
-//         <View className="mb-6">
-//           <AnimatedCard delay={1400}>
-//             <View className="px-4 mb-4">
-//               <Text className="text-lg font-bold text-gray-800">Reviews</Text>
-//             </View>
-//           </AnimatedCard>
-          
-//           <View className="px-4">
-//             <ReviewCard
-//               name="Meera"
-//               location="Singapore"
-//               review="Well-preserved fort, lots of boutique shops, and great ocean views. It can get a bit crowded during peak season, but it's still worth the visit."
-//               delay={1500}
-//             />
-//             <ReviewCard
-//               name="Meera"
-//               location="Singapore"
-//               review="Well-preserved fort, lots of boutique shops, and great ocean views. It can get a bit crowded during peak season, but it's still worth the visit."
-//               delay={1600}
-//             />
-//           </View>
-
-//           <AnimatedCard delay={1700}>
-//             <TouchableOpacity className="mx-4 mt-4 bg-primary py-4 rounded-xl">
-//               <Text className="text-white text-center font-semibold">View all</Text>
-//             </TouchableOpacity>
-//           </AnimatedCard>
-//         </View>
-
-//         <View className="h-20" />
-//       </ScrollView>
-
-      
-//     </View>
-//   );
-// };
-
-// export default GalleApp;
-
-
-// // import { PageTransition, StaggeredListItem, LoadingSkeleton } from '@/components/transitions/animations';
-// // import React, { useState } from 'react';
-// // import { Text, SafeAreaView } from 'react-native';
-
-// // export default function AnotherScreen() {
-// //   const [visible, setVisible] = useState(true);
-
-// //   return (
-// //     <SafeAreaView className="flex-1 bg-white">
-// //       <PageTransition animationType="scaleIn" isVisible={visible}>
-// //         <StaggeredListItem index={0} delay={100}>
-// //           <Text className="text-xl mt-60 font-bold px-4">Hello World</Text>
-// //         </StaggeredListItem>
-// //       </PageTransition>
-// //     </SafeAreaView>
-// //   );
-// // }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// import React, { useState, useEffect } from 'react';
-// import {
-//   View,
-//   Text,
-//   ScrollView,
-//   TouchableOpacity,
-//   Animated,
-//   StatusBar,
-//   Alert,
-// } from 'react-native';
-// import { ArrowLeft, Heart, Share2 } from 'lucide-react-native';
-// import MenuCard, { MenuItem } from '@/components/explorer-components/MenuCard';
-
-// const SunsetFoodCafe = () => {
-//   const [liked, setLiked] = useState(false);
-  
-//   // Animated values for progress bars
-//   const [progressAnimations] = useState({
-//     excellent: new Animated.Value(0),
-//     veryGood: new Animated.Value(0),
-//     average: new Animated.Value(0),
-//     poor: new Animated.Value(0),
-//     terrible: new Animated.Value(0),
-//   });
-
-//   const reviewData = {
-//     excellent: 85,
-//     veryGood: 70,
-//     average: 45,
-//     poor: 20,
-//     terrible: 10,
-//   };
-
-//   const menuItems: MenuItem[] = [
-//     {
-//       id: 1,
-//       name: 'Grilled King Prawns',
-//       description: 'Large grilled prawns served with garlic butter',
-//       price: 'LKR 2500',
-//       rating: 4.8,
-//       image: { 
-//         uri: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg' 
-//       },
-//     },
-//     {
-//       id: 2,
-//       name: 'Grilled King Prawns',
-//       description: 'Large grilled prawns served with garlic butter',
-//       price: 'LKR 2500',
-//       rating: 4.8,
-//       image: { 
-//         uri: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg' 
-//       },
-//     },
-//     {
-//       id: 3,
-//       name: 'Grilled King Prawns',
-//       description: 'Fresh king prawns with local herbs',
-//       price: 'LKR 2800',
-//       rating: 4.6,
-//       image: { 
-//         uri: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg' 
-//       },
-//     },
-//     {
-//       id: 4,
-//       name: 'Grilled King Prawns',
-//       description: 'Spiced grilled prawns with local sauce',
-//       price: 'LKR 2500',
-//       rating: 4.8,
-//       image: { 
-//         uri: 'https://images.squarespace-cdn.com/content/v1/5a3bb03b4c326d76de73ddaa/9732566d-6b33-4a1a-ba0c-1b73ed8848a4/The+Common+Wanderer-9888.jpg' 
-//       },
-//     },
-//   ];
-
-//   useEffect(() => {
-//     // Animate progress bars with staggered timing
-//     const animations = Object.keys(progressAnimations).map((key, index) => {
-//       const typedKey = key as keyof typeof progressAnimations;
-//       return Animated.timing(progressAnimations[typedKey], {
-//         toValue: reviewData[typedKey] / 100,
-//         duration: 1000,
-//         delay: index * 200,
-//         useNativeDriver: false,
-//       });
-//     });
-
-//     Animated.stagger(100, animations).start();
-//   }, []);
-
-//   type ProgressBarProps = {
-//     label: string;
-//     animatedValue: Animated.Value;
-//     color?: string;
-//   };
-
-//   const ProgressBar = ({ label, animatedValue, color = '#10b981' }: ProgressBarProps) => (
-//     <View className="flex-row items-center mb-2">
-//       <Text className="text-sm text-gray-600 w-16 text-right mr-3">{label}</Text>
-//       <View className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-//         <Animated.View
-//           className="h-full rounded-full"
-//           style={{
-//             backgroundColor: color,
-//             width: animatedValue.interpolate({
-//               inputRange: [0, 1],
-//               outputRange: ['0%', '100%'],
-//             }),
-//           }}
-//         />
-//       </View>
-//     </View>
-//   );
-
-//   const handleMenuItemPress = (item: MenuItem) => {
-//     Alert.alert(
-//       item.name,
-//       `${item.description}\n\nPrice: ${item.price}\nRating: ${item.rating}⭐`,
-//       [
-//         { text: 'Cancel', style: 'cancel' },
-//         { text: 'Add to Cart', style: 'default' },
-//       ]
-//     );
-//   };
-
-//   const handleBackPress = () => {
-//     Alert.alert('Go Back', 'Are you sure you want to go back?', [
-//       { text: 'Cancel', style: 'cancel' },
-//       { text: 'Yes', style: 'default' },
-//     ]);
-//   };
-
-//   const handleSharePress = () => {
-//     Alert.alert('Share', 'Share Sunset Food Cafe with friends!');
-//   };
-
-//   return (
-//     <View className="flex-1 bg-gray-50">
-//       <StatusBar barStyle="dark-content" backgroundColor="#f9fafb" />
-      
-//       {/* Header */}
-//       <View className="flex-row items-center justify-between px-4 py-3 bg-white">
-//         <TouchableOpacity className="p-2" onPress={handleBackPress}>
-//           <ArrowLeft size={24} color="#374151" />
-//         </TouchableOpacity>
-//         <View className="flex-row items-center space-x-4">
-//           <TouchableOpacity 
-//             onPress={() => setLiked(!liked)}
-//             className="p-2"
+//   // Error state
+//   if (error) {
+//     return (
+//       <SafeAreaView className="flex-1 bg-white">
+//         <HeaderSection title="Error" onBack={() => router.back()} />
+//         <View className="flex-1 justify-center items-center px-6">
+//           <Ionicons name="alert-circle" size={64} color="#ef4444" />
+//           <Text className="mt-4 text-xl font-semibold text-gray-800">
+//             Oops!
+//           </Text>
+//           <Text className="mt-2 text-gray-600 text-center">{error}</Text>
+//           <TouchableOpacity
+//             className="mt-6 bg-primary px-6 py-3 rounded-lg"
+//             onPress={() => router.back()}
 //           >
-//             <Heart 
-//               size={24} 
-//               color={liked ? "#ef4444" : "#9ca3af"} 
-//               fill={liked ? "#ef4444" : "none"}
-//             />
-//           </TouchableOpacity>
-//           <TouchableOpacity className="p-2" onPress={handleSharePress}>
-//             <Share2 size={24} color="#9ca3af" />
+//             <Text className="text-white font-semibold">Go Back</Text>
 //           </TouchableOpacity>
 //         </View>
-//       </View>
+//       </SafeAreaView>
+//     );
+//   }
 
-//       <ScrollView showsVerticalScrollIndicator={false}>
-//         {/* Hero Images */}
-//         <ScrollView 
-//           horizontal 
-//           showsHorizontalScrollIndicator={false}
-//           className="mb-6"
-//           pagingEnabled
-//         >
-//           {/* Hero images would go here */}
-//           <View className="w-screen h-64 bg-gradient-to-r from-blue-400 to-blue-600 items-center justify-center">
-//             <Text className="text-white text-xl font-bold">Beautiful Ocean View</Text>
-//           </View>
-//           <View className="w-screen h-64 bg-gradient-to-r from-orange-400 to-pink-600 items-center justify-center">
-//             <Text className="text-white text-xl font-bold">Stunning Sunset</Text>
-//           </View>
-//         </ScrollView>
+//   // Main content
+//   if (!placeDetail) return null;
 
-//         {/* Restaurant Info */}
-//         <View className="px-4 mb-6">
-//           <Text className="text-2xl font-bold text-gray-800 mb-2">
-//             Sunset Food Cafe
-//           </Text>
-//           <Text className="text-gray-600 leading-6">
-//             Located right on the golden shores of Unawatuna, Sunset Food Cafe is a cozy beachside spot famous for its fresh seafood and stunning sunset views. Whether you're here for a romantic dinner, a casual cocktail or just to chill with friends, this cafe promises an unforgettable dining experience.
-//           </Text>
-//         </View>
+//   return (
+//     <>
+//       <SafeAreaView className="bg-white">
+//         <HeaderSection
+//           title={placeDetail.name}
+//           onBack={() => router.back()}
+//           showFavorite={true}
+//           isFavorite={isFavourite}
+//           onFavoritePress={handleFavourite}
+//         />
+//       </SafeAreaView>
 
-//         {/* Menu Highlights */}
-//         <View className="px-4 mb-6">
-//           <Text className="text-xl font-bold text-gray-800 mb-4">
-//             Menu Highlights
-//           </Text>
-//           <View className="flex-row flex-wrap justify-between">
-//             {menuItems.map((item) => (
-//               <View key={item.id} className="w-[48%]">
-//                 <MenuCard 
-//                   item={item} 
-//                   onPress={handleMenuItemPress}
+//       <ScrollView className="flex-1 mb-20 bg-gray-50">
+//         {/* Image Gallery */}
+//         {placeDetail.photos && placeDetail.photos.length > 0 && (
+//           <View className="ml-6 mb-6">
+//             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+//               {placeDetail.photos.map((photo, index) => (
+//                 <Image
+//                   key={index}
+//                   source={{
+//                     uri: photo.startsWith("http")
+//                       ? photo
+//                       : `${BASE_URL}${photo}`,
+//                   }}
+//                   className="w-96 h-96 rounded-lg mr-4 shadow-sm"
+//                   resizeMode="cover"
 //                 />
-//               </View>
-//             ))}
+//               ))}
+//             </ScrollView>
 //           </View>
+//         )}
+
+//         {/* Basic Information */}
+//         <View className="px-4 py-3 border-t border-b border-gray-100 bg-white">
+//           <Text className="text-2xl font-semibold text-gray-500 mb-3">
+//             Overview
+//           </Text>
+
+//           <View className="flex-row items-start mb-3">
+//             <Ionicons name="location" size={24} color="#008080" />
+//             <Text className="ml-2 text-gray-700 w-[85%]">
+//               {placeDetail.vicinity || placeDetail.formattedAddress}
+//             </Text>
+//           </View>
+
+//           {placeDetail.rating && (
+//             <View className="flex-row items-center mb-3">
+//               <Ionicons name="star" size={24} color="#FBB03B" />
+//               <Text className="ml-2 text-gray-700">
+//                 {placeDetail.rating} ({placeDetail.userRatingsTotal || 0} reviews)
+//               </Text>
+//             </View>
+//           )}
+
+//           {placeDetail.priceLevel !== undefined && (
+//             <View className="flex-row items-center">
+//               <Ionicons name="cash" size={24} color="#008080" />
+//               <Text className="ml-2 text-gray-700">
+//                 Price Level: {"$".repeat(placeDetail.priceLevel)}
+//               </Text>
+//             </View>
+//           )}
 //         </View>
 
-//         {/* Reviews Section */}
-//         <View className="px-4 mb-8">
-//           <View className="bg-white rounded-xl p-6 shadow-sm">
-//             {/* Overall Rating */}
-//             <View className="flex-row items-center mb-6">
-//               <View className="bg-teal-500 rounded-full w-16 h-16 items-center justify-center mr-4">
-//                 <Text className="text-white text-xl font-bold">4.9</Text>
-//               </View>
-//               <View className="flex-1">
-//                 <Text className="text-lg font-semibold text-gray-800 mb-1">
-//                   Reviews
-//                 </Text>
-//                 <Text className="text-sm text-gray-600">
-//                   Based on 284 reviews
-//                 </Text>
+//         <View className="px-4 mt-6 mb-6">
+//           <AddToTripButton service={convertToServiceDTO(placeDetail)} />
+//         </View>
+
+//         {/* Place Details */}
+//         <View className="p-5">
+//           <Text className="text-3xl font-bold text-primary mb-4">
+//             About This Place
+//           </Text>
+
+//           {/* Place Type and Features */}
+//           <View className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+//             <View className="flex-row justify-between mb-3">
+//               <Text className="font-semibold text-gray-700">Type:</Text>
+//               <Text className="text-gray-600 capitalize">
+//                 {placeDetail.types?.join(", ").replace(/_/g, " ") || "Public Place"}
+//               </Text>
+//             </View>
+            
+//             {/* Features Grid */}
+//             <View className="mt-3">
+//               <Text className="font-semibold text-gray-700 mb-2">Features:</Text>
+//               <View className="flex-row flex-wrap">
+//                 {placeDetail.openingHours && 
+//                   renderFeature(
+//                     <Clock size={16} color="#008080" />,
+//                     "Open Now",
+//                     placeDetail.openingHours.openNow ? "Yes" : "No"
+//                   )
+//                 }
+                
+//                 {placeDetail.currentOpeningHours && 
+//                   renderFeature(
+//                     <Clock size={16} color="#008080" />,
+//                     "Hours",
+//                     "See schedule"
+//                   )
+//                 }
+                
+//                 {placeDetail.utcOffsetMinutes !== undefined && 
+//                   renderFeature(
+//                     <Clock size={16} color="#008080" />,
+//                     "Timezone",
+//                     `UTC${placeDetail.utcOffsetMinutes >= 0 ? '+' : ''}${placeDetail.utcOffsetMinutes/60}`
+//                   )
+//                 }
+                
+//                 {placeDetail.popularity && 
+//                   renderFeature(
+//                     <Users size={16} color="#008080" />,
+//                     "Popularity",
+//                     `${placeDetail.popularity}/100`
+//                   )
+//                 }
 //               </View>
 //             </View>
+//           </View>
+//         </View>
 
-//             {/* Progress Bars */}
-//             <ProgressBar 
-//               label="Excellent" 
-//               animatedValue={progressAnimations.excellent}
-//               color="#10b981"
-//             />
-//             <ProgressBar 
-//               label="Very Good" 
-//               animatedValue={progressAnimations.veryGood}
-//               color="#22c55e"
-//             />
-//             <ProgressBar 
-//               label="Average" 
-//               animatedValue={progressAnimations.average}
-//               color="#eab308"
-//             />
-//             <ProgressBar 
-//               label="Poor" 
-//               animatedValue={progressAnimations.poor}
-//               color="#f97316"
-//             />
-//             <ProgressBar 
-//               label="Terrible" 
-//               animatedValue={progressAnimations.terrible}
-//               color="#ef4444"
-//             />
+//         {/* Opening Hours */}
+//         {placeDetail.currentOpeningHours && (
+//           <View className="px-4 mb-6">
+//             <Text className="text-2xl font-semibold text-gray-500 mb-4">
+//               Opening Hours
+//             </Text>
+//             <View className="bg-white rounded-lg p-4 shadow-sm">
+//               {placeDetail.currentOpeningHours.weekdayDescriptions?.map((day, index) => (
+//                 <View key={index} className="flex-row justify-between py-2 border-b border-gray-100 last:border-b-0">
+//                   <Text className="text-gray-700">{day.split(": ")[0]}</Text>
+//                   <Text className="text-gray-600 font-medium">{day.split(": ")[1]}</Text>
+//                 </View>
+//               ))}
+              
+//               {placeDetail.currentOpeningHours.periods && (
+//                 <View className="mt-3">
+//                   <Text className="font-semibold text-gray-700 mb-2">Current Week:</Text>
+//                   {placeDetail.currentOpeningHours.periods.map((period, index) => (
+//                     <View key={index} className="mb-2">
+//                       <Text className="text-gray-600">
+//                         {period.open.day}: {period.open.time} - {period.close ? `${period.close.time}` : "Open 24h"}
+//                       </Text>
+//                     </View>
+//                   ))}
+//                 </View>
+//               )}
+//             </View>
+//           </View>
+//         )}
+
+//         {/* Location Map */}
+//         {placeDetail.geometry && placeDetail.geometry.location && (
+//           <View className="px-4 mb-6">
+//             <View className="flex-row items-center justify-between mb-3">
+//               <Text className="text-2xl font-semibold text-gray-500">
+//                 Location
+//               </Text>
+//             </View>
+
+//             {/* Address Display - Always visible */}
+//             <View className="p-3 bg-white rounded-lg shadow-sm mb-3">
+//               <TouchableOpacity
+//                 onPress={() => setShowMap(!showMap)}
+//                 className="flex-row items-center"
+//               >
+//                 <Ionicons name="location" size={20} color="#008080" />
+//                 <View className="flex-1 ml-2">
+//                   <Text className="text-sm font-medium text-gray-700 mb-1">
+//                     Address
+//                   </Text>
+//                   <Text className="text-sm text-gray-600">
+//                     {placeDetail.vicinity || placeDetail.formattedAddress}
+//                   </Text>
+//                 </View>
+//                 <Ionicons
+//                   name={showMap ? "chevron-up" : "chevron-down"}
+//                   size={20}
+//                   color="#666"
+//                 />
+//               </TouchableOpacity>
+//             </View>
+
+//             {/* Map - Conditionally visible */}
+//             {showMap && (
+//               <View
+//                 className="rounded-lg overflow-hidden"
+//                 style={{ height: 200 }}
+//               >
+//                 <MapView
+//                   style={{ flex: 1 }}
+//                   initialRegion={{
+//                     latitude: placeDetail.geometry.location.lat,
+//                     longitude: placeDetail.geometry.location.lng,
+//                     latitudeDelta: 0.01,
+//                     longitudeDelta: 0.01,
+//                   }}
+//                   showsUserLocation={true}
+//                   showsMyLocationButton={true}
+//                   showsCompass={true}
+//                   scrollEnabled={true}
+//                   zoomEnabled={true}
+//                 >
+//                   <Marker
+//                     coordinate={{
+//                       latitude: placeDetail.geometry.location.lat,
+//                       longitude: placeDetail.geometry.location.lng,
+//                     }}
+//                     title={placeDetail.name}
+//                     description={placeDetail.vicinity}
+//                   />
+//                 </MapView>
+//               </View>
+//             )}
+//           </View>
+//         )}
+
+//         {/* Reviews Section */}
+//         {placeDetail.reviews && placeDetail.reviews.length > 0 && (
+//           <View className="px-4 mb-6">
+//             <Text className="text-2xl font-semibold text-gray-500 mb-4">
+//               Reviews
+//             </Text>
+            
+//             {placeDetail.reviews.slice(0, 3).map((review, index) => (
+//               <View key={index} className="bg-white rounded-lg p-4 mb-3 shadow-sm">
+//                 <View className="flex-row items-center mb-2">
+//                   {review.profilePhotoUrl ? (
+//                     <Image 
+//                       source={{ uri: review.profilePhotoUrl }} 
+//                       className="w-10 h-10 rounded-full mr-3"
+//                     />
+//                   ) : (
+//                     <View className="w-10 h-10 rounded-full bg-gray-300 mr-3 items-center justify-center">
+//                       <Ionicons name="person" size={20} color="#666" />
+//                     </View>
+//                   )}
+//                   <View>
+//                     <Text className="font-semibold text-gray-800">
+//                       {review.authorName || "Anonymous"}
+//                     </Text>
+//                     <View className="flex-row items-center">
+//                       <Star size={14} color="#FBB03B" fill="#FBB03B" />
+//                       <Text className="ml-1 text-gray-600 text-sm">
+//                         {review.rating}
+//                       </Text>
+//                       <Text className="ml-2 text-gray-400 text-sm">
+//                         {review.relativeTimeDescription}
+//                       </Text>
+//                     </View>
+//                   </View>
+//                 </View>
+                
+//                 <Text className="text-gray-700 mt-2">
+//                   {review.text}
+//                 </Text>
+//               </View>
+//             ))}
+            
+//             {placeDetail.reviews.length > 3 && (
+//               <TouchableOpacity 
+//                 className="bg-primary py-3 rounded-lg items-center mt-2"
+//                 onPress={() => {
+//                   // Navigate to full reviews page
+//                   // router.push(`/place/reviews/${placeId}`);
+//                 }}
+//               >
+//                 <Text className="text-white font-medium">
+//                   View All {placeDetail.reviews.length} Reviews
+//                 </Text>
+//               </TouchableOpacity>
+//             )}
+//           </View>
+//         )}
+
+//         {/* Leave a Review Section */}
+//         <View className="px-4 mb-20">
+//           <Text className="text-3xl font-semibold text-gray-500 mb-4">
+//             Leave a Review
+//           </Text>
+
+//           <View className="bg-white rounded-xl shadow-sm p-4">
+//             {/* Rating Stars */}
+//             <Text className="text-gray-500 font-medium text-lg mb-2">
+//               Your Rating
+//             </Text>
+//             <View className="flex-row mb-4">
+//               {[1, 2, 3, 4, 5].map((star) => (
+//                 <TouchableOpacity
+//                   key={star}
+//                   onPress={() => setUserRating(star)}
+//                 >
+//                   <Star
+//                     size={24}
+//                     color={userRating >= star ? "#FBB03B" : "#E5E7EB"}
+//                     fill={userRating >= star ? "#FBB03B" : "none"}
+//                     className="mr-1"
+//                   />
+//                 </TouchableOpacity>
+//               ))}
+//             </View>
+
+//             {/* Review Input */}
+//             <Text className="text-gray-500 font-medium mb-1 text-lg">
+//               Your Review
+//             </Text>
+//             <View className="bg-gray-100 rounded-lg px-3 py-2 mb-4">
+//               <TextInput
+//                 multiline
+//                 placeholder="Share your experience..."
+//                 value={userReview}
+//                 onChangeText={setUserReview}
+//                 className="text-sm text-gray-800"
+//                 style={{ minHeight: 80 }}
+//               />
+//             </View>
+
+//             {/* Submit Button */}
+//             <TouchableOpacity
+//               onPress={handleSubmitReview}
+//               className="bg-primary py-3 rounded-lg items-center"
+//             >
+//               <Text className="text-white text-lg font-medium">
+//                 Submit Review
+//               </Text>
+//             </TouchableOpacity>
+
+//             <TouchableOpacity
+//               onPress={() => router.push("../../support/complaints" as any)}
+//               className="border-4 border-primary mt-5 bg-white py-3 items-center rounded-full"
+//             >
+//               <Text className="text-primary text-lg font-bold">
+//                 Report an Issue
+//               </Text>
+//             </TouchableOpacity>
 //           </View>
 //         </View>
 //       </ScrollView>
-//     </View>
+//     </>
 //   );
 // };
 
-// export default SunsetFoodCafe;
+// export default PublicPlaceDetailPage;
