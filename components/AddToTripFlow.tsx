@@ -1048,7 +1048,7 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
 
   const modalTranslateY = slideAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [screenHeight * 0.7, 0],
+    outputRange: [screenHeight * 1, 0],
   });
 
   const formatTripDates = (startDate: string, endDate: string) => {
