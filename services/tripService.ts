@@ -103,3 +103,13 @@ export const acceptTripInvitation = async (token: string): Promise<ApiResponse<T
         throw error;
     }
 };
+
+// Get trip participants
+export const getTripParticipants = async (tripId: number): Promise<ApiResponse<any[]>> => {
+    try {
+        const response = await api.get<ApiResponse<any[]>>(`/trips/${tripId}/participants`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};

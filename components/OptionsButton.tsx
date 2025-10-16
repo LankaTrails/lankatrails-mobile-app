@@ -13,10 +13,13 @@ import { router } from 'expo-router';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-const OptionsButton = () => {
+interface OptionsButtonProps {
+  tripId?: string;
+}
+
+const OptionsButton: React.FC<OptionsButtonProps> = ({ tripId }) => {
   const [isVisible, setIsVisible] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
   // Individual animation values for staggered effect
@@ -106,17 +109,21 @@ const OptionsButton = () => {
     }
   };
 
-  const handleOptionPress = (option) => {
+  const handleOptionPress = (option: string) => {
     console.log(`${option} pressed`);
     toggleMenu();
     // Add your navigation logic here
-    if (option === 'Budget')
-      router.push('./{id}/BudgetView');
-    else if (option === 'Map')
+    if (option === 'Budget') {
+      if (tripId) {
+        router.push(`/(tabs)/trips/${tripId}/BudgetView` as any);
+      } else {
+        alert('Trip ID not available');
+      }
+    } else if (option === 'Map') {
       alert("Route -> map view!");
-    else if (option === 'Chat')
-     router.push('../../../screens/Chat');
-
+    } else if (option === 'Chat') {
+      router.push('../../../screens/Chat');
+    }
   };
 
   const options = [
@@ -128,7 +135,7 @@ const OptionsButton = () => {
 
   const animationValues = [option1Anim, option2Anim, option3Anim, option4Anim];
 
-  const getOptionStyle = (index) => {
+  const getOptionStyle = (index: number) => {
     const animValue = animationValues[index];
     const angle = (index * 60) + 150; // Spread options in an arc
     const radius = 80;

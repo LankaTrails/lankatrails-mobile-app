@@ -196,7 +196,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     paddingVertical: 5,
     borderRadius: 24,
-    elevation: 6,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
