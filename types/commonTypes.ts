@@ -27,3 +27,15 @@ export interface Location {
     latitude: number;
     longitude: number;
 }
+
+export interface UserPreferences {
+  preferredCurrency: string;
+  timeZone: string;
+  language: string;
+  is24Hour: boolean;
+  measurementSystem: string;
+  notificationsEnabled: boolean;
+  emailNotifications: boolean;
+  pushNotifications: boolean;
+  smsNotifications: boolean;
+}

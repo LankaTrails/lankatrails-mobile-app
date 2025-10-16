@@ -2,6 +2,7 @@ import InputField from "@/components/InputField";
 import LongButton from "@/components/LongButton";
 import PhoneInput from "@/components/PhoneInput";
 import { signUp } from "@/services/userService";
+import { getDeviceLocalization } from "@/utils/localizationUtils";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { router, useLocalSearchParams } from "expo-router";
@@ -20,6 +21,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import type { UserPreferences } from "@/types/commonTypes";
 
 const { width, height } = Dimensions.get("window");
 
@@ -200,14 +202,34 @@ const SignUp = () => {
     try {
       setIsLoading(true);
 
+      // Get device localization preferences
+      const deviceLocalization = getDeviceLocalization();
+
+      // Convert device localization to UserPreferences format
+      const userPreferences: UserPreferences = {
+        preferredCurrency: deviceLocalization.currency,
+        timeZone: deviceLocalization.timeZone,
+        language: deviceLocalization.languageTag,
+        is24Hour: deviceLocalization.is24HourClock,
+        measurementSystem: deviceLocalization.measurementSystem,
+        // Set default notification preferences
+        notificationsEnabled: false,
+        emailNotifications: false,
+        pushNotifications: false,
+        smsNotifications: false,
+      };
+
       const response = await signUp(
         form.firstName,
         form.lastName,
         form.country,
         form.email,
         form.phone,
-        form.password
+        form.password,
+        userPreferences
       );
+
+      console.log(deviceLocalization);
 
       // Success - show success message with more details
       // alert message to say please check your email and verify your account to continue

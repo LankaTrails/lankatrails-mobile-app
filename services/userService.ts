@@ -1,4 +1,5 @@
 import api from '../api/axiosInstance';
+import type { UserPreferences } from '../types/commonTypes';
 
 // Types for API responses
 interface SignUpResponse {
@@ -49,6 +50,7 @@ export async function signUp(
   email: string,
   phone: string,
   password: string,
+  userPreferences?: UserPreferences,
 ): Promise<SignUpResponse> {
   try {
     const response = await api.post<SignUpResponse>('/auth/signup/tourist', {
@@ -58,6 +60,7 @@ export async function signUp(
       password,
       phoneNumber: phone.trim(),
       country: country.trim(),
+      userPreferences,
     });
 
     // Check if the API response indicates success
