@@ -26,6 +26,9 @@ import Icon from "react-native-vector-icons/Ionicons";
 import { useNavigation } from "@react-navigation/native";
 import {
   getDirections,
+  getDirectionsWithApiInfo,
+  getTravelModeRecommendations,
+  logRouteDetails,
   DirectionsRoute,
   DirectionsWaypoint,
 } from "@/services/googleDirectionsService";
@@ -63,11 +66,19 @@ const TripMapView: React.FC = () => {
   const [showLegend, setShowLegend] = useState(false);
   const [showRoutes, setShowRoutes] = useState(false); // Changed to false by default
   const [routeSegments, setRouteSegments] = useState<DirectionsRoute[]>([]);
+  const [showRouteDetails, setShowRouteDetails] = useState(false); // Add state for route details visibility
   const [loadingRoutes, setLoadingRoutes] = useState(false);
   const [routeCoordinates, setRouteCoordinates] = useState<
     { latitude: number; longitude: number }[]
   >([]);
   const [routesLoaded, setRoutesLoaded] = useState(false); // Track if routes have been loaded
+  const [routeApiUsed, setRouteApiUsed] = useState<"routes" | "legacy" | null>(
+    null
+  ); // Track which API was used
+  const [travelMode, setTravelMode] = useState<
+    "driving" | "walking" | "transit" | "motorcycle"
+  >("driving");
+  const [showTravelModeSelector, setShowTravelModeSelector] = useState(false);
   const mapRef = useRef<MapView>(null);
 
   // Debug: Log the tripId to see what we're receiving
@@ -131,6 +142,7 @@ const TripMapView: React.FC = () => {
         console.log("Creating routes for", sortedMarkers.length, "markers");
 
         const routes: DirectionsRoute[] = [];
+        let apiError = false;
 
         // Create route segments between consecutive markers
         for (let i = 0; i < sortedMarkers.length - 1; i++) {
@@ -150,21 +162,37 @@ const TripMapView: React.FC = () => {
             } → ${sortedMarkers[i + 1].title}`
           );
 
-          const route = await getDirections(origin, destination, [], "driving");
+          const routeResult = await getDirectionsWithApiInfo(
+            origin,
+            destination,
+            [],
+            travelMode
+          );
 
-          if (route) {
-            routes.push(route);
+          if (routeResult) {
+            routes.push(routeResult.route);
+
+            // Track which API was used (use the most recent one)
+            setRouteApiUsed(routeResult.apiUsed);
+
             console.log(
-              `Route ${i + 1} found: ${route.distance}, ${route.duration}, ${
-                route.coordinates.length
+              `Route ${i + 1} found via ${routeResult.apiUsed} API: ${
+                routeResult.route.distance
+              }, ${routeResult.route.duration}, ${
+                routeResult.route.coordinates.length
               } points`
             );
+
+            // Log detailed route information
+            logRouteDetails(routeResult.route, travelMode);
           } else {
             console.warn(
               `No route found between ${sortedMarkers[i].title} and ${
                 sortedMarkers[i + 1].title
               }`
             );
+            apiError = true;
+            // Continue trying other routes even if one fails
           }
 
           // Add small delay to avoid rate limiting
@@ -173,16 +201,42 @@ const TripMapView: React.FC = () => {
 
         setRouteSegments(routes);
 
-        // Also set the basic coordinates for fallback polyline
+        // Always set fallback coordinates for straight line connections
         const coordinates = sortedMarkers.map((marker) => marker.coordinate);
         setRouteCoordinates(coordinates);
+
+        // Show user-friendly message if API failed but we have fallback
+        if (apiError && routes.length === 0) {
+          Alert.alert(
+            "Route Information",
+            "Unable to fetch detailed driving directions. Showing direct connections between locations instead.",
+            [{ text: "OK" }]
+          );
+        }
 
         console.log("All routes fetched:", routes.length, "segments");
         setRoutesLoaded(true);
       } catch (error) {
         console.error("Error fetching routes:", error);
+
+        // Show user-friendly error message
+        Alert.alert(
+          "Route Error",
+          "Unable to load driving directions. Please check your internet connection and try again.",
+          [{ text: "OK" }]
+        );
+
         // Fallback to simple straight lines
-        const coordinates = markers.map((marker) => marker.coordinate);
+        const sortedMarkers = [...markers].sort((a, b) => {
+          if (a.type === "start_location") return -1;
+          if (b.type === "start_location") return 1;
+          if (!a.startTime || !b.startTime) return 0;
+          return (
+            new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+          );
+        });
+
+        const coordinates = sortedMarkers.map((marker) => marker.coordinate);
         setRouteCoordinates(coordinates);
         setRoutesLoaded(true);
       } finally {
@@ -198,6 +252,37 @@ const TripMapView: React.FC = () => {
       await fetchRoutes();
     }
     setShowRoutes(!showRoutes);
+  };
+
+  // Handle travel mode change
+  const handleTravelModeChange = async (
+    newMode: "driving" | "walking" | "transit" | "motorcycle"
+  ) => {
+    if (newMode === travelMode) {
+      setShowTravelModeSelector(false);
+      return;
+    }
+
+    setTravelMode(newMode);
+    setShowTravelModeSelector(false);
+
+    // Reset routes and refetch with new travel mode if routes are currently shown
+    if (showRoutes && markers.length > 1) {
+      setRouteSegments([]);
+      setRouteCoordinates([]);
+      setRoutesLoaded(false);
+      setRouteApiUsed(null);
+
+      // Show loading and refetch routes
+      setLoadingRoutes(true);
+      await fetchRoutes();
+    } else {
+      // Just reset for next time
+      setRouteSegments([]);
+      setRouteCoordinates([]);
+      setRoutesLoaded(false);
+      setRouteApiUsed(null);
+    }
   };
 
   const getMarkerColor = (type: string): string => {
@@ -223,6 +308,21 @@ const TripMapView: React.FC = () => {
         return "#EC4899"; // Pink
       default:
         return "#6B7280"; // Gray
+    }
+  };
+
+  const getTravelModeColor = (mode: string): string => {
+    switch (mode) {
+      case "driving":
+        return "#008080"; // Teal
+      case "walking":
+        return "#10B981"; // Green
+      case "transit":
+        return "#3B82F6"; // Blue
+      case "motorcycle":
+        return "#F59E0B"; // Orange
+      default:
+        return "#008080";
     }
   };
 
@@ -555,6 +655,11 @@ const TripMapView: React.FC = () => {
           showsMyLocationButton={false}
           showsCompass={true}
           showsScale={true}
+          onPress={() => {
+            if (showTravelModeSelector) {
+              setShowTravelModeSelector(false);
+            }
+          }}
         >
           {markers.map((marker) => (
             <Marker
@@ -580,7 +685,7 @@ const TripMapView: React.FC = () => {
               <Polyline
                 key={`route-${index}`}
                 coordinates={route.coordinates}
-                strokeColor="#008080"
+                strokeColor={getTravelModeColor(travelMode)}
                 strokeWidth={4}
                 lineCap="round"
                 lineJoin="round"
@@ -593,7 +698,7 @@ const TripMapView: React.FC = () => {
             routeCoordinates.length > 1 && (
               <Polyline
                 coordinates={routeCoordinates}
-                strokeColor="#008080"
+                strokeColor={getTravelModeColor(travelMode)}
                 strokeWidth={3}
                 lineDashPattern={[10, 10]}
               />
@@ -611,6 +716,27 @@ const TripMapView: React.FC = () => {
         </View>
 
         <View style={styles.topRightControls}>
+          <TouchableOpacity
+            style={[
+              styles.floatingControlButton,
+              showTravelModeSelector && styles.activeFloatingButton,
+            ]}
+            onPress={() => setShowTravelModeSelector(!showTravelModeSelector)}
+          >
+            <Icon
+              name={
+                travelMode === "driving"
+                  ? "car"
+                  : travelMode === "walking"
+                  ? "walk"
+                  : travelMode === "transit"
+                  ? "bus"
+                  : "bicycle"
+              }
+              size={20}
+              color={showTravelModeSelector ? "#ffffff" : "#008080"}
+            />
+          </TouchableOpacity>
           <TouchableOpacity
             style={[
               styles.floatingControlButton,
@@ -653,47 +779,239 @@ const TripMapView: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Route Information - only show when routes are displayed */}
-        {showRoutes && routeSegments.length > 0 && (
+        {/* Route Information - show when routes are displayed */}
+        {showRoutes && (
           <View style={styles.routeInfoPanel}>
-            <View style={styles.routeInfoHeader}>
-              <Icon name="car" size={16} color="#008080" />
-              <Text style={styles.routeInfoTitle}>Driving Route</Text>
-            </View>
-            <View style={styles.routeStats}>
-              <View style={styles.routeStat}>
-                <Text style={styles.routeStatValue}>
-                  {routeSegments
-                    .reduce((total, segment) => {
-                      const distance = parseFloat(
-                        segment.distance.replace(/[^\d.]/g, "")
-                      );
-                      return total + (isNaN(distance) ? 0 : distance);
-                    }, 0)
-                    .toFixed(1)}{" "}
-                  km
+            {routeSegments.length > 0 ? (
+              // Show actual driving route information
+              <>
+                <View style={styles.routeInfoHeader}>
+                  <Icon name="car" size={16} color="#008080" />
+                  <Text style={styles.routeInfoTitle}>
+                    Driving Route{" "}
+                    {routeApiUsed === "routes"
+                      ? "(Routes API)"
+                      : "(Legacy API)"}
+                  </Text>
+                </View>
+                <View style={styles.routeStats}>
+                  <View style={styles.routeStat}>
+                    <Text style={styles.routeStatValue}>
+                      {routeSegments
+                        .reduce((total, segment) => {
+                          const distance = parseFloat(
+                            segment.distance.replace(/[^\d.]/g, "")
+                          );
+                          return total + (isNaN(distance) ? 0 : distance);
+                        }, 0)
+                        .toFixed(1)}{" "}
+                      km
+                    </Text>
+                    <Text style={styles.routeStatLabel}>Total Distance</Text>
+                  </View>
+                  <View style={styles.routeStat}>
+                    <Text style={styles.routeStatValue}>
+                      {routeSegments.reduce((total, segment) => {
+                        const duration = parseInt(
+                          segment.duration.replace(/[^\d]/g, "")
+                        );
+                        return total + (isNaN(duration) ? 0 : duration);
+                      }, 0)}{" "}
+                      min
+                    </Text>
+                    <Text style={styles.routeStatLabel}>Driving Time</Text>
+                  </View>
+                  <View style={styles.routeStat}>
+                    <Text style={styles.routeStatValue}>
+                      {routeSegments.length}
+                    </Text>
+                    <Text style={styles.routeStatLabel}>Route Segments</Text>
+                  </View>
+                </View>
+
+                {/* Route Details Toggle */}
+                {routeSegments.length > 0 &&
+                  routeSegments[0].summary &&
+                  (routeSegments[0].summary.keyWaypoints?.expressways ||
+                    routeSegments[0].summary.keyWaypoints?.majorRoads ||
+                    routeSegments[0].summary.keyWaypoints?.transitHubs ||
+                    routeSegments[0].summary.tollInfo?.hasTolls ||
+                    routeSegments[0].summary.trafficInfo?.hasTrafficData ||
+                    (routeSegments[0].summary.warnings &&
+                      routeSegments[0].summary.warnings.length > 0)) && (
+                    <TouchableOpacity
+                      style={styles.routeDetailsToggle}
+                      onPress={() => setShowRouteDetails(!showRouteDetails)}
+                    >
+                      <Text style={styles.routeDetailsToggleText}>
+                        {showRouteDetails
+                          ? "Hide Details"
+                          : "Show Route Details"}
+                      </Text>
+                      <Icon
+                        name={showRouteDetails ? "chevron-up" : "chevron-down"}
+                        size={14}
+                        color="#008080"
+                      />
+                    </TouchableOpacity>
+                  )}
+
+                {/* Enhanced Route Details */}
+                {showRouteDetails &&
+                  routeSegments.length > 0 &&
+                  routeSegments[0].summary && (
+                    <View style={styles.routeDetailsContainer}>
+                      {/* Route Description */}
+                      {routeSegments[0].summary.description && (
+                        <View style={styles.routeDetailItem}>
+                          <Icon
+                            name="information-circle"
+                            size={14}
+                            color="#6B7280"
+                          />
+                          <Text style={styles.routeDetailText}>
+                            {routeSegments[0].summary.description}
+                          </Text>
+                        </View>
+                      )}
+
+                      {/* Expressways */}
+                      {routeSegments[0].summary.keyWaypoints?.expressways && (
+                        <View style={styles.routeDetailItem}>
+                          <Text style={styles.routeDetailIcon}>🛣️</Text>
+                          <View style={styles.routeDetailContent}>
+                            <Text style={styles.routeDetailLabel}>
+                              Expressways:
+                            </Text>
+                            <Text style={styles.routeDetailValue}>
+                              {routeSegments[0].summary.keyWaypoints.expressways.join(
+                                ", "
+                              )}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+
+                      {/* Major Roads */}
+                      {routeSegments[0].summary.keyWaypoints?.majorRoads && (
+                        <View style={styles.routeDetailItem}>
+                          <Text style={styles.routeDetailIcon}>🚗</Text>
+                          <View style={styles.routeDetailContent}>
+                            <Text style={styles.routeDetailLabel}>
+                              Major Roads:
+                            </Text>
+                            <Text style={styles.routeDetailValue}>
+                              {routeSegments[0].summary.keyWaypoints.majorRoads
+                                .slice(0, 3)
+                                .join(", ")}
+                              {routeSegments[0].summary.keyWaypoints.majorRoads
+                                .length > 3 &&
+                                ` (+${
+                                  routeSegments[0].summary.keyWaypoints
+                                    .majorRoads.length - 3
+                                } more)`}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+
+                      {/* Transit Hubs */}
+                      {routeSegments[0].summary.keyWaypoints?.transitHubs && (
+                        <View style={styles.routeDetailItem}>
+                          <Text style={styles.routeDetailIcon}>🚌</Text>
+                          <View style={styles.routeDetailContent}>
+                            <Text style={styles.routeDetailLabel}>
+                              Transit Hubs:
+                            </Text>
+                            <Text style={styles.routeDetailValue}>
+                              {routeSegments[0].summary.keyWaypoints.transitHubs.join(
+                                ", "
+                              )}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+
+                      {/* Toll Information */}
+                      {routeSegments[0].summary.tollInfo?.hasTolls && (
+                        <View style={styles.routeDetailItem}>
+                          <Text style={styles.routeDetailIcon}>💰</Text>
+                          <View style={styles.routeDetailContent}>
+                            <Text style={styles.routeDetailLabel}>Tolls:</Text>
+                            <Text style={styles.routeDetailValue}>
+                              Expected
+                              {routeSegments[0].summary.tollInfo.estimatedPrice
+                                ? ` (~${routeSegments[0].summary.tollInfo.estimatedPrice})`
+                                : ""}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+
+                      {/* Traffic Information */}
+                      {routeSegments[0].summary.trafficInfo?.hasTrafficData && (
+                        <View style={styles.routeDetailItem}>
+                          <Text style={styles.routeDetailIcon}>🚦</Text>
+                          <View style={styles.routeDetailContent}>
+                            <Text style={styles.routeDetailLabel}>
+                              Traffic:
+                            </Text>
+                            <Text style={styles.routeDetailValue}>
+                              Real-time data available
+                              {routeSegments[0].summary.trafficInfo
+                                .congestionLevel !== "unknown" &&
+                                ` (${routeSegments[0].summary.trafficInfo.congestionLevel})`}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+
+                      {/* Route Warnings */}
+                      {routeSegments[0].summary.warnings &&
+                        routeSegments[0].summary.warnings.length > 0 && (
+                          <View style={styles.routeDetailItem}>
+                            <Text style={styles.routeDetailIcon}>⚠️</Text>
+                            <View style={styles.routeDetailContent}>
+                              <Text style={styles.routeDetailLabel}>
+                                Warnings:
+                              </Text>
+                              <Text style={styles.routeDetailValue}>
+                                {routeSegments[0].summary.warnings
+                                  .slice(0, 2)
+                                  .join("; ")}
+                                {routeSegments[0].summary.warnings.length > 2 &&
+                                  "..."}
+                              </Text>
+                            </View>
+                          </View>
+                        )}
+                    </View>
+                  )}
+
+                {routeApiUsed === "routes" && (
+                  <View style={styles.apiIndicator}>
+                    <Icon name="checkmark-circle" size={12} color="#10B981" />
+                    <Text style={styles.apiIndicatorText}>
+                      Using modern Routes API
+                    </Text>
+                  </View>
+                )}
+              </>
+            ) : routeCoordinates.length > 1 ? (
+              // Show fallback route information
+              <>
+                <View style={styles.routeInfoHeader}>
+                  <Icon name="git-branch" size={16} color="#F59E0B" />
+                  <Text style={[styles.routeInfoTitle, { color: "#F59E0B" }]}>
+                    Direct Connections
+                  </Text>
+                </View>
+                <Text style={styles.fallbackRouteText}>
+                  Showing direct lines between locations. Detailed driving
+                  directions are not available.
                 </Text>
-                <Text style={styles.routeStatLabel}>Total Distance</Text>
-              </View>
-              <View style={styles.routeStat}>
-                <Text style={styles.routeStatValue}>
-                  {routeSegments.reduce((total, segment) => {
-                    const duration = parseInt(
-                      segment.duration.replace(/[^\d]/g, "")
-                    );
-                    return total + (isNaN(duration) ? 0 : duration);
-                  }, 0)}{" "}
-                  min
-                </Text>
-                <Text style={styles.routeStatLabel}>Driving Time</Text>
-              </View>
-              <View style={styles.routeStat}>
-                <Text style={styles.routeStatValue}>
-                  {routeSegments.length}
-                </Text>
-                <Text style={styles.routeStatLabel}>Route Segments</Text>
-              </View>
-            </View>
+              </>
+            ) : null}
           </View>
         )}
 
@@ -727,6 +1045,101 @@ const TripMapView: React.FC = () => {
                 </View>
               ))}
             </ScrollView>
+          </View>
+        )}
+
+        {/* Travel Mode Selector */}
+        {showTravelModeSelector && (
+          <View style={styles.travelModeSelector}>
+            <View style={styles.travelModeSelectorHeader}>
+              <Text style={styles.travelModeSelectorTitle}>Travel Mode</Text>
+              <TouchableOpacity
+                onPress={() => setShowTravelModeSelector(false)}
+                style={styles.travelModeSelectorClose}
+              >
+                <Icon name="close" size={16} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.travelModeOptions}>
+              {[
+                {
+                  mode: "driving" as const,
+                  icon: "car",
+                  label: "Driving",
+                  description: "Best route by car with traffic info",
+                  availability: "Available worldwide",
+                },
+                {
+                  mode: "walking" as const,
+                  icon: "walk",
+                  label: "Walking",
+                  description: "Pedestrian-friendly routes",
+                  availability: "Available in most areas",
+                },
+                {
+                  mode: "transit" as const,
+                  icon: "bus",
+                  label: "Public Transit",
+                  description: "Buses, trains, and other public transport",
+                  availability: "Limited to major cities",
+                },
+                {
+                  mode: "motorcycle" as const,
+                  icon: "bicycle",
+                  label: "Two-Wheeler",
+                  description: "Motorcycle and scooter routes",
+                  availability: "Available on motorable roads",
+                },
+              ].map((option) => (
+                <TouchableOpacity
+                  key={option.mode}
+                  style={[
+                    styles.travelModeOption,
+                    travelMode === option.mode &&
+                      styles.selectedTravelModeOption,
+                  ]}
+                  onPress={() => handleTravelModeChange(option.mode)}
+                >
+                  <View style={styles.travelModeOptionContent}>
+                    <View
+                      style={[
+                        styles.travelModeIcon,
+                        travelMode === option.mode &&
+                          styles.selectedTravelModeIcon,
+                      ]}
+                    >
+                      <Icon
+                        name={option.icon}
+                        size={20}
+                        color={
+                          travelMode === option.mode ? "#ffffff" : "#008080"
+                        }
+                      />
+                    </View>
+                    <View style={styles.travelModeText}>
+                      <Text
+                        style={[
+                          styles.travelModeLabel,
+                          travelMode === option.mode &&
+                            styles.selectedTravelModeLabel,
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                      <Text style={styles.travelModeDescription}>
+                        {option.description}
+                      </Text>
+                      <Text style={styles.travelModeAvailability}>
+                        {option.availability}
+                      </Text>
+                    </View>
+                  </View>
+                  {travelMode === option.mode && (
+                    <Icon name="checkmark-circle" size={20} color="#008080" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         )}
 
@@ -1071,6 +1484,176 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#6B7280",
     textAlign: "center",
+  },
+  fallbackRouteText: {
+    fontSize: 12,
+    color: "#6B7280",
+    textAlign: "center",
+    fontStyle: "italic",
+  },
+  apiIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#F3F4F6",
+  },
+  apiIndicatorText: {
+    fontSize: 10,
+    color: "#10B981",
+    marginLeft: 4,
+    fontWeight: "500",
+  },
+  // Travel Mode Selector Styles
+  travelModeSelector: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    backgroundColor: "white",
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+    width: 280,
+    zIndex: 1000,
+  },
+  travelModeSelectorHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  travelModeSelectorTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  travelModeSelectorClose: {
+    padding: 4,
+  },
+  travelModeOptions: {
+    gap: 8,
+  },
+  travelModeOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  selectedTravelModeOption: {
+    backgroundColor: "#F0F9FF",
+    borderColor: "#008080",
+  },
+  travelModeOptionContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  travelModeIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#E5E7EB",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  selectedTravelModeIcon: {
+    backgroundColor: "#008080",
+  },
+  travelModeText: {
+    flex: 1,
+  },
+  travelModeLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#111827",
+    marginBottom: 2,
+  },
+  selectedTravelModeLabel: {
+    color: "#008080",
+  },
+  travelModeDescription: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginBottom: 2,
+  },
+  travelModeAvailability: {
+    fontSize: 10,
+    color: "#9CA3AF",
+    fontStyle: "italic",
+  },
+  // Route Details Styles
+  routeDetailsToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginTop: 8,
+    backgroundColor: "#F0F9FF",
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#E0F2FE",
+  },
+  routeDetailsToggleText: {
+    fontSize: 12,
+    color: "#008080",
+    fontWeight: "500",
+    marginRight: 4,
+  },
+  routeDetailsContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#F3F4F6",
+  },
+  routeDetailItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 8,
+    paddingHorizontal: 4,
+  },
+  routeDetailIcon: {
+    fontSize: 14,
+    marginRight: 8,
+    marginTop: 1,
+    width: 20,
+    textAlign: "center",
+  },
+  routeDetailContent: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    flexWrap: "wrap",
+  },
+  routeDetailLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#374151",
+    marginRight: 4,
+  },
+  routeDetailValue: {
+    fontSize: 12,
+    color: "#6B7280",
+    flex: 1,
+    lineHeight: 16,
+  },
+  routeDetailText: {
+    fontSize: 12,
+    color: "#6B7280",
+    flex: 1,
+    lineHeight: 16,
+    marginLeft: 4,
   },
 });
 

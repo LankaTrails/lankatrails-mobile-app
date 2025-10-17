@@ -108,8 +108,10 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
 
   // Transform BookingItem to BookingUIData with computed display properties
   const transformBookingToUI = (booking: BookingItem): BookingUIData => {
-    const startDate = new Date(booking.startTime);
-    const endDate = new Date(booking.endTime);
+    const startDate = booking.startTime
+      ? new Date(booking.startTime)
+      : new Date();
+    const endDate = booking.endTime ? new Date(booking.endTime) : new Date();
 
     return {
       ...booking, // Spread all BookingItem properties
@@ -477,10 +479,11 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
                       {service.service?.serviceName || "Service"}
                     </Text>
                     <Text style={styles.serviceDateTime}>
-                      {service.displayDate} • {service.displayTime}
+                      {service.displayDate || "Date"} •{" "}
+                      {service.displayTime || "Time"}
                     </Text>
                     <Text style={styles.serviceLocation}>
-                      📍 {service.displayLocation}{" "}
+                      📍 {service.displayLocation || "Unknown Location"}{" "}
                       {getWeatherIcon(service.weather)}
                     </Text>
                   </View>
@@ -528,7 +531,7 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
                 <View style={styles.serviceDetailRow}>
                   <Text style={styles.serviceDetailLabel}>Provider:</Text>
                   <Text style={styles.serviceDetailValue}>
-                    {service.displayProviderName}
+                    {service.displayProviderName || "Unknown Provider"}
                   </Text>
                 </View>
                 <View style={styles.serviceDetailRow}>
@@ -536,14 +539,15 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
                     Adults/Children:
                   </Text>
                   <Text style={styles.serviceDetailValue}>
-                    {service.numberOfAdults}/{service.numberOfChildren}
+                    {service.numberOfAdults || 0}/
+                    {service.numberOfChildren || 0}
                   </Text>
                 </View>
                 {service.status === "CONFIRMED" && (
                   <View style={styles.serviceDetailRow}>
                     <Text style={styles.serviceDetailLabel}>Reference:</Text>
                     <Text style={styles.serviceDetailValue}>
-                      BK-{service.tripItemId}
+                      BK-{service.tripItemId || "N/A"}
                     </Text>
                   </View>
                 )}
@@ -551,7 +555,7 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
                   <View style={styles.serviceDetailRow}>
                     <Text style={styles.serviceDetailLabel}>Total Price:</Text>
                     <Text style={styles.serviceDetailValue}>
-                      LKR {service.totalPrice}
+                      LKR {service.totalPrice || 0}
                     </Text>
                   </View>
                 )}
@@ -559,7 +563,7 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
                   <View style={styles.serviceDetailRow}>
                     <Text style={styles.serviceDetailLabel}>Paid:</Text>
                     <Text style={styles.serviceDetailValue}>
-                      LKR {service.paidAmount}
+                      LKR {service.paidAmount || 0}
                     </Text>
                   </View>
                 )}
@@ -567,7 +571,7 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
                   <View style={styles.serviceDetailRow}>
                     <Text style={styles.serviceDetailLabel}>Due:</Text>
                     <Text style={styles.serviceDetailValue}>
-                      LKR {service.dueAmount}
+                      LKR {service.dueAmount || 0}
                     </Text>
                   </View>
                 )}
@@ -579,7 +583,7 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
                     LKR {service.totalPrice || 0}
                   </Text>
                   <Text style={styles.serviceDuration}>
-                    {service.displayDuration}
+                    {service.displayDuration || "Duration"}
                   </Text>
                 </View>
                 <View style={styles.serviceActions}>

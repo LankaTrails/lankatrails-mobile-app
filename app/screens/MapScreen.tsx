@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { View, Button, StyleSheet, Dimensions } from 'react-native';
-import MapView, { Marker, Polyline } from 'react-native-maps';
-import axios from 'axios';
-import polyline from '@mapbox/polyline';
+import React, { useEffect, useState } from "react";
+import { View, Button, StyleSheet, Dimensions } from "react-native";
+import MapView, { Marker, Polyline } from "react-native-maps";
+import axios from "axios";
+import polyline from "@mapbox/polyline";
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
 type Place = {
   id: string;
@@ -12,7 +12,7 @@ type Place = {
   lat: number;
   lng: number;
   icon: any;
-  type: 'provider' | 'public_place';
+  type: "provider" | "public_place";
 };
 
 const SAMPLE_PLACES: Place[] = [
@@ -28,15 +28,15 @@ const SAMPLE_PLACES: Place[] = [
     id: "2",
     name: "Galle Face Green",
     lat: 6.9275,
-    lng: 79.8440,
+    lng: 79.844,
     icon: require("../../assets/icons/park.png"),
     type: "public_place",
   },
   {
     id: "3",
     name: "Galle Fort",
-    lat: 6.0260,
-    lng: 80.2170,
+    lat: 6.026,
+    lng: 80.217,
     icon: require("../../assets/icons/park.png"),
     type: "public_place",
   },
@@ -63,7 +63,7 @@ const SAMPLE_PLACES: Place[] = [
     lng: 80.7594,
     icon: require("../../assets/icons/park.png"),
     type: "public_place",
-  }
+  },
 ];
 
 const GOOGLE_API_KEY = "AIzaSyA47Q-I515EK0DU4pvk5jgUcatYcdnf8cY";
@@ -71,8 +71,10 @@ const GOOGLE_API_KEY = "AIzaSyA47Q-I515EK0DU4pvk5jgUcatYcdnf8cY";
 export default function MapScreen() {
   const [origin, setOrigin] = useState<Place | null>(null);
   const [destination, setDestination] = useState<Place | null>(null);
-  const [routeCoords, setRouteCoords] = useState<{ latitude: number; longitude: number }[]>([]);
-  const [mode, setMode] = useState('driving');
+  const [routeCoords, setRouteCoords] = useState<
+    { latitude: number; longitude: number }[]
+  >([]);
+  const [mode, setMode] = useState("driving");
 
   useEffect(() => {
     if (origin && destination) {
@@ -80,7 +82,11 @@ export default function MapScreen() {
     }
   }, [origin, destination, mode]);
 
-  const fetchAndSetRoute = async (orig: Place, dest: Place, selectedMode: string) => {
+  const fetchAndSetRoute = async (
+    orig: Place,
+    dest: Place,
+    selectedMode: string
+  ) => {
     try {
       const url = `https://maps.googleapis.com/maps/api/directions/json`;
       const response = await axios.get(url, {
@@ -94,16 +100,18 @@ export default function MapScreen() {
 
       if (response.data.routes.length > 0) {
         const points = response.data.routes[0].overview_polyline.points;
-        const decoded = polyline.decode(points).map(([latitude, longitude]) => ({
-          latitude,
-          longitude,
-        }));
+        const decoded = polyline
+          .decode(points)
+          .map(([latitude, longitude]) => ({
+            latitude,
+            longitude,
+          }));
         setRouteCoords(decoded);
       } else {
         setRouteCoords([]);
       }
     } catch (error) {
-      console.error('Failed to fetch route', error);
+      console.error("Failed to fetch route", error);
     }
   };
 
@@ -138,9 +146,9 @@ export default function MapScreen() {
             image={place.icon}
             pinColor={
               origin?.id === place.id
-                ? 'green'
+                ? "green"
                 : destination?.id === place.id
-                ? 'red'
+                ? "red"
                 : undefined
             }
             onPress={() => handleMarkerPress(place)}
@@ -157,12 +165,12 @@ export default function MapScreen() {
       </MapView>
 
       <View style={styles.controls}>
-        {['driving', 'walking', 'bicycling', 'transit'].map((m) => (
+        {["driving", "walking", "motorcycle", "transit"].map((m) => (
           <Button
             key={m}
             title={m}
             onPress={() => setMode(m)}
-            color={mode === m ? 'blue' : 'gray'}
+            color={mode === m ? "blue" : "gray"}
           />
         ))}
         <Button
@@ -188,13 +196,13 @@ const styles = StyleSheet.create({
     height,
   },
   controls: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 20,
     left: 10,
     right: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: 'rgba(255,255,255,0.8)',
+    flexDirection: "row",
+    justifyContent: "space-around",
+    backgroundColor: "rgba(255,255,255,0.8)",
     borderRadius: 10,
     padding: 5,
   },
