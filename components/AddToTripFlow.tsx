@@ -280,7 +280,7 @@ const DateSelectionWidget: React.FC<{
       <View style={styles.calendarGrid}>{renderCalendarDays()}</View>
 
       {/* Selection Summary */}
-      <View style={styles.selectionSummary}>
+      {/* <View style={styles.selectionSummary}>
         <Text style={styles.selectionLabel}>Selected:</Text>
         <Text style={styles.selectionText}>
           {bookingType === "MULTI_DAY"
@@ -295,7 +295,7 @@ const DateSelectionWidget: React.FC<{
             ? selectedDates[0].toLocaleDateString()
             : `${selectedDates.length} dates selected`}
         </Text>
-      </View>
+      </View> */}
     </View>
   );
 };
@@ -308,7 +308,11 @@ const TimeSelectionWidget: React.FC<{
   selectedDate: Date | null;
   availableTimeSlots: TimeSlotsResponseDTO | null;
   isLoading: boolean;
+  customStartHour?: number;
+  customStartMinute?: number;
+  customDuration?: number;
   onTimeSlotSelect: (timeSlot: TimeSlotsRequestDTO) => void;
+  onCustomTimeChange?: (hour: number, minute: number, duration: number) => void;
   onFetchTimeSlots: (date: Date) => void;
 }> = ({
   bookingType,
@@ -317,17 +321,17 @@ const TimeSelectionWidget: React.FC<{
   selectedDate,
   availableTimeSlots,
   isLoading,
+  customStartHour = 9,
+  customStartMinute = 0,
+  customDuration = 1,
   onTimeSlotSelect,
+  onCustomTimeChange,
   onFetchTimeSlots,
 }) => {
   console.log("TimeSelectionWidget rendered with:");
   console.log("- bookingType:", bookingType);
   console.log("- selectedDate:", selectedDate);
   console.log("- availableTimeSlots:", availableTimeSlots);
-
-  const [customStartHour, setCustomStartHour] = useState(9);
-  const [customStartMinute, setCustomStartMinute] = useState(0);
-  const [duration, setDuration] = useState(1);
 
   useEffect(() => {
     if (bookingType === "TIME_SLOTS" && selectedDate && !availableTimeSlots) {
@@ -366,10 +370,10 @@ const TimeSelectionWidget: React.FC<{
 
     return (
       <View>
-        <Text style={styles.sectionTitle}>Available Time Slots</Text>
-        <Text style={styles.timeSlotSubtitle}>
+        {/* <Text style={styles.sectionTitle}>Available Time Slots</Text> */}
+        {/* <Text style={styles.timeSlotSubtitle}>
           Select a time slot that works for your schedule
-        </Text>
+        </Text> */}
         <View style={styles.timeSlotsGrid}>
           {availableTimeSlots.content.map((slot, index) => (
             <TouchableOpacity
@@ -393,7 +397,8 @@ const TimeSelectionWidget: React.FC<{
                       styles.selectedTimeSlotText,
                   ]}
                 >
-                  {slot.slotStartTime} - {slot.slotEndTime}
+                  {slot.slotStartTime.substring(0, 5)} -{" "}
+                  {slot.slotEndTime.substring(0, 5)}
                 </Text>
                 <Ionicons
                   name="time-outline"
@@ -423,7 +428,13 @@ const TimeSelectionWidget: React.FC<{
         <View style={styles.timePickerRow}>
           <View style={styles.timePicker}>
             <TouchableOpacity
-              onPress={() => setCustomStartHour((h) => (h === 0 ? 23 : h - 1))}
+              onPress={() =>
+                onCustomTimeChange?.(
+                  customStartHour === 0 ? 23 : customStartHour - 1,
+                  customStartMinute,
+                  customDuration
+                )
+              }
               style={styles.timePickerButton}
             >
               <Ionicons name="chevron-up" size={20} color="#008080" />
@@ -432,7 +443,13 @@ const TimeSelectionWidget: React.FC<{
               {customStartHour.toString().padStart(2, "0")}
             </Text>
             <TouchableOpacity
-              onPress={() => setCustomStartHour((h) => (h === 23 ? 0 : h + 1))}
+              onPress={() =>
+                onCustomTimeChange?.(
+                  customStartHour === 23 ? 0 : customStartHour + 1,
+                  customStartMinute,
+                  customDuration
+                )
+              }
               style={styles.timePickerButton}
             >
               <Ionicons name="chevron-down" size={20} color="#008080" />
@@ -444,7 +461,11 @@ const TimeSelectionWidget: React.FC<{
           <View style={styles.timePicker}>
             <TouchableOpacity
               onPress={() =>
-                setCustomStartMinute((m) => (m === 0 ? 45 : m - 15))
+                onCustomTimeChange?.(
+                  customStartHour,
+                  customStartMinute === 0 ? 45 : customStartMinute - 15,
+                  customDuration
+                )
               }
               style={styles.timePickerButton}
             >
@@ -455,7 +476,11 @@ const TimeSelectionWidget: React.FC<{
             </Text>
             <TouchableOpacity
               onPress={() =>
-                setCustomStartMinute((m) => (m === 45 ? 0 : m + 15))
+                onCustomTimeChange?.(
+                  customStartHour,
+                  customStartMinute === 45 ? 0 : customStartMinute + 15,
+                  customDuration
+                )
               }
               style={styles.timePickerButton}
             >
@@ -469,14 +494,26 @@ const TimeSelectionWidget: React.FC<{
         <Text style={styles.timePickerLabel}>Duration (hours)</Text>
         <View style={styles.durationRow}>
           <TouchableOpacity
-            onPress={() => setDuration((d) => Math.max(0.5, d - 0.5))}
+            onPress={() =>
+              onCustomTimeChange?.(
+                customStartHour,
+                customStartMinute,
+                Math.max(0.5, customDuration - 0.5)
+              )
+            }
             style={styles.durationButton}
           >
             <Ionicons name="remove" size={20} color="#008080" />
           </TouchableOpacity>
-          <Text style={styles.durationValue}>{duration}</Text>
+          <Text style={styles.durationValue}>{customDuration}</Text>
           <TouchableOpacity
-            onPress={() => setDuration((d) => Math.min(12, d + 0.5))}
+            onPress={() =>
+              onCustomTimeChange?.(
+                customStartHour,
+                customStartMinute,
+                Math.min(12, customDuration + 0.5)
+              )
+            }
             style={styles.durationButton}
           >
             <Ionicons name="add" size={20} color="#008080" />
@@ -489,14 +526,14 @@ const TimeSelectionWidget: React.FC<{
         <Text style={styles.selectionText}>
           {customStartHour.toString().padStart(2, "0")}:
           {customStartMinute.toString().padStart(2, "0")} -
-          {Math.floor((customStartHour + duration) % 24)
+          {Math.floor((customStartHour + customDuration) % 24)
             .toString()
             .padStart(2, "0")}
           :
-          {((customStartMinute + (duration % 1) * 60) % 60)
+          {((customStartMinute + (customDuration % 1) * 60) % 60)
             .toString()
             .padStart(2, "0")}
-          {duration === 1 ? " (1 hour)" : ` (${duration} hours)`}
+          {customDuration === 1 ? " (1 hour)" : ` (${customDuration} hours)`}
         </Text>
       </View>
     </View>
@@ -559,7 +596,7 @@ const TimeSelectionWidget: React.FC<{
     case "FIXED_TIME":
       return renderFixedTime();
     case "EVENT_BASED":
-      return renderEventBased();
+      return renderEventBased(); // TODO:
     case "WHOLE_DAY":
       return renderWholeDayService();
     case "MULTI_DAY":
@@ -599,6 +636,11 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
     useState<TimeSlotsRequestDTO | null>(null);
   const [availableTimeSlots, setAvailableTimeSlots] =
     useState<TimeSlotsResponseDTO | null>(null);
+
+  // Custom time selection for FLEXIBLE_HOURS
+  const [customStartHour, setCustomStartHour] = useState(9);
+  const [customStartMinute, setCustomStartMinute] = useState(0);
+  const [customDuration, setCustomDuration] = useState(1);
 
   // Animation
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -652,6 +694,9 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
     setCheckOutDate(null);
     setSelectedTimeSlot(null);
     setAvailableTimeSlots(null);
+    setCustomStartHour(9);
+    setCustomStartMinute(0);
+    setCustomDuration(1);
   };
 
   const loadTrips = async () => {
@@ -683,6 +728,20 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
     console.log("Current step set to:", FlowStep.TRAVELERS_UNITS);
   };
 
+  // Auto-suggest units when travelers change
+  useEffect(() => {
+    if (
+      currentStep === FlowStep.TRAVELERS_UNITS &&
+      serviceDetail?.bookingConfig?.manageCapacity
+    ) {
+      const suggested = getSuggestedUnits();
+      // Only auto-update if current units is 1 (default) and suggestion is different
+      if (units === 1 && suggested !== 1) {
+        setUnits(suggested);
+      }
+    }
+  }, [adults, children, currentStep]);
+
   const handleCreateNewTrip = () => {
     console.log("Create new trip button pressed");
     setShowNewTripFlow(true);
@@ -697,34 +756,171 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
     setCurrentStep(FlowStep.TRAVELERS_UNITS);
   };
 
+  // Helper function to determine if time selection is needed
+  const needsTimeSelection = (bookingType?: BookingType) => {
+    if (!bookingType) return false;
+    return ["TIME_SLOTS", "FLEXIBLE_HOURS", "FIXED_TIME"].includes(bookingType);
+  };
+
+  // Helper function to determine if pricing should be shown
+  const shouldShowPricing = () => {
+    return (
+      serviceDetail?.priceConfig !== undefined &&
+      serviceDetail?.priceConfig !== null
+    );
+  };
+
+  // Helper function to get next step after date selection
+  const getNextStepAfterDates = (bookingType?: BookingType) => {
+    if (needsTimeSelection(bookingType)) {
+      return FlowStep.TIME_DURATION;
+    } else if (shouldShowPricing()) {
+      return FlowStep.PRICE_SUMMARY;
+    } else {
+      return FlowStep.CONFIRMATION;
+    }
+  };
+
+  // Helper function to get next step after time selection
+  const getNextStepAfterTime = () => {
+    if (shouldShowPricing()) {
+      return FlowStep.PRICE_SUMMARY;
+    } else {
+      return FlowStep.CONFIRMATION;
+    }
+  };
+
+  // Helper function to validate date selection
+  const validateDateSelection = (
+    dates: Date[],
+    checkIn?: Date,
+    checkOut?: Date
+  ): { isValid: boolean; errorMessage?: string } => {
+    const bookingConfig = serviceDetail?.bookingConfig;
+    const bookingType = bookingConfig?.bookingType;
+
+    // Check if dates are selected
+    if (bookingType === "MULTI_DAY") {
+      if (!checkIn || !checkOut) {
+        return {
+          isValid: false,
+          errorMessage: "Please select check-in and check-out dates.",
+        };
+      }
+    } else {
+      if (dates.length === 0) {
+        return {
+          isValid: false,
+          errorMessage: "Please select at least one date.",
+        };
+      }
+    }
+
+    // Validate last minute booking period (minimum advance booking time)
+    if (bookingConfig?.lastMinuteBookingPeriod) {
+      const minBookingDate = new Date();
+      minBookingDate.setHours(
+        minBookingDate.getHours() + bookingConfig.lastMinuteBookingPeriod
+      );
+
+      const dateToCheck = checkIn || dates[0];
+      if (dateToCheck && dateToCheck < minBookingDate) {
+        return {
+          isValid: false,
+          errorMessage: `Bookings must be made at least ${bookingConfig.lastMinuteBookingPeriod} hours in advance.`,
+        };
+      }
+    }
+
+    // Validate advance booking period (maximum advance booking time)
+    if (bookingConfig?.advanceBookingPeriod) {
+      const maxBookingDate = new Date();
+      maxBookingDate.setDate(
+        maxBookingDate.getDate() + bookingConfig.advanceBookingPeriod
+      );
+
+      const dateToCheck = checkIn || dates[0];
+      if (dateToCheck && dateToCheck > maxBookingDate) {
+        return {
+          isValid: false,
+          errorMessage: `Bookings cannot be made more than ${bookingConfig.advanceBookingPeriod} days in advance.`,
+        };
+      }
+    }
+
+    // Validate minimum and maximum booking days for multi-day bookings
+    if (bookingType === "MULTI_DAY" && checkIn && checkOut) {
+      const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (
+        bookingConfig?.minimumBookingDays &&
+        diffDays < bookingConfig.minimumBookingDays
+      ) {
+        return {
+          isValid: false,
+          errorMessage: `Minimum booking period is ${bookingConfig.minimumBookingDays} days.`,
+        };
+      }
+
+      if (
+        bookingConfig?.maximumBookingDays &&
+        diffDays > bookingConfig.maximumBookingDays
+      ) {
+        return {
+          isValid: false,
+          errorMessage: `Maximum booking period is ${bookingConfig.maximumBookingDays} days.`,
+        };
+      }
+    }
+
+    // Check if selected dates are within trip dates
+    if (selectedTrip) {
+      const tripStart = new Date(selectedTrip.startDate);
+      const tripEnd = new Date(selectedTrip.endDate);
+
+      const datesToCheck =
+        bookingType === "MULTI_DAY" ? [checkIn!, checkOut!] : dates;
+
+      for (const date of datesToCheck) {
+        if (date < tripStart || date > tripEnd) {
+          return {
+            isValid: false,
+            errorMessage: "Selected dates must be within your trip dates.",
+          };
+        }
+      }
+    }
+
+    return { isValid: true };
+  };
+
   const handleDatesConfirmed = async (
     dates: Date[],
     checkIn?: Date,
     checkOut?: Date
   ) => {
+    // Validate date selection
+    const validation = validateDateSelection(dates, checkIn, checkOut);
+    if (!validation.isValid) {
+      Alert.alert("Invalid Date Selection", validation.errorMessage);
+      return;
+    }
+
     setSelectedDates(dates);
     if (checkIn) setCheckInDate(checkIn);
     if (checkOut) setCheckOutDate(checkOut);
 
     const bookingType = serviceDetail?.bookingConfig?.bookingType;
 
-    // Check if we need time slots
+    // For TIME_SLOTS, fetch available slots before proceeding
     if (bookingType === "TIME_SLOTS" && dates.length > 0) {
       await fetchAvailableTimeSlots(dates[0]);
-      setCurrentStep(FlowStep.TIME_DURATION);
-    } else if (
-      bookingType === "FLEXIBLE_HOURS" ||
-      bookingType === "FIXED_TIME"
-    ) {
-      setCurrentStep(FlowStep.TIME_DURATION);
-    } else {
-      // For other booking types, check if pricing is available
-      if (serviceDetail?.priceConfig) {
-        setCurrentStep(FlowStep.PRICE_SUMMARY);
-      } else {
-        setCurrentStep(FlowStep.CONFIRMATION);
-      }
     }
+
+    // Navigate to next step
+    const nextStep = getNextStepAfterDates(bookingType);
+    setCurrentStep(nextStep);
   };
 
   const fetchAvailableTimeSlots = async (selectedDate: Date) => {
@@ -764,13 +960,8 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
 
   const handleTimeSlotSelected = (slot: TimeSlotsRequestDTO) => {
     setSelectedTimeSlot(slot);
-
-    // Check if pricing is available
-    if (serviceDetail?.priceConfig) {
-      setCurrentStep(FlowStep.PRICE_SUMMARY);
-    } else {
-      setCurrentStep(FlowStep.CONFIRMATION);
-    }
+    const nextStep = getNextStepAfterTime();
+    setCurrentStep(nextStep);
   };
 
   const handleConfirmAddToTrip = async () => {
@@ -783,19 +974,22 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
       let endTime: string;
 
       const bookingType = serviceDetail?.bookingConfig?.bookingType;
+      const bookingConfig = serviceDetail?.bookingConfig;
+
       console.log("🔍 Debug time calculation:");
       console.log("🔍 bookingType:", bookingType);
       console.log("🔍 selectedTimeSlot:", selectedTimeSlot);
       console.log("🔍 selectedDates:", selectedDates);
       console.log("🔍 checkInDate:", checkInDate);
       console.log("🔍 checkOutDate:", checkOutDate);
+      console.log("🔍 customStartHour:", customStartHour);
+      console.log("🔍 customStartMinute:", customStartMinute);
+      console.log("🔍 customDuration:", customDuration);
 
       if (bookingType === "MULTI_DAY" && checkInDate && checkOutDate) {
         console.log("🔍 Taking MULTI_DAY path");
-        const checkInTime =
-          serviceDetail?.bookingConfig?.defaultCheckInTime || "15:00";
-        const checkOutTime =
-          serviceDetail?.bookingConfig?.defaultCheckOutTime || "11:00";
+        const checkInTime = bookingConfig?.defaultCheckInTime || "15:00";
+        const checkOutTime = bookingConfig?.defaultCheckOutTime || "11:00";
 
         const startDateTime = new Date(checkInDate);
         const [checkInHour, checkInMinute] = checkInTime.split(":").map(Number);
@@ -815,74 +1009,92 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
         selectedDates.length > 0
       ) {
         console.log("🔍 Taking TIME_SLOTS path");
-        console.log("🕐 Selected time slot object:", selectedTimeSlot);
 
-        // Get the selected date
         const selectedDate = new Date(selectedDates[0]);
         const year = selectedDate.getFullYear();
         const month = selectedDate.getMonth();
         const day = selectedDate.getDate();
 
-        console.log(
-          "🕐 Date components - Year:",
-          year,
-          "Month:",
-          month,
-          "Day:",
-          day
-        );
-
         // Use the exact times from the API response
-        const startTimeStr = selectedTimeSlot.slotStartTime; // e.g., "14:30:00"
-        const endTimeStr = selectedTimeSlot.slotEndTime; // e.g., "15:30:00"
-
-        console.log("🕐 API times - Start:", startTimeStr, "End:", endTimeStr);
+        const startTimeStr = selectedTimeSlot.slotStartTime;
+        const endTimeStr = selectedTimeSlot.slotEndTime;
 
         // Create ISO datetime strings by combining date and time
         const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(
           day
         ).padStart(2, "0")}`;
-        // Remove seconds from time if present (14:30:00 -> 14:30)
         const startTimeFormatted = startTimeStr.substring(0, 5);
         const endTimeFormatted = endTimeStr.substring(0, 5);
         startTime = `${dateStr}T${startTimeFormatted}`;
         endTime = `${dateStr}T${endTimeFormatted}`;
+      } else if (bookingType === "FLEXIBLE_HOURS" && selectedDates.length > 0) {
+        console.log("🔍 Taking FLEXIBLE_HOURS path");
 
-        console.log(
-          "🕐 Final datetime strings - Start:",
-          startTime,
-          "End:",
-          endTime
-        );
-      } else if (bookingType === "WHOLE_DAY" && selectedDates.length > 0) {
-        console.log("🔍 Taking WHOLE_DAY path");
         const selectedDate = new Date(selectedDates[0]);
         const year = selectedDate.getFullYear();
         const month = selectedDate.getMonth();
         const day = selectedDate.getDate();
 
-        const startDateTime = new Date(year, month, day, 0, 0, 0, 0); // Start of day
-        const endDateTime = new Date(year, month, day, 23, 59, 59, 999); // End of day
+        // Calculate start and end times based on custom selection
+        const startDateTime = new Date(
+          year,
+          month,
+          day,
+          customStartHour,
+          customStartMinute,
+          0,
+          0
+        );
+
+        // Calculate end time based on duration
+        const endDateTime = new Date(startDateTime);
+        const durationMs = customDuration * 60 * 60 * 1000; // Convert hours to milliseconds
+        endDateTime.setTime(endDateTime.getTime() + durationMs);
 
         startTime = startDateTime.toISOString();
         endTime = endDateTime.toISOString();
-      } else if (bookingType === "EVENT_BASED" && selectedDates.length > 0) {
-        console.log("🔍 Taking EVENT_BASED path");
-        // For event-based services, use the selected date with event time
+      } else if (bookingType === "WHOLE_DAY" && selectedDates.length > 0) {
+        console.log("🔍 Taking WHOLE_DAY path");
+
         const selectedDate = new Date(selectedDates[0]);
         const year = selectedDate.getFullYear();
         const month = selectedDate.getMonth();
         const day = selectedDate.getDate();
 
-        // Default event time or from service config
-        const eventStartTime = "09:00"; // Could be from serviceDetail if available
-        const eventEndTime = "17:00";
+        // Use service operating hours if available, otherwise full day
+        const serviceHours = serviceDetail?.availableTimeDTOS?.find(
+          (schedule) =>
+            !schedule.isClosed &&
+            schedule.dayOfWeek ===
+              [
+                "Sunday",
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+              ][selectedDate.getDay()]
+        );
+
+        let startHour = 0,
+          startMinute = 0,
+          endHour = 23,
+          endMinute = 59;
+
+        if (serviceHours && !serviceHours.is24Hours) {
+          [startHour, startMinute] = serviceHours.openTime
+            .split(":")
+            .map(Number);
+          [endHour, endMinute] = serviceHours.closeTime.split(":").map(Number);
+        }
 
         const startDateTime = new Date(
           year,
           month,
           day,
-          ...eventStartTime.split(":").map(Number),
+          startHour,
+          startMinute,
           0,
           0
         );
@@ -890,7 +1102,109 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
           year,
           month,
           day,
-          ...eventEndTime.split(":").map(Number),
+          endHour,
+          endMinute,
+          0,
+          0
+        );
+
+        startTime = startDateTime.toISOString();
+        endTime = endDateTime.toISOString();
+      } else if (bookingType === "FIXED_TIME" && selectedDates.length > 0) {
+        console.log("🔍 Taking FIXED_TIME path");
+
+        const selectedDate = new Date(selectedDates[0]);
+        const dayName = [
+          "Sunday",
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+        ][selectedDate.getDay()];
+
+        // Find the service hours for the selected day
+        const serviceHours = serviceDetail?.availableTimeDTOS?.find(
+          (schedule) => schedule.dayOfWeek === dayName && !schedule.isClosed
+        );
+
+        if (serviceHours) {
+          const year = selectedDate.getFullYear();
+          const month = selectedDate.getMonth();
+          const day = selectedDate.getDate();
+
+          const [startHour, startMinute] = serviceHours.openTime
+            .split(":")
+            .map(Number);
+          const [endHour, endMinute] = serviceHours.closeTime
+            .split(":")
+            .map(Number);
+
+          const startDateTime = new Date(
+            year,
+            month,
+            day,
+            startHour,
+            startMinute,
+            0,
+            0
+          );
+          const endDateTime = new Date(
+            year,
+            month,
+            day,
+            endHour,
+            endMinute,
+            0,
+            0
+          );
+
+          startTime = startDateTime.toISOString();
+          endTime = endDateTime.toISOString();
+        } else {
+          // Fallback to default hours
+          const year = selectedDate.getFullYear();
+          const month = selectedDate.getMonth();
+          const day = selectedDate.getDate();
+
+          const startDateTime = new Date(year, month, day, 9, 0, 0, 0);
+          const endDateTime = new Date(year, month, day, 17, 0, 0, 0);
+
+          startTime = startDateTime.toISOString();
+          endTime = endDateTime.toISOString();
+        }
+      } else if (bookingType === "EVENT_BASED" && selectedDates.length > 0) {
+        console.log("🔍 Taking EVENT_BASED path");
+
+        const selectedDate = new Date(selectedDates[0]);
+        const year = selectedDate.getFullYear();
+        const month = selectedDate.getMonth();
+        const day = selectedDate.getDate();
+
+        // For event-based services, you might need additional event data
+        // For now, use default event hours
+        const eventStartTime = "09:00";
+        const eventEndTime = "17:00";
+
+        const [startHour, startMinute] = eventStartTime.split(":").map(Number);
+        const [endHour, endMinute] = eventEndTime.split(":").map(Number);
+
+        const startDateTime = new Date(
+          year,
+          month,
+          day,
+          startHour,
+          startMinute,
+          0,
+          0
+        );
+        const endDateTime = new Date(
+          year,
+          month,
+          day,
+          endHour,
+          endMinute,
           0,
           0
         );
@@ -899,14 +1213,14 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
         endTime = endDateTime.toISOString();
       } else if (selectedDates.length > 0) {
         console.log("🔍 Taking default/fallback path");
-        // For other types or fallback
+
         const selectedDate = new Date(selectedDates[0]);
         const year = selectedDate.getFullYear();
         const month = selectedDate.getMonth();
         const day = selectedDate.getDate();
 
-        const startDateTime = new Date(year, month, day, 9, 0, 0, 0); // Default 9 AM start
-        const endDateTime = new Date(year, month, day, 17, 0, 0, 0); // Default 5 PM end
+        const startDateTime = new Date(year, month, day, 9, 0, 0, 0);
+        const endDateTime = new Date(year, month, day, 17, 0, 0, 0);
 
         startTime = startDateTime.toISOString();
         endTime = endDateTime.toISOString();
@@ -949,7 +1263,6 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
           [{ text: "OK", onPress: () => onTripAdded?.() }]
         );
       } else if (!response.success) {
-        // Handle bad request or other API errors
         const errorMessage =
           response.message || "Failed to add service to trip";
         console.error("API Error:", response);
@@ -958,11 +1271,9 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
     } catch (error) {
       console.error("Error adding to trip:", error);
 
-      // Try to extract more specific error information
       let errorMessage = "Failed to add service to trip. Please try again.";
 
       if (error && typeof error === "object") {
-        // Check if it's an API error with response data
         if ("response" in error && error.response) {
           const response = error.response as any;
           if (response.data && response.data.message) {
@@ -970,9 +1281,7 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
           } else if (response.statusText) {
             errorMessage = `Error: ${response.statusText}`;
           }
-        }
-        // Check if it's a standard Error object with message
-        else if ("message" in error && typeof error.message === "string") {
+        } else if ("message" in error && typeof error.message === "string") {
           errorMessage = error.message;
         }
       }
@@ -984,6 +1293,8 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
   };
 
   const goBack = () => {
+    const bookingType = serviceDetail?.bookingConfig?.bookingType;
+
     switch (currentStep) {
       case FlowStep.TRAVELERS_UNITS:
         setCurrentStep(FlowStep.TRIP_SELECTION);
@@ -995,31 +1306,19 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
         setCurrentStep(FlowStep.DATE_SELECTION);
         break;
       case FlowStep.PRICE_SUMMARY:
-        const bookingType = serviceDetail?.bookingConfig?.bookingType;
-        if (
-          bookingType === "TIME_SLOTS" ||
-          bookingType === "FLEXIBLE_HOURS" ||
-          bookingType === "FIXED_TIME"
-        ) {
+        if (needsTimeSelection(bookingType)) {
           setCurrentStep(FlowStep.TIME_DURATION);
         } else {
           setCurrentStep(FlowStep.DATE_SELECTION);
         }
         break;
       case FlowStep.CONFIRMATION:
-        if (serviceDetail?.priceConfig) {
+        if (shouldShowPricing()) {
           setCurrentStep(FlowStep.PRICE_SUMMARY);
+        } else if (needsTimeSelection(bookingType)) {
+          setCurrentStep(FlowStep.TIME_DURATION);
         } else {
-          const bookingType = serviceDetail?.bookingConfig?.bookingType;
-          if (
-            bookingType === "TIME_SLOTS" ||
-            bookingType === "FLEXIBLE_HOURS" ||
-            bookingType === "FIXED_TIME"
-          ) {
-            setCurrentStep(FlowStep.TIME_DURATION);
-          } else {
-            setCurrentStep(FlowStep.DATE_SELECTION);
-          }
+          setCurrentStep(FlowStep.DATE_SELECTION);
         }
         break;
       default:
@@ -1065,128 +1364,790 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
     return `${startFormatted} • ${diffDays} day${diffDays > 1 ? "s" : ""}`;
   };
 
-  const renderTravelersUnitsContent = () => (
-    <View style={styles.content}>
-      <Text style={styles.subtitle}>
-        Select the number of travelers and units needed
-      </Text>
+  // Helper function to validate travelers and units
+  const validateTravelersAndUnits = (): {
+    isValid: boolean;
+    errorMessage?: string;
+  } => {
+    const bookingConfig = serviceDetail?.bookingConfig;
+    const priceConfig = serviceDetail?.priceConfig;
 
-      {/* Adults Section */}
-      <View style={styles.sectionContainer}>
-        <Text style={styles.sectionTitle}>Travelers</Text>
+    // Basic validation - at least one traveler required
+    if (adults + children === 0) {
+      return {
+        isValid: false,
+        errorMessage: "At least one traveler is required.",
+      };
+    }
 
-        <View style={styles.counterRow}>
-          <View style={styles.counterInfo}>
-            <Text style={styles.counterLabel}>Adults</Text>
-            <Text style={styles.counterSubLabel}>13+ years</Text>
+    // Basic validation - at least one unit required
+    if (units < 1) {
+      return {
+        isValid: false,
+        errorMessage: "At least one unit is required.",
+      };
+    }
+
+    // Validate minimum units per booking
+    if (
+      bookingConfig?.minUnitsPerBooking &&
+      units < bookingConfig.minUnitsPerBooking
+    ) {
+      return {
+        isValid: false,
+        errorMessage: `Minimum ${bookingConfig.minUnitsPerBooking} unit${
+          bookingConfig.minUnitsPerBooking > 1 ? "s" : ""
+        } required per booking.`,
+      };
+    }
+
+    // Validate maximum units per booking
+    if (
+      bookingConfig?.maxUnitsPerBooking &&
+      units > bookingConfig.maxUnitsPerBooking
+    ) {
+      return {
+        isValid: false,
+        errorMessage: `Maximum ${bookingConfig.maxUnitsPerBooking} unit${
+          bookingConfig.maxUnitsPerBooking > 1 ? "s" : ""
+        } allowed per booking.`,
+      };
+    }
+
+    // Check total units availability
+    if (bookingConfig?.totalUnits && units > bookingConfig.totalUnits) {
+      return {
+        isValid: false,
+        errorMessage: `Only ${bookingConfig.totalUnits} unit${
+          bookingConfig.totalUnits > 1 ? "s" : ""
+        } available in total.`,
+      };
+    }
+
+    // Capacity management validation - Enhanced for precise adult/child capacity handling
+    if (bookingConfig?.manageCapacity) {
+      // If both adult and child capacities are defined separately
+      if (bookingConfig.unitAdultCapacity && bookingConfig.unitChildCapacity) {
+        const baseAdultCapacity = bookingConfig.unitAdultCapacity * units;
+        const baseChildCapacity = bookingConfig.unitChildCapacity * units;
+
+        // Validate adult capacity
+        if (adults > baseAdultCapacity) {
+          const excessAdults = adults - baseAdultCapacity;
+
+          if (!bookingConfig.allowExtraCapacity) {
+            // Calculate minimum units needed for adults
+            const minUnitsForAdults = Math.ceil(
+              adults / bookingConfig.unitAdultCapacity
+            );
+            return {
+              isValid: false,
+              errorMessage: `${adults} adults require at least ${minUnitsForAdults} unit${
+                minUnitsForAdults > 1 ? "s" : ""
+              }. Current: ${units} unit${
+                units > 1 ? "s" : ""
+              } (max ${baseAdultCapacity} adults).`,
+            };
+          }
+
+          // Check extra adult capacity limits
+          if (
+            bookingConfig.extraAdultCapacityLimit !== undefined &&
+            excessAdults > bookingConfig.extraAdultCapacityLimit
+          ) {
+            return {
+              isValid: false,
+              errorMessage: `Maximum ${
+                bookingConfig.extraAdultCapacityLimit
+              } extra adult${
+                bookingConfig.extraAdultCapacityLimit > 1 ? "s" : ""
+              } allowed across all units.`,
+            };
+          }
+        }
+
+        // Validate child capacity
+        if (children > baseChildCapacity) {
+          const excessChildren = children - baseChildCapacity;
+
+          if (!bookingConfig.allowExtraCapacity) {
+            // Calculate minimum units needed for children
+            const minUnitsForChildren = Math.ceil(
+              children / bookingConfig.unitChildCapacity
+            );
+            return {
+              isValid: false,
+              errorMessage: `${children} child${
+                children > 1 ? "ren" : ""
+              } require at least ${minUnitsForChildren} unit${
+                minUnitsForChildren > 1 ? "s" : ""
+              }. Current: ${units} unit${
+                units > 1 ? "s" : ""
+              } (max ${baseChildCapacity} children).`,
+            };
+          }
+
+          // Check extra child capacity limits
+          if (
+            bookingConfig.extraChildCapacityLimit !== undefined &&
+            excessChildren > bookingConfig.extraChildCapacityLimit
+          ) {
+            return {
+              isValid: false,
+              errorMessage: `Maximum ${
+                bookingConfig.extraChildCapacityLimit
+              } extra child${
+                bookingConfig.extraChildCapacityLimit > 1 ? "ren" : ""
+              } allowed across all units.`,
+            };
+          }
+        }
+
+        // Check if current units are insufficient (suggest more units)
+        const minUnitsForAdults = Math.ceil(
+          adults / bookingConfig.unitAdultCapacity
+        );
+        const minUnitsForChildren = Math.ceil(
+          children / bookingConfig.unitChildCapacity
+        );
+        const requiredUnits = Math.max(minUnitsForAdults, minUnitsForChildren);
+
+        if (units < requiredUnits && !bookingConfig.allowExtraCapacity) {
+          return {
+            isValid: false,
+            errorMessage: `Insufficient units. Need ${requiredUnits} unit${
+              requiredUnits > 1 ? "s" : ""
+            } for ${adults} adult${
+              adults > 1 ? "s" : ""
+            } and ${children} child${children > 1 ? "ren" : ""}.`,
+          };
+        }
+      }
+
+      // If only adult capacity is defined (treats as total capacity per unit)
+      else if (bookingConfig.unitAdultCapacity) {
+        const totalTravelers = adults + children;
+        const baseCapacity = bookingConfig.unitAdultCapacity * units;
+
+        if (totalTravelers > baseCapacity) {
+          if (!bookingConfig.allowExtraCapacity) {
+            const requiredUnits = Math.ceil(
+              totalTravelers / bookingConfig.unitAdultCapacity
+            );
+            return {
+              isValid: false,
+              errorMessage: `${totalTravelers} traveler${
+                totalTravelers > 1 ? "s" : ""
+              } require at least ${requiredUnits} unit${
+                requiredUnits > 1 ? "s" : ""
+              }. Current: ${units} unit${
+                units > 1 ? "s" : ""
+              } (max ${baseCapacity} people).`,
+            };
+          }
+
+          // Check total extra capacity limit
+          const extraPeopleNeeded = totalTravelers - baseCapacity;
+          const maxExtraCapacity =
+            (bookingConfig.extraAdultCapacityLimit || 0) +
+            (bookingConfig.extraChildCapacityLimit || 0);
+
+          if (maxExtraCapacity > 0 && extraPeopleNeeded > maxExtraCapacity) {
+            return {
+              isValid: false,
+              errorMessage: `Maximum ${maxExtraCapacity} extra people allowed across all units.`,
+            };
+          }
+        }
+      }
+    }
+
+    // Pricing-related validation
+    if (priceConfig) {
+      // For per-unit pricing, ensure units make sense with travelers
+      if (
+        priceConfig.priceType === "PER_UNIT" &&
+        bookingConfig?.manageCapacity
+      ) {
+        const unitCapacity = bookingConfig.unitAdultCapacity || 1;
+        const recommendedUnits = Math.ceil((adults + children) / unitCapacity);
+
+        // Warn if units seem insufficient (not blocking, just informative)
+        if (units < recommendedUnits && !bookingConfig.allowExtraCapacity) {
+          return {
+            isValid: false,
+            errorMessage: `${recommendedUnits} unit${
+              recommendedUnits > 1 ? "s" : ""
+            } recommended for ${adults + children} traveler${
+              adults + children > 1 ? "s" : ""
+            }.`,
+          };
+        }
+      }
+
+      // For per-person pricing with extra charges, validate extra capacity costs
+      if (
+        priceConfig.priceType === "PER_PERSON" &&
+        priceConfig.extraPerAdult &&
+        priceConfig.extraPerChild
+      ) {
+        if (bookingConfig?.manageCapacity && bookingConfig.unitAdultCapacity) {
+          const baseCapacity = bookingConfig.unitAdultCapacity * units;
+          const extraPeople = Math.max(0, adults + children - baseCapacity);
+
+          // Ensure extra charges are configured if extra capacity is being used
+          if (
+            extraPeople > 0 &&
+            !priceConfig.extraPerAdult &&
+            !priceConfig.extraPerChild
+          ) {
+            return {
+              isValid: false,
+              errorMessage:
+                "Extra capacity pricing not configured for this service.",
+            };
+          }
+        }
+      }
+
+      // Validate deposit requirements
+      if (priceConfig.requiresDeposit && !priceConfig.depositAmount) {
+        return {
+          isValid: false,
+          errorMessage: "Deposit amount not configured for this service.",
+        };
+      }
+    }
+
+    // Booking type specific validations
+    if (bookingConfig?.bookingType) {
+      switch (bookingConfig.bookingType) {
+        case "MULTI_DAY":
+          // For multi-day bookings, units often represent rooms/accommodations
+          if (bookingConfig.manageCapacity && bookingConfig.unitAdultCapacity) {
+            const totalCapacity = bookingConfig.unitAdultCapacity * units;
+            if (
+              adults + children > totalCapacity &&
+              !bookingConfig.allowExtraCapacity
+            ) {
+              return {
+                isValid: false,
+                errorMessage: `${units} unit${
+                  units > 1 ? "s" : ""
+                } can accommodate maximum ${totalCapacity} guest${
+                  totalCapacity > 1 ? "s" : ""
+                }.`,
+              };
+            }
+          }
+          break;
+
+        case "TIME_SLOTS":
+          // For time slots, validate that we don't exceed slot capacity
+          if (bookingConfig.totalUnits && units > bookingConfig.totalUnits) {
+            return {
+              isValid: false,
+              errorMessage: `Only ${bookingConfig.totalUnits} slot${
+                bookingConfig.totalUnits > 1 ? "s" : ""
+              } available for this time.`,
+            };
+          }
+          break;
+
+        case "FLEXIBLE_HOURS":
+          // For flexible hours, ensure reasonable unit count
+          if (units > 10) {
+            // Arbitrary reasonable limit
+            return {
+              isValid: false,
+              errorMessage:
+                "Maximum 10 units allowed for flexible hour bookings.",
+            };
+          }
+          break;
+      }
+    }
+
+    return { isValid: true };
+  };
+
+  // Helper function to suggest optimal units based on travelers and configuration
+  const getSuggestedUnits = (): number => {
+    const bookingConfig = serviceDetail?.bookingConfig;
+
+    if (!bookingConfig?.manageCapacity) {
+      return 1; // Default to 1 if no capacity management
+    }
+
+    let suggestedUnits = 1;
+
+    // Calculate units needed based on separate adult and child capacities
+    if (bookingConfig.unitAdultCapacity && bookingConfig.unitChildCapacity) {
+      // Both adult and child capacities are defined
+      const unitsForAdults = Math.ceil(
+        adults / bookingConfig.unitAdultCapacity
+      );
+      const unitsForChildren = Math.ceil(
+        children / bookingConfig.unitChildCapacity
+      );
+
+      // Take the maximum of both requirements
+      suggestedUnits = Math.max(unitsForAdults, unitsForChildren, 1);
+    } else if (bookingConfig.unitAdultCapacity) {
+      // Only adult capacity defined - treat as total capacity per unit
+      const totalTravelers = adults + children;
+      suggestedUnits = Math.ceil(
+        totalTravelers / bookingConfig.unitAdultCapacity
+      );
+    } else {
+      // No specific capacities defined
+      suggestedUnits = 1;
+    }
+
+    // Apply minimum units constraint
+    if (bookingConfig.minUnitsPerBooking) {
+      suggestedUnits = Math.max(
+        suggestedUnits,
+        bookingConfig.minUnitsPerBooking
+      );
+    }
+
+    // Apply maximum units constraint
+    if (bookingConfig.maxUnitsPerBooking) {
+      suggestedUnits = Math.min(
+        suggestedUnits,
+        bookingConfig.maxUnitsPerBooking
+      );
+    }
+
+    // Apply total units availability constraint
+    if (bookingConfig.totalUnits) {
+      suggestedUnits = Math.min(suggestedUnits, bookingConfig.totalUnits);
+    }
+
+    return Math.max(1, suggestedUnits);
+  };
+
+  // Helper function to get smart unit counter limits
+  const getUnitCounterLimits = () => {
+    const bookingConfig = serviceDetail?.bookingConfig;
+
+    let minUnits = 1;
+    let maxUnits = 999; // Large default
+
+    // Apply booking config constraints
+    if (bookingConfig?.minUnitsPerBooking) {
+      minUnits = Math.max(minUnits, bookingConfig.minUnitsPerBooking);
+    }
+
+    if (bookingConfig?.maxUnitsPerBooking) {
+      maxUnits = Math.min(maxUnits, bookingConfig.maxUnitsPerBooking);
+    }
+
+    if (bookingConfig?.totalUnits) {
+      maxUnits = Math.min(maxUnits, bookingConfig.totalUnits);
+    }
+
+    // For certain booking types, apply reasonable limits
+    if (bookingConfig?.bookingType === "FLEXIBLE_HOURS") {
+      maxUnits = Math.min(maxUnits, 10);
+    }
+
+    return { minUnits, maxUnits };
+  };
+
+  const renderTravelersUnitsContent = () => {
+    const bookingConfig = serviceDetail?.bookingConfig;
+
+    return (
+      <View style={styles.content}>
+        <Text style={styles.subtitle}>
+          Select the number of travelers and units needed
+        </Text>
+
+        {/* Adults Section */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Travelers</Text>
+
+          <View style={styles.counterRow}>
+            <View style={styles.counterInfo}>
+              <Text style={styles.counterLabel}>Adults</Text>
+              <Text style={styles.counterSubLabel}>13+ years</Text>
+            </View>
+            <View style={styles.counterControls}>
+              <TouchableOpacity
+                style={[
+                  styles.counterButton,
+                  adults <= 1 && styles.counterButtonDisabled,
+                ]}
+                onPress={() => adults > 1 && setAdults(adults - 1)}
+                disabled={adults <= 1}
+              >
+                <Ionicons
+                  name="remove"
+                  size={20}
+                  color={adults <= 1 ? "#D1D5DB" : "#008080"}
+                />
+              </TouchableOpacity>
+              <Text style={styles.counterValue}>{adults}</Text>
+              <TouchableOpacity
+                style={styles.counterButton}
+                onPress={() => setAdults(adults + 1)}
+              >
+                <Ionicons name="add" size={20} color="#008080" />
+              </TouchableOpacity>
+            </View>
           </View>
-          <View style={styles.counterControls}>
-            <TouchableOpacity
-              style={[
-                styles.counterButton,
-                adults <= 1 && styles.counterButtonDisabled,
-              ]}
-              onPress={() => adults > 1 && setAdults(adults - 1)}
-              disabled={adults <= 1}
-            >
-              <Ionicons
-                name="remove"
-                size={20}
-                color={adults <= 1 ? "#D1D5DB" : "#008080"}
-              />
-            </TouchableOpacity>
-            <Text style={styles.counterValue}>{adults}</Text>
-            <TouchableOpacity
-              style={styles.counterButton}
-              onPress={() => setAdults(adults + 1)}
-            >
-              <Ionicons name="add" size={20} color="#008080" />
-            </TouchableOpacity>
+
+          <View style={styles.counterRow}>
+            <View style={styles.counterInfo}>
+              <Text style={styles.counterLabel}>Children</Text>
+              <Text style={styles.counterSubLabel}>2-12 years</Text>
+            </View>
+            <View style={styles.counterControls}>
+              <TouchableOpacity
+                style={[
+                  styles.counterButton,
+                  children <= 0 && styles.counterButtonDisabled,
+                ]}
+                onPress={() => children > 0 && setChildren(children - 1)}
+                disabled={children <= 0}
+              >
+                <Ionicons
+                  name="remove"
+                  size={20}
+                  color={children <= 0 ? "#D1D5DB" : "#008080"}
+                />
+              </TouchableOpacity>
+              <Text style={styles.counterValue}>{children}</Text>
+              <TouchableOpacity
+                style={styles.counterButton}
+                onPress={() => setChildren(children + 1)}
+              >
+                <Ionicons name="add" size={20} color="#008080" />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
-        <View style={styles.counterRow}>
-          <View style={styles.counterInfo}>
-            <Text style={styles.counterLabel}>Children</Text>
-            <Text style={styles.counterSubLabel}>2-12 years</Text>
+        {/* Units Section */}
+        <View style={styles.sectionContainer}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Text style={styles.sectionTitle}>Units</Text>
+            {(() => {
+              const suggested = getSuggestedUnits();
+              return (
+                suggested !== units && (
+                  <TouchableOpacity
+                    style={{
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                      backgroundColor: "#E0F2F1",
+                      borderRadius: 12,
+                    }}
+                    onPress={() => setUnits(suggested)}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        color: "#008080",
+                        fontWeight: "500",
+                      }}
+                    >
+                      Suggested: {suggested}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              );
+            })()}
           </View>
-          <View style={styles.counterControls}>
-            <TouchableOpacity
-              style={[
-                styles.counterButton,
-                children <= 0 && styles.counterButtonDisabled,
-              ]}
-              onPress={() => children > 0 && setChildren(children - 1)}
-              disabled={children <= 0}
-            >
-              <Ionicons
-                name="remove"
-                size={20}
-                color={children <= 0 ? "#D1D5DB" : "#008080"}
-              />
-            </TouchableOpacity>
-            <Text style={styles.counterValue}>{children}</Text>
-            <TouchableOpacity
-              style={styles.counterButton}
-              onPress={() => setChildren(children + 1)}
-            >
-              <Ionicons name="add" size={20} color="#008080" />
-            </TouchableOpacity>
+
+          <View style={styles.counterRow}>
+            <View style={styles.counterInfo}>
+              <Text style={styles.counterLabel}>
+                {bookingConfig?.unitAdultCapacity
+                  ? bookingConfig.bookingType === "MULTI_DAY"
+                    ? "Rooms/Accommodations"
+                    : "Units/Groups"
+                  : "Units"}
+              </Text>
+              <Text style={styles.counterSubLabel}>
+                {bookingConfig?.unitAdultCapacity &&
+                bookingConfig?.unitChildCapacity
+                  ? `${bookingConfig.unitAdultCapacity} adults + ${bookingConfig.unitChildCapacity} children per unit`
+                  : bookingConfig?.unitAdultCapacity
+                  ? `${bookingConfig.unitAdultCapacity} guests per unit`
+                  : bookingConfig?.totalUnits
+                  ? `${bookingConfig.totalUnits} total available`
+                  : "Select number needed"}
+              </Text>
+            </View>
+            <View style={styles.counterControls}>
+              {(() => {
+                const { minUnits, maxUnits } = getUnitCounterLimits();
+                return (
+                  <>
+                    <TouchableOpacity
+                      style={[
+                        styles.counterButton,
+                        units <= minUnits && styles.counterButtonDisabled,
+                      ]}
+                      onPress={() => {
+                        if (units > minUnits) setUnits(units - 1);
+                      }}
+                      disabled={units <= minUnits}
+                    >
+                      <Ionicons
+                        name="remove"
+                        size={20}
+                        color={units <= minUnits ? "#D1D5DB" : "#008080"}
+                      />
+                    </TouchableOpacity>
+                    <Text style={styles.counterValue}>{units}</Text>
+                    <TouchableOpacity
+                      style={[
+                        styles.counterButton,
+                        units >= maxUnits && styles.counterButtonDisabled,
+                      ]}
+                      onPress={() => {
+                        if (units < maxUnits) setUnits(units + 1);
+                      }}
+                      disabled={units >= maxUnits}
+                    >
+                      <Ionicons
+                        name="add"
+                        size={20}
+                        color={units >= maxUnits ? "#D1D5DB" : "#008080"}
+                      />
+                    </TouchableOpacity>
+                  </>
+                );
+              })()}
+            </View>
           </View>
+
+          {/* Enhanced capacity information */}
+          {bookingConfig?.manageCapacity && (
+            <View style={styles.capacityInfo}>
+              {bookingConfig.unitAdultCapacity &&
+              bookingConfig.unitChildCapacity ? (
+                // Detailed capacity breakdown for separate adult/child limits
+                <View>
+                  <Text style={styles.capacityText}>
+                    Capacity per unit: {bookingConfig.unitAdultCapacity} adults
+                    + {bookingConfig.unitChildCapacity} children
+                  </Text>
+                  <Text style={styles.capacityText}>
+                    Total capacity: {bookingConfig.unitAdultCapacity * units}{" "}
+                    adults + {bookingConfig.unitChildCapacity * units} children
+                  </Text>
+
+                  {/* Check if we need more units for adults */}
+                  {adults > bookingConfig.unitAdultCapacity * units && (
+                    <Text
+                      style={[
+                        styles.capacityText,
+                        { color: "#EF4444", fontWeight: "600" },
+                      ]}
+                    >
+                      ⚠️ Need{" "}
+                      {Math.ceil(adults / bookingConfig.unitAdultCapacity)} unit
+                      {Math.ceil(adults / bookingConfig.unitAdultCapacity) > 1
+                        ? "s"
+                        : ""}{" "}
+                      for {adults} adults
+                    </Text>
+                  )}
+
+                  {/* Check if we need more units for children */}
+                  {children > bookingConfig.unitChildCapacity * units && (
+                    <Text
+                      style={[
+                        styles.capacityText,
+                        { color: "#EF4444", fontWeight: "600" },
+                      ]}
+                    >
+                      ⚠️ Need{" "}
+                      {Math.ceil(children / bookingConfig.unitChildCapacity)}{" "}
+                      unit
+                      {Math.ceil(children / bookingConfig.unitChildCapacity) > 1
+                        ? "s"
+                        : ""}{" "}
+                      for {children} children
+                    </Text>
+                  )}
+
+                  {/* Show extra capacity usage if allowed */}
+                  {(adults > bookingConfig.unitAdultCapacity * units ||
+                    children > bookingConfig.unitChildCapacity * units) &&
+                    bookingConfig.allowExtraCapacity && (
+                      <Text style={[styles.capacityText, { color: "#F59E0B" }]}>
+                        Extra capacity:{" "}
+                        {Math.max(
+                          0,
+                          adults - bookingConfig.unitAdultCapacity * units
+                        )}{" "}
+                        adults,{" "}
+                        {Math.max(
+                          0,
+                          children - bookingConfig.unitChildCapacity * units
+                        )}{" "}
+                        children
+                      </Text>
+                    )}
+
+                  {/* Show if current selection is optimal */}
+                  {(() => {
+                    const requiredAdultUnits = Math.ceil(
+                      adults / bookingConfig.unitAdultCapacity
+                    );
+                    const requiredChildUnits = Math.ceil(
+                      children / bookingConfig.unitChildCapacity
+                    );
+                    const optimalUnits = Math.max(
+                      requiredAdultUnits,
+                      requiredChildUnits
+                    );
+
+                    if (
+                      units === optimalUnits &&
+                      adults <= bookingConfig.unitAdultCapacity * units &&
+                      children <= bookingConfig.unitChildCapacity * units
+                    ) {
+                      return (
+                        <Text
+                          style={[
+                            styles.capacityText,
+                            { color: "#059669", fontWeight: "600" },
+                          ]}
+                        >
+                          ✓ Optimal unit selection
+                        </Text>
+                      );
+                    }
+                    return null;
+                  })()}
+                </View>
+              ) : bookingConfig.unitAdultCapacity ? (
+                // Simple capacity (total people per unit)
+                <View>
+                  <Text style={styles.capacityText}>
+                    Capacity per unit: {bookingConfig.unitAdultCapacity} people
+                  </Text>
+                  <Text style={styles.capacityText}>
+                    Total capacity: {bookingConfig.unitAdultCapacity * units}{" "}
+                    people
+                  </Text>
+
+                  {/* Check if we need more units */}
+                  {adults + children >
+                    bookingConfig.unitAdultCapacity * units && (
+                    <Text
+                      style={[
+                        styles.capacityText,
+                        {
+                          color: bookingConfig.allowExtraCapacity
+                            ? "#F59E0B"
+                            : "#EF4444",
+                          fontWeight: "600",
+                        },
+                      ]}
+                    >
+                      {bookingConfig.allowExtraCapacity
+                        ? `Extra: ${
+                            adults +
+                            children -
+                            bookingConfig.unitAdultCapacity * units
+                          } people`
+                        : `⚠️ Need ${Math.ceil(
+                            (adults + children) /
+                              bookingConfig.unitAdultCapacity
+                          )} unit${
+                            Math.ceil(
+                              (adults + children) /
+                                bookingConfig.unitAdultCapacity
+                            ) > 1
+                              ? "s"
+                              : ""
+                          } for ${adults + children} people`}
+                    </Text>
+                  )}
+
+                  {/* Show if optimal */}
+                  {(() => {
+                    const optimalUnits = Math.ceil(
+                      (adults + children) / bookingConfig.unitAdultCapacity
+                    );
+                    if (
+                      units === optimalUnits &&
+                      adults + children <=
+                        bookingConfig.unitAdultCapacity * units
+                    ) {
+                      return (
+                        <Text
+                          style={[
+                            styles.capacityText,
+                            { color: "#059669", fontWeight: "600" },
+                          ]}
+                        >
+                          ✓ Optimal unit selection
+                        </Text>
+                      );
+                    }
+                    return null;
+                  })()}
+                </View>
+              ) : (
+                <Text style={styles.capacityText}>
+                  {units} unit{units > 1 ? "s" : ""} selected
+                </Text>
+              )}
+
+              {/* Show constraints */}
+              {(bookingConfig.minUnitsPerBooking ||
+                bookingConfig.maxUnitsPerBooking ||
+                bookingConfig.totalUnits) && (
+                <Text
+                  style={[
+                    styles.capacityText,
+                    { fontSize: 11, color: "#6B7280", marginTop: 4 },
+                  ]}
+                >
+                  Constraints:
+                  {bookingConfig.minUnitsPerBooking &&
+                    ` Min: ${bookingConfig.minUnitsPerBooking}`}
+                  {bookingConfig.maxUnitsPerBooking &&
+                    ` Max: ${bookingConfig.maxUnitsPerBooking}`}
+                  {bookingConfig.totalUnits &&
+                    ` Available: ${bookingConfig.totalUnits}`}
+                </Text>
+              )}
+            </View>
+          )}
+        </View>
+
+        <View style={styles.buttonContainer}>
+          <LongButton
+            label="Continue to Dates"
+            onPress={() => {
+              const validation = validateTravelersAndUnits();
+              if (!validation.isValid) {
+                Alert.alert("Invalid Selection", validation.errorMessage);
+                return;
+              }
+              setCurrentStep(FlowStep.DATE_SELECTION);
+            }}
+          />
         </View>
       </View>
-
-      {/* Units Section */}
-      <View style={styles.sectionContainer}>
-        <Text style={styles.sectionTitle}>Units</Text>
-
-        <View style={styles.counterRow}>
-          <View style={styles.counterInfo}>
-            <Text style={styles.counterLabel}>
-              {serviceDetail?.bookingConfig?.unitAdultCapacity
-                ? "Rooms/Units"
-                : "Units"}
-            </Text>
-            <Text style={styles.counterSubLabel}>
-              {serviceDetail?.bookingConfig?.unitAdultCapacity
-                ? `${serviceDetail.bookingConfig.unitAdultCapacity} guests per unit`
-                : "Select number needed"}
-            </Text>
-          </View>
-          <View style={styles.counterControls}>
-            <TouchableOpacity
-              style={[
-                styles.counterButton,
-                units <= 1 && styles.counterButtonDisabled,
-              ]}
-              onPress={() => units > 1 && setUnits(units - 1)}
-              disabled={units <= 1}
-            >
-              <Ionicons
-                name="remove"
-                size={20}
-                color={units <= 1 ? "#D1D5DB" : "#008080"}
-              />
-            </TouchableOpacity>
-            <Text style={styles.counterValue}>{units}</Text>
-            <TouchableOpacity
-              style={styles.counterButton}
-              onPress={() => setUnits(units + 1)}
-            >
-              <Ionicons name="add" size={20} color="#008080" />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.buttonContainer}>
-        <LongButton
-          label="Continue to Dates"
-          onPress={() => setCurrentStep(FlowStep.DATE_SELECTION)}
-        />
-      </View>
-    </View>
-  );
+    );
+  };
 
   const renderTripSelection = () => (
     <View style={styles.content}>
@@ -1283,13 +2244,13 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
 
     return (
       <View style={styles.content}>
-        <Text style={styles.subtitle}>
+        {/* <Text style={styles.subtitle}>
           {bookingType === "MULTI_DAY"
             ? "Select your check-in and check-out dates"
             : bookingType === "TIME_SLOTS"
             ? "Select the date for your time slot"
             : "Select your preferred date(s)"}
-        </Text>
+        </Text> */}
 
         <DateSelectionWidget
           bookingType={bookingType}
@@ -1312,46 +2273,29 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
         <View style={styles.buttonContainer}>
           <LongButton
             label={
-              bookingType === "TIME_SLOTS" ||
-              bookingType === "FLEXIBLE_HOURS" ||
-              bookingType === "FIXED_TIME"
+              needsTimeSelection(bookingType)
                 ? "Continue to Time Selection"
-                : serviceDetail?.priceConfig
+                : shouldShowPricing()
                 ? "Continue to Pricing"
                 : "Continue to Confirmation"
             }
             onPress={() => {
-              // Check if dates are selected before proceeding
-              const hasValidDates =
-                bookingType === "MULTI_DAY"
-                  ? checkInDate && checkOutDate
-                  : selectedDates.length > 0;
-
-              if (!hasValidDates) {
+              // Validate dates before proceeding
+              const validation = validateDateSelection(
+                selectedDates,
+                checkInDate || undefined,
+                checkOutDate || undefined
+              );
+              if (!validation.isValid) {
                 Alert.alert(
-                  "Please Select Dates",
-                  "You must select dates to continue."
+                  "Please Select Valid Dates",
+                  validation.errorMessage
                 );
                 return;
               }
 
-              console.log("Date selection continue button pressed");
-              console.log("Current booking type:", bookingType);
-              const needsTimeSelection =
-                bookingType === "TIME_SLOTS" ||
-                bookingType === "FLEXIBLE_HOURS" ||
-                bookingType === "FIXED_TIME";
-
-              if (needsTimeSelection) {
-                console.log("Setting step to TIME_DURATION");
-                setCurrentStep(FlowStep.TIME_DURATION);
-              } else if (serviceDetail?.priceConfig) {
-                console.log("Setting step to PRICE_SUMMARY");
-                setCurrentStep(FlowStep.PRICE_SUMMARY);
-              } else {
-                console.log("Setting step to CONFIRMATION");
-                setCurrentStep(FlowStep.CONFIRMATION);
-              }
+              const nextStep = getNextStepAfterDates(bookingType);
+              setCurrentStep(nextStep);
             }}
           />
         </View>
@@ -1385,8 +2329,20 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
           selectedDate={selectedDates[0] || checkInDate}
           availableTimeSlots={availableTimeSlots}
           isLoading={isLoading}
+          customStartHour={customStartHour}
+          customStartMinute={customStartMinute}
+          customDuration={customDuration}
           onTimeSlotSelect={(timeSlot: TimeSlotsRequestDTO) => {
             setSelectedTimeSlot(timeSlot);
+          }}
+          onCustomTimeChange={(
+            hour: number,
+            minute: number,
+            duration: number
+          ) => {
+            setCustomStartHour(hour);
+            setCustomStartMinute(minute);
+            setCustomDuration(duration);
           }}
           onFetchTimeSlots={(date: Date) => {
             if (selectedTrip && date) {
@@ -1398,16 +2354,13 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
         <View style={styles.buttonContainer}>
           <LongButton
             label={
-              serviceDetail?.priceConfig
+              shouldShowPricing()
                 ? "Continue to Pricing"
                 : "Continue to Confirmation"
             }
             onPress={() => {
-              if (serviceDetail?.priceConfig) {
-                setCurrentStep(FlowStep.PRICE_SUMMARY);
-              } else {
-                setCurrentStep(FlowStep.CONFIRMATION);
-              }
+              const nextStep = getNextStepAfterTime();
+              setCurrentStep(nextStep);
             }}
           />
         </View>
@@ -1421,8 +2374,25 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
 
     const priceConfig = serviceDetail.priceConfig;
     const priceType = priceConfig.priceType;
+    const bookingType = serviceDetail?.bookingConfig?.bookingType;
     let basePrice = 0;
     let breakdown: Array<{ label: string; amount: number }> = [];
+
+    // Calculate duration for time-based pricing
+    const calculateDuration = () => {
+      if (bookingType === "MULTI_DAY" && checkInDate && checkOutDate) {
+        const diffTime = Math.abs(
+          checkOutDate.getTime() - checkInDate.getTime()
+        );
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      } else if (bookingType === "FLEXIBLE_HOURS") {
+        return customDuration;
+      } else {
+        return 1; // Default duration
+      }
+    };
+
+    const duration = calculateDuration();
 
     switch (priceType) {
       case "FIXED":
@@ -1471,34 +2441,90 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
         break;
 
       case "PER_HOUR":
-      case "PER_DAY":
-      case "PER_NIGHT":
-        // Calculate duration based on booking type
-        let duration = 1;
-        if (checkInDate && checkOutDate) {
-          const diffTime = Math.abs(
-            checkOutDate.getTime() - checkInDate.getTime()
-          );
-          duration = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        }
-        const timeBasedPrice =
+        const hourlyPrice =
           (priceConfig.pricePerUnit || priceConfig.fixedPrice || 0) * duration;
-        basePrice = timeBasedPrice;
+        basePrice = hourlyPrice;
         breakdown.push({
-          label: `${duration} ${
-            priceType === "PER_HOUR"
-              ? "Hour"
-              : priceType === "PER_DAY"
-              ? "Day"
-              : "Night"
-          }${duration > 1 ? "s" : ""}`,
-          amount: timeBasedPrice,
+          label: `${duration} Hour${duration > 1 ? "s" : ""}`,
+          amount: hourlyPrice,
+        });
+        break;
+
+      case "PER_DAY":
+        const dailyPrice =
+          (priceConfig.pricePerUnit || priceConfig.fixedPrice || 0) * duration;
+        basePrice = dailyPrice;
+        breakdown.push({
+          label: `${duration} Day${duration > 1 ? "s" : ""}`,
+          amount: dailyPrice,
+        });
+        break;
+
+      case "PER_NIGHT":
+        const nightlyPrice =
+          (priceConfig.pricePerUnit || priceConfig.fixedPrice || 0) *
+          Math.max(duration - 1, 1);
+        basePrice = nightlyPrice;
+        breakdown.push({
+          label: `${Math.max(duration - 1, 1)} Night${
+            Math.max(duration - 1, 1) > 1 ? "s" : ""
+          }`,
+          amount: nightlyPrice,
+        });
+        break;
+
+      case "PER_KM":
+        // For distance-based pricing, we'd need additional distance data
+        // For now, use a default or require distance input
+        const distance = 10; // This should come from route calculation or user input
+        const kmPrice = (priceConfig.pricePerUnit || 0) * distance;
+        basePrice = kmPrice;
+        breakdown.push({
+          label: `${distance} KM`,
+          amount: kmPrice,
         });
         break;
 
       default:
         basePrice = priceConfig.fixedPrice || 0;
         breakdown.push({ label: "Service Price", amount: basePrice });
+    }
+
+    // Apply unit multiplier for multi-unit bookings
+    if (units > 1 && !["PER_UNIT", "HYBRID"].includes(priceType)) {
+      basePrice *= units;
+      breakdown = breakdown.map((item) => ({
+        ...item,
+        amount: item.amount * units,
+        label: item.label + ` (×${units} units)`,
+      }));
+    }
+
+    // Calculate extra charges if applicable
+    let extraCharges = 0;
+    if (priceConfig.extraChargePerUnit && units > 1) {
+      extraCharges += priceConfig.extraChargePerUnit * (units - 1);
+    }
+    if (
+      priceConfig.extraPerAdult &&
+      adults > (serviceDetail?.bookingConfig?.unitAdultCapacity || 0)
+    ) {
+      const extraAdults =
+        adults - (serviceDetail?.bookingConfig?.unitAdultCapacity || 0);
+      extraCharges += priceConfig.extraPerAdult * extraAdults;
+    }
+    if (
+      priceConfig.extraPerChild &&
+      children > (serviceDetail?.bookingConfig?.unitChildCapacity || 0)
+    ) {
+      const extraChildren =
+        children - (serviceDetail?.bookingConfig?.unitChildCapacity || 0);
+      extraCharges += priceConfig.extraPerChild * extraChildren;
+    }
+
+    if (extraCharges > 0) {
+      breakdown.push({ label: "Extra Charges", amount: extraCharges });
+      basePrice += extraCharges;
     }
 
     // Calculate deposit/advance payment if required
@@ -1521,6 +2547,7 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
       totalPrice: basePrice,
       requiresDeposit: priceConfig.requiresDeposit || false,
       allowsAdvancePayment: priceConfig.allowAdvancePayment || false,
+      duration,
     };
   };
 
@@ -1775,7 +2802,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
     padding: 20,
-    height: "70%",
   },
   header: {
     marginBottom: 24,
@@ -1998,6 +3024,19 @@ const styles = StyleSheet.create({
     color: "#111827",
     marginHorizontal: 16,
     minWidth: 30,
+    textAlign: "center",
+  },
+  capacityInfo: {
+    backgroundColor: "#F0F8FF",
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#E6F7FF",
+  },
+  capacityText: {
+    fontSize: 14,
+    color: "#008080",
     textAlign: "center",
   },
   // Date selection styles

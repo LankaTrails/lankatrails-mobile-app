@@ -6,7 +6,12 @@ import {
   Text,
 } from "react-native";
 
-export default function LongButton({ label = "", onPress }) {
+type LongButtonProps = {
+  label?: string;
+  onPress?: () => void;
+};
+
+export default function LongButton({ label = "", onPress }: LongButtonProps) {
   const [scaleValue] = useState(new Animated.Value(1));
 
   const handlePressIn = () => {
