@@ -21,6 +21,7 @@ import SummaryCard from "../../../../components/SummaryCard";
 import TripDetailsModal, {
   TripDetails as TripDetailsType,
 } from "../../../../components/TripDetailsModal";
+import TripSharingModal from "../../../../components/TripSharingModal";
 import BookingsView from "./BookingsView";
 import ScheduleView from "./ScheduleView";
 
@@ -56,6 +57,7 @@ const TripDetails = () => {
   const [viewMode, setViewMode] = useState<"schedule" | "bookings">("schedule");
   const [showEditModal, setShowEditModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showSharingModal, setShowSharingModal] = useState(false);
   const [currentInvitationLink, setCurrentInvitationLink] =
     useState<string>("");
   const [currentInvitationRole, setCurrentInvitationRole] =
@@ -230,160 +232,10 @@ const TripDetails = () => {
         return;
       }
 
-      // First, ask user what type of invitation they want to create
-      Alert.alert(
-        "Invitation Type",
-        "What type of invitation do you want to create?\n\n• Individual: Single-use invitation for one person\n• Group: Reusable invitation link for multiple people",
-        [
-          {
-            text: "Individual Invitation",
-            onPress: () => selectRole(false),
-          },
-          {
-            text: "Group Invitation",
-            onPress: () => selectRole(true),
-          },
-          {
-            text: "Cancel",
-            style: "cancel",
-          },
-        ]
-      );
+      setShowSharingModal(true);
     } catch (error: any) {
       console.error("Failed to show invitation type selection:", error);
       Alert.alert("Error", "Failed to initiate invitation process");
-    }
-  };
-
-  const selectRole = (isGroupInvitation: boolean) => {
-    // Second, ask user what role they want to assign to the invitee(s)
-    const invitationType = isGroupInvitation ? "group" : "individual";
-    Alert.alert(
-      "Invitation Role",
-      `What role should the invited ${
-        isGroupInvitation ? "people" : "person"
-      } have?\n\n• Member: Can view and join trip\n• Editor: Can modify trip details\n• Admin: Full trip management access`,
-      [
-        {
-          text: "Member (View Only)",
-          onPress: () => generateInvitation("MEMBER", isGroupInvitation),
-        },
-        {
-          text: "Editor (Can Modify)",
-          onPress: () => generateInvitation("EDITOR", isGroupInvitation),
-        },
-        {
-          text: "Admin (Full Access)",
-          onPress: () => generateInvitation("ADMIN", isGroupInvitation),
-        },
-        {
-          text: "Back",
-          onPress: () => handleShare(), // Go back to invitation type selection
-        },
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-      ]
-    );
-  };
-  const generateInvitation = async (
-    role: "MEMBER" | "EDITOR" | "ADMIN",
-    isGroupInvitation: boolean
-  ) => {
-    try {
-      setLoading(true);
-
-      // Prepare invitation data
-      const invitationData: TripInvitationRequest = {
-        tripId: Number(tripID),
-        role: role,
-        isGroupInvitation: isGroupInvitation,
-      };
-
-      const response = await generateTripInvitation(
-        Number(tripID),
-        invitationData
-      );
-
-      if (response.success && response.data) {
-        const invitationToken = response.data;
-        // const invitationLink = `https://lankatrails.app/invite/${invitationToken}`;
-        // const invitationLink = `lankatrailsmobileapp://invite/${invitationToken}`;
-        const invitationLink = `${prefix}invite/${invitationToken}`;
-
-        // Show options to user
-        const invitationType = isGroupInvitation ? "group" : "individual";
-        Alert.alert(
-          "Share Trip Invitation",
-          `Share this ${invitationType} ${role.toLowerCase()} invitation for "${
-            trip?.tripName || tripDetails.title
-          }":`,
-          [
-            {
-              text: "Show QR Code",
-              onPress: () => {
-                setCurrentInvitationLink(invitationLink);
-                setCurrentInvitationRole(role);
-                setCurrentInvitationType(invitationType);
-                setShowQRModal(true);
-              },
-            },
-            {
-              text: "Copy Link",
-              onPress: async () => {
-                try {
-                  await Clipboard.setStringAsync(invitationLink);
-                  Alert.alert(
-                    "Success",
-                    "Invitation link copied to clipboard!"
-                  );
-                } catch (error) {
-                  console.error("Error copying to clipboard:", error);
-                  Alert.alert("Error", "Failed to copy invitation link");
-                }
-              },
-            },
-            {
-              text: "Share",
-              onPress: async () => {
-                try {
-                  const inviteMessage = isGroupInvitation
-                    ? `You're invited to join our trip "${
-                        trip?.tripName || tripDetails.title
-                      }" with ${role.toLowerCase()} access! This group invitation can be used by multiple people. Click this link to join: ${invitationLink}`
-                    : `You're invited to join our trip "${
-                        trip?.tripName || tripDetails.title
-                      }" with ${role.toLowerCase()} access! Click this link to join: ${invitationLink}`;
-
-                  await Share.share({
-                    message: inviteMessage,
-                    title: `Join ${trip?.tripName || tripDetails.title}`,
-                  });
-                } catch (error) {
-                  console.error("Error sharing:", error);
-                  Alert.alert("Error", "Failed to share invitation link");
-                }
-              },
-            },
-            {
-              text: "Cancel",
-              style: "cancel",
-            },
-          ]
-        );
-      } else {
-        throw new Error(response.message || "Failed to generate invitation");
-      }
-    } catch (error: any) {
-      console.error("Failed to generate trip invitation:", error);
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Failed to generate invitation link";
-      Alert.alert("Error", errorMessage);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -522,6 +374,13 @@ const TripDetails = () => {
         tripName={trip?.tripName || tripDetails.title}
         role={currentInvitationRole}
         invitationType={currentInvitationType}
+      />
+
+      <TripSharingModal
+        visible={showSharingModal}
+        onClose={() => setShowSharingModal(false)}
+        tripId={Number(tripID)}
+        tripName={trip?.tripName || tripDetails.title}
       />
     </>
   );
