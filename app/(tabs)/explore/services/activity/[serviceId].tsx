@@ -50,7 +50,7 @@ const convertToService = (detail: ActivityServiceDetail): Service => ({
     : [],
   mainImageUrl:
     detail.images && detail.images.length > 0 ? detail.images[0].imageUrl : "",
-  provider: detail.provider ?? null,
+  provider: null,
 });
 
 const ActivityServiceDetailPage = () => {

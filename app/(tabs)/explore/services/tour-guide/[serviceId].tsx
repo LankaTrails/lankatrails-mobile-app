@@ -50,6 +50,7 @@ const convertToService = (detail: TourGuideServiceDetail): Service => ({
     : [],
   mainImageUrl:
     detail.images && detail.images.length > 0 ? detail.images[0].imageUrl : "",
+  provider: null,
 });
 
 const TourGuideServiceDetailPage = () => {
@@ -262,10 +263,13 @@ const TourGuideServiceDetailPage = () => {
           <View className="flex-row items-start mt-1">
             <Ionicons name="location" size={24} color="#008080" />
             <Text className="ml-2 text-gray-700 w-[85%]">
-              {serviceDetail.locationBased?.formattedAddress ||
-                (serviceDetail.locationBased
-                  ? `${serviceDetail.locationBased.city}, ${serviceDetail.locationBased.district}`
-                  : "Location not available")}
+              {serviceDetail.locations && serviceDetail.locations.length > 0
+                ? serviceDetail.locations[0].formattedAddress ||
+                  (serviceDetail.locations[0].city &&
+                  serviceDetail.locations[0].district
+                    ? `${serviceDetail.locations[0].city}, ${serviceDetail.locations[0].district}`
+                    : "Location not available")
+                : "Location not available"}
             </Text>
           </View>
 
@@ -335,9 +339,9 @@ const TourGuideServiceDetailPage = () => {
           )}
 
         {/* Location Map */}
-        {serviceDetail.locationBased &&
-          serviceDetail.locationBased.latitude &&
-          serviceDetail.locationBased.longitude && (
+        {serviceDetail.locations[0] &&
+          serviceDetail.locations[0].latitude &&
+          serviceDetail.locations[0].longitude && (
             <View className="px-4 mb-6">
               <View className="flex-row items-center justify-between mb-3">
                 <Text className="text-2xl font-semibold text-gray-500">
@@ -357,7 +361,7 @@ const TourGuideServiceDetailPage = () => {
                       Address
                     </Text>
                     <Text className="text-sm text-gray-600">
-                      {serviceDetail.locationBased.formattedAddress}
+                      {serviceDetail.locations[0].formattedAddress}
                     </Text>
                   </View>
                   <Ionicons
@@ -377,8 +381,8 @@ const TourGuideServiceDetailPage = () => {
                   <MapView
                     style={{ flex: 1 }}
                     initialRegion={{
-                      latitude: serviceDetail.locationBased.latitude,
-                      longitude: serviceDetail.locationBased.longitude,
+                      latitude: serviceDetail.locations[0].latitude,
+                      longitude: serviceDetail.locations[0].longitude,
                       latitudeDelta: 0.01,
                       longitudeDelta: 0.01,
                     }}
@@ -390,11 +394,11 @@ const TourGuideServiceDetailPage = () => {
                   >
                     <Marker
                       coordinate={{
-                        latitude: serviceDetail.locationBased.latitude,
-                        longitude: serviceDetail.locationBased.longitude,
+                        latitude: serviceDetail.locations[0].latitude,
+                        longitude: serviceDetail.locations[0].longitude,
                       }}
                       title={serviceDetail.serviceName}
-                      description={serviceDetail.locationBased.formattedAddress}
+                      description={serviceDetail.locations[0].formattedAddress}
                     />
                   </MapView>
                 </View>
@@ -485,11 +489,11 @@ const TourGuideServiceDetailPage = () => {
           </Text> */}
 
           {/* <View className="bg-white rounded-xl shadow-sm p-4"> */}
-            {/* Rating Stars */}
-            {/* <Text className="text-gray-500 font-medium text-lg mb-2">
+          {/* Rating Stars */}
+          {/* <Text className="text-gray-500 font-medium text-lg mb-2">
               Your Rating
             </Text> */}
-            {/* <View className="flex-row mb-4">
+          {/* <View className="flex-row mb-4">
               {[1, 2, 3, 4, 5].map((star) => (
                 <TouchableOpacity
                   key={star}
@@ -505,11 +509,11 @@ const TourGuideServiceDetailPage = () => {
               ))}
             </View> */}
 
-            {/* Review Input */}
-            {/* <Text className="text-gray-500 font-medium mb-1 text-lg">
+          {/* Review Input */}
+          {/* <Text className="text-gray-500 font-medium mb-1 text-lg">
               Your Review
             </Text> */}
-            {/* <View className="bg-gray-100 rounded-lg px-3 py-2 mb-4">
+          {/* <View className="bg-gray-100 rounded-lg px-3 py-2 mb-4">
               <TextInput
                 multiline
                 placeholder="Share your experience with this guide..."
@@ -520,8 +524,8 @@ const TourGuideServiceDetailPage = () => {
               />
             </View> */}
 
-            {/* Submit Button */}
-            {/* <TouchableOpacity
+          {/* Submit Button */}
+          {/* <TouchableOpacity
               onPress={handleSubmitReview}
               className="bg-primary py-3 rounded-lg items-center"
             >
@@ -530,7 +534,7 @@ const TourGuideServiceDetailPage = () => {
               </Text>
             </TouchableOpacity> */}
 
-            {/* <TouchableOpacity
+          {/* <TouchableOpacity
               onPress={() => router.push("../../support/complaints" as any)}
               className="border-4 border-primary mt-5 bg-white py-3 items-center rounded-full"
             >

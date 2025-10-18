@@ -50,7 +50,7 @@ const convertToService = (detail: FoodBeverageServiceDetail): Service => ({
     : [],
   mainImageUrl:
     detail.images && detail.images.length > 0 ? detail.images[0].imageUrl : "",
-  provider: detail.provider || null,
+  provider: null,
 });
 
 const FoodBeverageServiceDetailPage = () => {
@@ -262,10 +262,13 @@ const FoodBeverageServiceDetailPage = () => {
           <View className="flex-row items-start mt-1">
             <Ionicons name="location" size={24} color="#008080" />
             <Text className="ml-2 text-gray-700 w-[85%]">
-              {serviceDetail.locationBased?.formattedAddress ||
-                (serviceDetail.locationBased
-                  ? `${serviceDetail.locationBased.city}, ${serviceDetail.locationBased.district}`
-                  : "Location not available")}
+              {serviceDetail.locations && serviceDetail.locations.length > 0
+                ? serviceDetail.locations[0].formattedAddress ||
+                  (serviceDetail.locations[0].city &&
+                  serviceDetail.locations[0].district
+                    ? `${serviceDetail.locations[0].city}, ${serviceDetail.locations[0].district}`
+                    : "Location not available")
+                : "Location not available"}
             </Text>
           </View>
 
@@ -357,9 +360,9 @@ const FoodBeverageServiceDetailPage = () => {
         </View>
 
         {/* Location Map */}
-        {serviceDetail.locationBased &&
-          serviceDetail.locationBased.latitude &&
-          serviceDetail.locationBased.longitude && (
+        {serviceDetail.locations[0] &&
+          serviceDetail.locations[0].latitude &&
+          serviceDetail.locations[0].longitude && (
             <View className="px-4 mb-6">
               <View className="flex-row items-center justify-between mb-3">
                 <Text className="text-2xl font-semibold text-gray-500">
@@ -379,7 +382,7 @@ const FoodBeverageServiceDetailPage = () => {
                       Address
                     </Text>
                     <Text className="text-sm text-gray-600">
-                      {serviceDetail.locationBased.formattedAddress}
+                      {serviceDetail.locations[0].formattedAddress}
                     </Text>
                   </View>
                   <Ionicons
@@ -399,8 +402,8 @@ const FoodBeverageServiceDetailPage = () => {
                   <MapView
                     style={{ flex: 1 }}
                     initialRegion={{
-                      latitude: serviceDetail.locationBased.latitude,
-                      longitude: serviceDetail.locationBased.longitude,
+                      latitude: serviceDetail.locations[0].latitude,
+                      longitude: serviceDetail.locations[0].longitude,
                       latitudeDelta: 0.01,
                       longitudeDelta: 0.01,
                     }}
@@ -412,11 +415,11 @@ const FoodBeverageServiceDetailPage = () => {
                   >
                     <Marker
                       coordinate={{
-                        latitude: serviceDetail.locationBased.latitude,
-                        longitude: serviceDetail.locationBased.longitude,
+                        latitude: serviceDetail.locations[0].latitude,
+                        longitude: serviceDetail.locations[0].longitude,
                       }}
                       title={serviceDetail.serviceName}
-                      description={serviceDetail.locationBased.formattedAddress}
+                      description={serviceDetail.locations[0].formattedAddress}
                     />
                   </MapView>
                 </View>
@@ -502,13 +505,13 @@ const FoodBeverageServiceDetailPage = () => {
 
         {/* Leave a Review Section */}
         {/* <View className="px-4 mb-20"> */}
-          {/* <Text className="text-3xl font-semibold text-gray-500 mb-4">
+        {/* <Text className="text-3xl font-semibold text-gray-500 mb-4">
             Leave a Review
           </Text> */}
 
-          <View className="bg-white rounded-xl shadow-sm p-4">
-            {/* Rating Stars */}
-            {/* <Text className="text-gray-500 font-medium text-lg mb-2">
+        <View className="bg-white rounded-xl shadow-sm p-4">
+          {/* Rating Stars */}
+          {/* <Text className="text-gray-500 font-medium text-lg mb-2">
               Your Rating
             </Text>
             <View className="flex-row mb-4">
@@ -527,8 +530,8 @@ const FoodBeverageServiceDetailPage = () => {
               ))}
             </View> */}
 
-            {/* Review Input */}
-            {/* <Text className="text-gray-500 font-medium mb-1 text-lg">
+          {/* Review Input */}
+          {/* <Text className="text-gray-500 font-medium mb-1 text-lg">
               Your Review
             </Text>
             <View className="bg-gray-100 rounded-lg px-3 py-2 mb-4">
@@ -542,8 +545,8 @@ const FoodBeverageServiceDetailPage = () => {
               />
             </View> */}
 
-            {/* Submit Button */}
-            {/* <TouchableOpacity
+          {/* Submit Button */}
+          {/* <TouchableOpacity
               onPress={handleSubmitReview}
               className="bg-primary py-3 rounded-lg items-center"
             >
@@ -552,7 +555,7 @@ const FoodBeverageServiceDetailPage = () => {
               </Text>
             </TouchableOpacity> */}
 
-            {/* <TouchableOpacity
+          {/* <TouchableOpacity
               onPress={() => router.push("../../support/complaints" as any)}
               className="border-4 border-primary mt-5 bg-white py-3 items-center rounded-full"
             >
