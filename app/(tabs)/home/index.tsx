@@ -1,848 +1,335 @@
-import React, { useState, useEffect, useRef } from 'react';
+// TravelApp.tsx
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   ScrollView,
   Image,
   TouchableOpacity,
-  TextInput,
-  Dimensions,
   StatusBar,
-  Modal,
-  FlatList,
-  Animated,
-  LayoutAnimation,
-  Platform,
-  UIManager,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import SearchBar from '@/components/SearchBar';
+  Dimensions,
+  ImageBackground,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
+import SearchBar from "@/components/SearchBar";
+import {
+  StaggeredListItem,
+  LoadingSkeleton,
+} from "@/components/transitions/animations";
+import Card from "@/components/Card";
+import ImageSlider from "@/components/transitions/ImageSlider";
+import { router } from "expo-router";
+import { fetchPopularPlacesSriLanka } from "@/utils/fetchPopularPlacesSriLanka";
 
-// Enable LayoutAnimation on Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 interface Place {
-  id: number;
+  place_id: string;
   name: string;
-  location: string;
-  image: string;
-  rating: number;
-  reviews: number;
-  tags: string[];
-  trending: boolean;
+  vicinity?: string;
+  rating?: number;
+  image?: string;
 }
 
-const TravelAppHome = () => {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [searchFocused, setSearchFocused] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [likedPlaces, setLikedPlaces] = useState(new Set<number>());
+const TravelApp = () => {
+  const [searchText, setSearchText] = useState("");
   const insets = useSafeAreaInsets();
-  
-  // Animation values
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(-50)).current;
-  const searchAnim = useRef(new Animated.Value(1)).current;
-  const headerAnim = useRef(new Animated.Value(0)).current;
-  const notificationBadgeAnim = useRef(new Animated.Value(1)).current;
-  const heroImageAnim = useRef(new Animated.Value(0)).current;
-  const quickActionsAnim = useRef(new Animated.Value(0)).current;
-  const categoriesAnim = useRef(new Animated.Value(0)).current;
-  const trendingAnim = useRef(new Animated.Value(0)).current;
+  const [showNotifications, setShowNotifications] = useState(false);
 
-  const heroImages = [
-    "https://images.unsplash.com/photo-1540979388789-6cee28a1cdc9?w=800&h=400&fit=crop",
-    "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=400&fit=crop",
-    "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800&h=400&fit=crop"
-  ];
+  // 🎯 Dynamic Popular Places
+  const [popularPlaces, setPopularPlaces] = useState<Place[]>([]);
+  const [loadingPopular, setLoadingPopular] = useState(true);
 
-  const quickActions = [
-    { 
-      id: 1, 
-      icon: "compass-outline", 
-      title: "Explore", 
-      subtitle: "Discover new places", 
-      color: "#008080" 
-    },
-    { 
-      id: 2, 
-      icon: "calendar-outline", 
-      title: "Plan Trip", 
-      subtitle: "Create itinerary", 
-      color: "#008080" ,
-    },
-    { 
-      id: 3, 
-      icon: "camera-outline", 
-      title: "Capture", 
-      subtitle: "Save memories", 
-      color: "#008080" 
-    },
-    { 
-      id: 4, 
-      icon: "navigate-outline", 
-      title: "Navigate", 
-      subtitle: "Get directions", 
-      color: "#008080" 
-    }
-  ];
+  useEffect(() => {
+    (async () => {
+      try {
+        const places = await fetchPopularPlacesSriLanka();
+        setPopularPlaces(places);
+      } catch (error) {
+        console.error("Failed to fetch popular places:", error);
+      } finally {
+        setLoadingPopular(false);
+      }
+    })();
+  }, []);
 
-  const trendingDestinations: Place[] = [
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 18) return "Good Afternoon";
+    return "Good Evening";
+  };
+
+  const categories = ["Hotels", "Beaches", "Hiking", "Culture", "Wildlife", "Restaurants"];
+
+  const trendingDestinations = [
     {
       id: 1,
       name: "Sigiriya Rock Fortress",
-      location: "Central Province",
-      image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=200&fit=crop",
-      rating: 4.8,
-      reviews: 1234,
-      tags: ["Ancient", "UNESCO"],
-      trending: true
+      location: "Dambulla",
+      image:
+        "https://images.unsplash.com/photo-1626697550561-8ff63f63683c?q=80&w=1000",
     },
     {
       id: 2,
-      name: "Temple of the Tooth",
-      location: "Kandy",
-      image: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=300&h=200&fit=crop",
-      rating: 4.7,
-      reviews: 892,
-      tags: ["Sacred", "Culture"],
-      trending: false
+      name: "Mirissa Beach",
+      location: "Mirissa",
+      image:
+        "https://images.unsplash.com/photo-1519046904884-53103b34b206?q=80&w=1000",
     },
     {
       id: 3,
-      name: "Nine Arch Bridge",
-      location: "Ella",
-      image: "https://images.unsplash.com/photo-1566552881560-0be862a7c445?w=300&h=200&fit=crop",
-      rating: 4.6,
-      reviews: 756,
-      tags: ["Architecture", "Scenic"],
-      trending: true
+      name: "Yala National Park",
+      location: "Hambantota",
+      image:
+        "https://images.unsplash.com/photo-1621135809414-8fba7ddfb616?q=80&w=1000",
     },
-    {
-      id: 4,
-      name: "Galle Fort",
-      location: "Southern Province",
-      image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&h=200&fit=crop",
-      rating: 4.5,
-      reviews: 634,
-      tags: ["Colonial", "Coastal"],
-      trending: false
-    }
   ];
 
-  const categories = [
-    { id: 1, icon: "🏛️", name: "Historical", count: 45 },
-    { id: 2, icon: "🏖️", name: "Beaches", count: 28 },
-    { id: 3, icon: "🏔️", name: "Mountains", count: 32 },
-    { id: 4, icon: "🌿", name: "Nature", count: 67 },
-    { id: 5, icon: "🏙️", name: "Cities", count: 23 },
-    { id: 6, icon: "🎭", name: "Culture", count: 41 }
-  ];
-
-  const notifications = [
+  const popularservices = [
     {
       id: 1,
-      title: "Trip Reminder",
-      message: "Your Kandy adventure starts in 3 days! Don't forget to pack your camera.",
-      time: "2 hours ago",
-      icon: "🎒",
-      color: "#008080"
+      name: "Nine Arch Bridge",
+      location: "Ella",
+      image:
+        "https://images.unsplash.com/photo-1566552881560-0be862a7c445?w=200&h=150&fit=crop",
+      rating: 4.6,
     },
     {
       id: 2,
-      title: "New Photos Added",
-      message: "Check out 15 stunning new photos from Sigiriya Rock Fortress.",
-      time: "5 hours ago",
-      icon: "🌟",
-      color: "#20B2AA"
+      name: "Temple of Tooth",
+      location: "Kandy",
+      image:
+        "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=200&h=150&fit=crop",
+      rating: 4.8,
     },
     {
       id: 3,
-      title: "Special Offer",
-      message: "Save 20% on guided tours this weekend. Limited time offer!",
-      time: "1 day ago",
-      icon: "💫",
-      color: "#40E0D0"
+      name: "Galle Fort",
+      location: "Galle",
+      image:
+        "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=200&h=150&fit=crop",
+      rating: 4.7,
     },
     {
       id: 4,
-      title: "Travel Buddy Request",
-      message: "Alex wants to join your upcoming trip to Ella. View request.",
-      time: "2 days ago",
-      icon: "👥",
-      color: "#5F9EA0"
-    }
+      name: "Adam's Peak",
+      location: "Ratnapura",
+      image:
+        "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=200&h=150&fit=crop",
+      rating: 4.5,
+    },
   ];
 
-  // Initial animations
-  useEffect(() => {
-    // Staggered entrance animations
-    Animated.sequence([
-      Animated.timing(headerAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(heroImageAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(quickActionsAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(categoriesAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(trendingAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Notification badge pulse animation
-    const pulseAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(notificationBadgeAnim, {
-          toValue: 1.2,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(notificationBadgeAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    pulseAnimation.start();
-
-    return () => pulseAnimation.stop();
-  }, []);
-
-  // Hero image slider with transitions
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % heroImages.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Search focus animation
-  const handleSearchFocus = () => {
-    setSearchFocused(true);
-    Animated.spring(searchAnim, {
-      toValue: 1.02,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handleSearchBlur = () => {
-    setSearchFocused(false);
-    Animated.spring(searchAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const toggleLike = (placeId: number) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setLikedPlaces(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(placeId)) {
-        newSet.delete(placeId);
-      } else {
-        newSet.add(placeId);
-      }
-      return newSet;
-    });
-  };
-
-  // Notification modal animations
-  const showNotificationModal = () => {
-    setShowNotifications(true);
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        tension: 80,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  const hideNotificationModal = () => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: -50,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setShowNotifications(false);
-      slideAnim.setValue(-50);
-      fadeAnim.setValue(0);
-    });
-  };
-
-  const renderQuickAction = ({ item, index }: { item: typeof quickActions[0], index: number }) => (
-    <Animated.View
-      style={{
-        opacity: quickActionsAnim,
-        transform: [{
-          translateY: quickActionsAnim.interpolate({
-            inputRange: [0, 1],
-            outputRange: [30, 0],
-          })
-        }]
-      }}
-    >
-      <TouchableOpacity 
-        style={{
-          backgroundColor: item.color,
-          borderRadius: 16,
-          padding: 20,
-          width: (width - 48) / 2,
-          marginBottom: 16,
-        }}
-        activeOpacity={0.8}
-        onPress={() => {
-          // Add haptic feedback if available
-          if (Platform.OS === 'ios') {
-            // HapticFeedback.impactAsync(HapticFeedback.ImpactFeedbackStyle.Medium);
-          }
-        }}
-      >
-        <Ionicons name={item.icon as any} size={24} color="white" style={{ marginBottom: 12 }} />
-        <Text style={{ fontSize: 18, fontWeight: '600', color: 'white', marginBottom: 4 }}>
-          {item.title}
-        </Text>
-        <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.9)' }}>
-          {item.subtitle}
-        </Text>
-      </TouchableOpacity>
-    </Animated.View>
-  );
-
-  const renderCategory = ({ item, index }: { item: typeof categories[0], index: number }) => (
-    <Animated.View
-      style={{
-        opacity: categoriesAnim,
-        transform: [{
-          translateX: categoriesAnim.interpolate({
-            inputRange: [0, 1],
-            outputRange: [50, 0],
-          })
-        }]
-      }}
-    >
-      <TouchableOpacity 
-        style={{
-          backgroundColor: 'white',
-          borderRadius: 16,
-          padding: 16,
-          marginRight: 16,
-          minWidth: 120,
-          alignItems: 'center',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-          elevation: 3,
-        }}
-        activeOpacity={0.8}
-      >
-        <Text style={{ fontSize: 24, marginBottom: 8 }}>{item.icon}</Text>
-        <Text style={{ fontSize: 14, fontWeight: '600', color: '#1f2937', marginBottom: 4 }}>
-          {item.name}
-        </Text>
-        <Text style={{ fontSize: 12, color: '#6b7280' }}>
-          {item.count} places
-        </Text>
-      </TouchableOpacity>
-    </Animated.View>
-  );
-
-  const renderTrendingPlace = ({ item, index }: { item: Place, index: number }) => (
-    <Animated.View
-      style={{
-        opacity: trendingAnim,
-        transform: [{
-          translateY: trendingAnim.interpolate({
-            inputRange: [0, 1],
-            outputRange: [50, 0],
-          })
-        }]
-      }}
-    >
-      <TouchableOpacity 
-        style={{
-          backgroundColor: 'white',
-          borderRadius: 16,
-          marginBottom: 16,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
-          elevation: 5,
-          overflow: 'hidden',
-        }}
-        activeOpacity={0.9}
-      >
-        <View style={{ position: 'relative' }}>
-          <Image 
-            source={{ uri: item.image }} 
-            style={{ width: '100%', height: 180 }}
-            resizeMode="cover"
-          />
-          
-          {/* Like Button with Animation */}
-          <TouchableOpacity
-            onPress={() => toggleLike(item.id)}
-            style={{
-              position: 'absolute',
-              top: 12,
-              right: 12,
-              backgroundColor: 'rgba(255,255,255,0.9)',
-              borderRadius: 20,
-              padding: 8,
-            }}
-          >
-            <Animated.View
-              style={{
-                transform: [{
-                  scale: likedPlaces.has(item.id) ? 1.2 : 1
-                }]
-              }}
-            >
-              <Ionicons 
-                name={likedPlaces.has(item.id) ? "heart" : "heart-outline"} 
-                size={20} 
-                color={likedPlaces.has(item.id) ? "#ef4444" : "#6b7280"} 
-              />
-            </Animated.View>
-          </TouchableOpacity>
-
-          {/* Trending Badge */}
-          {item.trending && (
-            <View style={{
-              position: 'absolute',
-              top: 12,
-              left: 12,
-              backgroundColor: '#f59e0b',
-              borderRadius: 12,
-              paddingHorizontal: 8,
-              paddingVertical: 4,
-              flexDirection: 'row',
-              alignItems: 'center',
-            }}>
-              <Ionicons name="trending-up" size={12} color="white" style={{ marginRight: 4 }} />
-              <Text style={{ color: 'white', fontSize: 10, fontWeight: '600' }}>Trending</Text>
-            </View>
-          )}
-        </View>
-        
-        <View style={{ padding: 16 }}>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1f2937', marginBottom: 4 }}>
-            {item.name}
-          </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-            <Ionicons name="location-outline" size={16} color="#6b7280" />
-            <Text style={{ marginLeft: 4, fontSize: 14, color: '#6b7280' }}>
-              {item.location}
-            </Text>
-          </View>
-          
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="star" size={16} color="#fbbf24" />
-              <Text style={{ marginLeft: 4, fontWeight: '600' }}>{item.rating}</Text>
-              <Text style={{ color: '#6b7280', fontSize: 14, marginLeft: 4 }}>
-                ({item.reviews} reviews)
-              </Text>
-            </View>
-          </View>
-          
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-            {item.tags.map((tag, index) => (
-              <View
-                key={index}
-                style={{
-                  backgroundColor: 'rgba(0,128,128,0.1)',
-                  borderRadius: 12,
-                  paddingHorizontal: 8,
-                  paddingVertical: 4,
-                  marginRight: 8,
-                  marginBottom: 4,
-                }}
-              >
-                <Text style={{ fontSize: 12, color: '#008080', fontWeight: '500' }}>
-                  {tag}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      </TouchableOpacity>
-    </Animated.View>
-  );
-
   return (
-    <View style={{ flex: 1, backgroundColor: '#f9fafb' }}>
+    <View className="flex-1 bg-white">
+      {showNotifications && (
+        <View pointerEvents="auto" className="absolute inset-0 bg-black/40 z-40" />
+      )}
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
-      <View style={{ height: insets.top, backgroundColor: '#ffffff' }} />
+      <View style={{ height: insets.top, backgroundColor: "#ffffff" }} />
 
-      {/* Header with Animation */}
-      <Animated.View 
-        style={{ 
-          backgroundColor: 'white', 
-          paddingHorizontal: 16, 
-          paddingTop: 16, 
-          paddingBottom: 8,
-          opacity: headerAnim,
-          transform: [{
-            translateY: headerAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [-20, 0],
-            })
-          }]
-        }}
-      >
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+      {/* Header */}
+      <View className={px-4 pt-4 pb-2 ${showNotifications ? "bg-white/80" : "bg-white"}}>
+        <View className="flex-row justify-between items-center mb-4">
           <View>
-            <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#1f2937', marginBottom: 4 }}>
-              Hello, Sarah 👋
+            <Text className="text-primary mt-6 text-4xl font-bold">
+              {getGreeting()}, Sarah 👋
             </Text>
-            <Text style={{ fontSize: 16, color: '#6b7280' }}>
-              Ready for your next adventure?
+            <Text className="text-gray-500 mt-3 text-lg font-semibold">
+              Where do you want to go?
             </Text>
           </View>
-          <View style={{ position: 'relative' }}>
-            <TouchableOpacity 
-              onPress={showNotificationModal}
-              style={{
-                backgroundColor: '#f3f4f6',
-                borderRadius: 24,
-                padding: 12,
-                position: 'relative',
-              }}
-            >
-              <Ionicons name="notifications-outline" size={24} color="#6b7280" />
-              <Animated.View style={{
-                position: 'absolute',
-                top: -2,
-                right: -2,
-                width: 16,
-                height: 16,
-                backgroundColor: '#ef4444',
-                borderRadius: 8,
-                alignItems: 'center',
-                justifyContent: 'center',
-                transform: [{ scale: notificationBadgeAnim }]
-              }}>
-                <Text style={{ color: 'white', fontSize: 10, fontWeight: '600' }}>3</Text>
-              </Animated.View>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            className="w-12 h-12 bg-gray-100 rounded-full items-center justify-center"
+            onPress={() => setShowNotifications(true)}
+          >
+            <Ionicons name="notifications-outline" size={24} color="#666" />
+          </TouchableOpacity>
+        </View>
+        <SearchBar onPress={() => {}} />
+      </View>
+
+      {/* Main Content */}
+      <ScrollView
+        className={flex-1 ${showNotifications ? "opacity-60" : " "}}
+        showsVerticalScrollIndicator={false}
+        scrollEnabled={!showNotifications}
+      >
+        {/* Image Slider */}
+        <View className="px-4 mb-6 w-full">
+          <ImageSlider
+            images={[
+              "https://images.unsplash.com/photo-1646894232861-a0ad84f1ad5d?q=80&w=2071",
+              "https://images.unsplash.com/photo-1591351373936-3d5bf044b854?q=80&w=1170",
+              "https://admin.idaoffice.org/wp-content/uploads/2023/12/pexels-michael-swigunski-3825040.jpg",
+            ]}
+          />
         </View>
 
-        {/* Search Bar with Animation */}
-        <SearchBar/>  
-      </Animated.View>
-
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Hero Image Slider with Animation */}
-        <Animated.View 
-          style={{ 
-            height: 240, 
-            marginHorizontal: 16, 
-            marginTop: 24, 
-            borderRadius: 24, 
-            overflow: 'hidden',
-            opacity: heroImageAnim,
-            transform: [{
-              translateY: heroImageAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [30, 0],
-              })
-            }]
-          }}
-        >
-          {heroImages.map((image, index) => (
-            <Animated.View
-              key={index}
-              style={{
-                position: 'absolute',
-                width: '100%',
-                height: '100%',
-                opacity: index === currentSlide ? 1 : 0,
-              }}
-            >
-              <Image source={{ uri: image }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-              <View style={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: '60%',
-                backgroundColor: 'transparent',
-              }} />
-              <View style={{ position: 'absolute', bottom: 24, left: 24 }}>
-                <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white', marginBottom: 8 }}>
-                  Discover Sri Lanka
-                </Text>
-                <Text style={{ fontSize: 16, color: 'rgba(255,255,255,0.9)' }}>
-                  Where ancient meets paradise
-                </Text>
-              </View>
-            </Animated.View>
+        {/* Categories */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-4 mb-6">
+          {categories.map((cat, i) => (
+            <TouchableOpacity key={i} className="bg-gray-100 px-4 py-2 mr-2 rounded-full">
+              <Text className="text-gray-700 font-medium">{cat}</Text>
+            </TouchableOpacity>
           ))}
-          
-          {/* Slide Indicators */}
-          <View style={{ 
-            position: 'absolute', 
-            bottom: 16, 
-            right: 24, 
-            flexDirection: 'row' 
-          }}>
-            {heroImages.map((_, index) => (
-              <TouchableOpacity
-                key={index}
-                onPress={() => setCurrentSlide(index)}
-                style={{
-                  width: index === currentSlide ? 24 : 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: index === currentSlide ? 'white' : 'rgba(255,255,255,0.5)',
-                  marginLeft: 8,
-                }}
-              />
+        </ScrollView>
+
+        {/* Trending Destinations */}
+        <View className="px-4 mb-6">
+          <Text className="text-black text-3xl font-bold mb-4">Trending Destinations</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {trendingDestinations.map((place, index) => (
+              <TouchableOpacity key={place.id} className="mr-4">
+                <ImageBackground
+                  source={{ uri: place.image }}
+                  className="w-64 h-40 rounded-2xl overflow-hidden justify-end"
+                >
+                  <LinearGradient
+                    colors={["transparent", "rgba(0,0,0,0.6)"]}
+                    className="w-full h-full justify-end p-4"
+                  >
+                    <Text className="text-white text-lg font-bold">{place.name}</Text>
+                    <Text className="text-gray-200 text-sm">{place.location}</Text>
+                  </LinearGradient>
+                </ImageBackground>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Travel Tip + Weather Widget */}
+        <View className="px-4 mb-6 flex-row justify-between">
+          <View className="bg-blue-100 rounded-xl p-4 w-[48%]">
+            <Text className="text-blue-700 font-bold mb-2">🌤 Weather</Text>
+            <Text className="text-gray-700">Colombo</Text>
+            <Text className="text-gray-500">28°C | Sunny</Text>
+          </View>
+          <View className="bg-green-100 rounded-xl p-4 w-[48%]">
+            <Text className="text-green-700 font-bold mb-2">💡 Travel Tip</Text>
+            <Text className="text-gray-700">
+              Best time to visit Ella is morning 🌄
+            </Text>
+          </View>
+        </View>
+
+        {/* Popular Services */}
+        <View className="px-4 mb-6">
+          <Text className="text-black text-3xl font-bold mb-4">Popular Services</Text>
+          <View className="flex-row flex-wrap justify-between -mx-1">
+            {popularservices.map((place, index) => (
+              <StaggeredListItem key={place.id} delay={index * 100}>
+                <Card
+                  item={{
+                    id: place.id,
+                    title: place.name,
+                    subtitle: place.location,
+                    rating: place.rating || 0,
+                    image: place.image,
+                  }}
+                  width={width * 0.5 - 16}
+                  onPress={(selectedPlace) => {
+                    console.log("Pressed:", selectedPlace.title);
+                  }}
+                />
+              </StaggeredListItem>
             ))}
           </View>
-        </Animated.View>
+        </View>
 
-        {/* Quick Actions with Staggered Animation */}
-        <View style={{ paddingHorizontal: 16, marginTop: 32 }}>
-          <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#1f2937', marginBottom: 16 }}>
-            Quick Actions
-          </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-            {quickActions.map((action, index) => (
-              <View key={action.id} style={{ width: (width - 48) / 2 }}>
-                {renderQuickAction({ item: action, index })}
-              </View>
-            ))}
+        {/* 🚀 Popular Places (Dynamic) */}
+        <View className="px-4 mb-6">
+          <Text className="text-black text-3xl font-bold mb-4">Popular Places</Text>
+          <View className="flex-row flex-wrap justify-between -mx-1">
+            {loadingPopular
+              ? Array.from({ length: 4 }).map((_, index) => (
+                  <LoadingSkeleton key={index} />
+                ))
+              : popularPlaces.map((place, index) => (
+                  <StaggeredListItem key={place.place_id} delay={index * 100}>
+                    <Card
+                      item={{
+                        id: parseInt(place.place_id, 10) || 0,
+                        title: place.name,
+                        subtitle: place.vicinity ?? "Sri Lanka",
+                        rating: place.rating ?? 0,
+                        image: place.image ?? "https://via.placeholder.com/200x150",
+                      }}
+                      width={width * 0.5 - 16}
+                      onPress={(selectedPlace) => {
+                        console.log("Navigating to place:", selectedPlace.title);
+                        router.push({
+                          pathname: "../../screens/PublicPlaceDetails",
+                          params: { placeId: place.place_id },
+                        });
+                      }}
+                    />
+                  </StaggeredListItem>
+                ))}
           </View>
         </View>
 
-        {/* Categories with Animation */}
-        <View style={{ marginTop: 32 }}>
-          <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
-            <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#1f2937' }}>
-              Explore by Category
+        {/* Plan Trip CTA */}
+        <View className="mx-4 mb-8 rounded-2xl overflow-hidden">
+          <LinearGradient colors={["#1D976C", "#93F9B9"]} className="p-6 items-center">
+            <Text className="text-white text-2xl font-bold mb-4">
+              Let&apos;s start the journey
             </Text>
-          </View>
-          <FlatList
-            data={categories}
-            renderItem={({ item, index }) => renderCategory({ item, index })}
-            keyExtractor={(item) => item.id.toString()}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 16 }}
-          />
-        </View>
-
-        {/* Trending Destinations with Animation */}
-        <View style={{ paddingHorizontal: 16, marginTop: 32 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#1f2937' }}>
-              Trending Now
-            </Text>
-            <TouchableOpacity>
-              <Text style={{ fontSize: 16, color: '#008080', fontWeight: '600' }}>View All</Text>
+            <TouchableOpacity
+              className="bg-white rounded-full px-6 py-3 mb-2"
+              onPress={() => router.push("../trips")}
+            >
+              <Text className="text-primary font-medium">Plan Trip</Text>
             </TouchableOpacity>
-          </View>
-          
-          <FlatList
-            data={trendingDestinations}
-            renderItem={({ item, index }) => renderTrendingPlace({ item, index })}
-            keyExtractor={(item) => item.id.toString()}
-            scrollEnabled={false}
-          />
+            <TouchableOpacity
+              className="bg-white/20 rounded-full px-6 py-3"
+              onPress={() => router.push("../explore")}
+            >
+              <Text className="text-white font-medium">Explore</Text>
+            </TouchableOpacity>
+          </LinearGradient>
         </View>
 
-        {/* Stats Section */}
-        <View style={{ paddingHorizontal: 16, marginTop: 32, marginBottom: 200 }}>
-          <View style={{
-            borderRadius: 16,
-            padding: 24,
-            backgroundColor: '#008080',
-          }}>
-            <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 16, textAlign: 'center', color: 'white' }}>
-              Your Journey So Far
-            </Text>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 24 }}>
-              <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 32, fontWeight: 'bold', color: 'white' }}>12</Text>
-                <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.9)' }}>Places Visited</Text>
-              </View>
-              <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 32, fontWeight: 'bold', color: 'white' }}>5</Text>
-                <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.9)' }}>Trips Planned</Text>
-              </View>
-              <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 32, fontWeight: 'bold', color: 'white' }}>847</Text>
-                <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.9)' }}>Photos Taken</Text>
-              </View>
-            </View>
-            <TouchableOpacity style={{
-              backgroundColor: 'white',
-              paddingVertical: 12,
-              borderRadius: 12,
-              alignItems: 'center',
-            }}>
-              <Text style={{ color: '#008080', fontSize: 16, fontWeight: '600' }}>
-                Plan Your Next Adventure
-              </Text>
-            </TouchableOpacity>
-          </View>
+        <View className="px-4 mb-24">
+          <Text className="text-center text-gray-400">LankaTrails © 2025</Text>
         </View>
       </ScrollView>
 
-      {/* Enhanced Notifications Modal */}
-      <Modal
-        visible={showNotifications}
-        transparent
-        animationType="none"
-        onRequestClose={hideNotificationModal}
-      >
-        <Animated.View style={{ 
-          flex: 1, 
-          backgroundColor: 'rgba(0,0,0,0.5)', 
-          justifyContent: 'center', 
-          alignItems: 'center',
-          opacity: fadeAnim,
-        }}>
-          <Animated.View style={{
-            width: width * 0.9,
-            maxHeight: '80%',
-            backgroundColor: 'white',
-            borderRadius: 16,
-            overflow: 'hidden',
-            transform: [{ translateY: slideAnim }]
-          }}>
-            {/* Header */}
-            <View style={{
-              backgroundColor: '#008080',
-              paddingHorizontal: 24,
-              paddingVertical: 16,
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Ionicons name="notifications" size={20} color="white" />
-                <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold', marginLeft: 8 }}>
-                  Notifications
-                </Text>
+      {/* Notifications Modal */}
+      {showNotifications && (
+        <View className="absolute inset-0 justify-center items-center z-50">
+          <TouchableOpacity
+            className="absolute inset-0"
+            onPress={() => setShowNotifications(false)}
+            activeOpacity={1}
+          />
+          <View className="bg-white w-[90%] rounded-2xl p-4 shadow-lg">
+            <Text className="text-3xl font-bold mb-6 text-black">Notifications</Text>
+            <StaggeredListItem index={0} delay={400}>
+              <View className="m-4">
+                <Text className="text-lg text-black">🧳 Your saved trip to Kandy is waiting!</Text>
               </View>
-              <TouchableOpacity
-                onPress={hideNotificationModal}
-                style={{ padding: 4 }}
-              >
-                <Ionicons name="close" size={24} color="white" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Notifications List */}
-            <ScrollView style={{ maxHeight: 400 }}>
-              {notifications.map((notification, index) => (
-                <TouchableOpacity
-                  key={notification.id}
-                  style={{
-                    flexDirection: 'row',
-                    padding: 16,
-                    borderBottomWidth: index < notifications.length - 1 ? 1 : 0,
-                    borderBottomColor: '#f3f4f6',
-                  }}
-                >
-                  <View style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    backgroundColor: `${notification.color}20`,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginRight: 12,
-                  }}>
-                    <Text style={{ fontSize: 16 }}>{notification.icon}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#1f2937', marginBottom: 4 }}>
-                      {notification.title}
-                    </Text>
-                    <Text style={{ fontSize: 14, color: '#6b7280', lineHeight: 20, marginBottom: 4 }}>
-                      {notification.message}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: '#008080', fontWeight: '500' }}>
-                      {notification.time}
-                    </Text>
-                  </View>
-                  <View style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: '#008080',
-                    marginTop: 8,
-                  }} />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            {/* Footer */}
-            <View style={{
-              paddingHorizontal: 16,
-              paddingVertical: 12,
-              backgroundColor: '#f9fafb',
-              borderTopWidth: 1,
-              borderTopColor: '#f3f4f6',
-            }}>
-              <TouchableOpacity>
-                <Text style={{
-                  textAlign: 'center',
-                  color: '#008080',
-                  fontSize: 14,
-                  fontWeight: '600',
-                }}>
-                  View All Notifications
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
-        </Animated.View>
-      </Modal>
+              <View className="m-4">
+                <Text className="text-lg text-black">🌍 New destination added: Trincomalee</Text>
+              </View>
+              <View className="m-4">
+                <Text className="text-lg text-black">💸 Special offer: 20% off in Galle hotels</Text>
+              </View>
+            </StaggeredListItem>
+            <TouchableOpacity
+              className="mt-4 self-end bg-primary px-4 py-2 rounded-full"
+              onPress={() => setShowNotifications(false)}
+            >
+              <Text className="text-white font-medium">Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
 
-export default TravelAppHome;
+export default TravelApp;
