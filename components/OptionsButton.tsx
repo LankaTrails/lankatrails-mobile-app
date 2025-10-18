@@ -19,13 +19,9 @@ interface OptionsButtonProps {
 }
 
 const OptionsButton: React.FC<OptionsButtonProps> = ({ tripId, tripName }) => {
-interface OptionsButtonProps {
-  tripId?: string;
-}
-
-const OptionsButton: React.FC<OptionsButtonProps> = ({ tripId }) => {
   const [isVisible, setIsVisible] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
   // Individual animation values for staggered effect
@@ -121,10 +117,10 @@ const OptionsButton: React.FC<OptionsButtonProps> = ({ tripId }) => {
 
     // Add your navigation logic here with proper tripId
     if (option === "Budget") {
-      router.push(`/(tabs)/trips/${tripId}/BudgetView`);
+      router.push(`/(tabs)/trips/${tripId}/BudgetView` as any);
     } else if (option === "Map") {
       if (tripId) {
-        router.push(`/(tabs)/trips/${tripId}/MapView`);
+        router.push(`/(tabs)/trips/${tripId}/MapView` as any);
       } else {
         console.error("Trip ID is required for map navigation");
       }
@@ -132,7 +128,7 @@ const OptionsButton: React.FC<OptionsButtonProps> = ({ tripId }) => {
       if (tripId) {
         // Navigate to group chat for the trip
         router.push({
-          pathname: "/screens/Chat",
+          pathname: "/screens/Chat" as any,
           params: {
             chatType: "group",
             tripId: tripId,
@@ -142,7 +138,7 @@ const OptionsButton: React.FC<OptionsButtonProps> = ({ tripId }) => {
       } else {
         console.error("Trip ID is required for group chat navigation");
         // Could show an alert or navigate to a chat list instead
-        router.push("/screens/Chat");
+        router.push("/screens/Chat" as any);
       }
     }
   };

@@ -505,7 +505,6 @@ const TripDetails = () => {
           tripId={tripID}
           tripName={trip?.tripName || tripDetails.title}
         />
-        <FloatingActionButton tripId={tripID} />
       </View>
 
       <TripDetailsModal
