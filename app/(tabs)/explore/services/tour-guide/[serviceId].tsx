@@ -25,24 +25,31 @@ import {
   fetchTourGuideService,
   isTourGuideService,
 } from "@/services/serviceDetail";
-import type {
-  ServiceDetailResponse,
-  TourGuideServiceDetail,
-} from "@/types/serviceTypes";
-import { ServiceDTO } from "@/types/triptypes";
+import type { TourGuideServiceDetail } from "@/types/serviceTypes";
+import { ApiResponse } from "@/types/commonTypes";
+import { Service } from "@/types/serviceTypes";
 
 const BASE_URL = process.env.EXPO_PUBLIC_URL;
 
-// Convert TourGuideServiceDetail to ServiceDTO for AddToTripButton
-const convertToServiceDTO = (detail: TourGuideServiceDetail): ServiceDTO => ({
+// Convert TourGuideServiceDetail to Service for AddToTripButton
+const convertToService = (detail: TourGuideServiceDetail): Service => ({
   serviceId: detail.serviceId || 0,
   serviceName: detail.serviceName,
   category: "TOUR_GUIDE" as const,
-  locationBased: detail.locationBased,
+  locations: detail.locations,
+  prices: detail.priceConfig
+    ? [
+        {
+          priceType: detail.priceConfig.priceType,
+          amount:
+            detail.priceConfig.fixedPrice ||
+            detail.priceConfig.pricePerUnit ||
+            0,
+        },
+      ]
+    : [],
   mainImageUrl:
-    detail.images && detail.images.length > 0
-      ? detail.images[0].imageUrl
-      : null,
+    detail.images && detail.images.length > 0 ? detail.images[0].imageUrl : "",
 });
 
 const TourGuideServiceDetailPage = () => {
@@ -85,9 +92,8 @@ const TourGuideServiceDetailPage = () => {
         setLoading(true);
         setError(null);
 
-        const response: ServiceDetailResponse = await fetchTourGuideService(
-          parseInt(serviceId)
-        );
+        const response: ApiResponse<TourGuideServiceDetail> =
+          await fetchTourGuideService(parseInt(serviceId));
 
         if (response.success && isTourGuideService(response.data)) {
           setServiceDetail(response.data);
@@ -256,8 +262,10 @@ const TourGuideServiceDetailPage = () => {
           <View className="flex-row items-start mt-1">
             <Ionicons name="location" size={24} color="#008080" />
             <Text className="ml-2 text-gray-700 w-[85%]">
-              {serviceDetail.locationBased.formattedAddress ||
-                `${serviceDetail.locationBased.city}, ${serviceDetail.locationBased.district}`}
+              {serviceDetail.locationBased?.formattedAddress ||
+                (serviceDetail.locationBased
+                  ? `${serviceDetail.locationBased.city}, ${serviceDetail.locationBased.district}`
+                  : "Location not available")}
             </Text>
           </View>
 
@@ -278,7 +286,10 @@ const TourGuideServiceDetailPage = () => {
         </View>
 
         <View className="px-4 mt-6 mb-6">
-          <AddToTripButton service={convertToServiceDTO(serviceDetail)} />
+          <AddToTripButton
+            service={convertToService(serviceDetail)}
+            serviceDetail={serviceDetail}
+          />
         </View>
 
         {/* Languages Spoken */}

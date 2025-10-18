@@ -3,10 +3,11 @@ import type {
     AccommodationServiceDetail,
     ActivityServiceDetail,
     FoodBeverageServiceDetail,
-    ServiceDetailResponse,
+    ServiceDetail,
     TourGuideServiceDetail,
     TransportServiceDetail
 } from '@/types/serviceTypes';
+import type { ApiResponse } from '@/types/commonTypes';
 import { logger } from '@/utils/logger';
 
 /**
@@ -14,10 +15,10 @@ import { logger } from '@/utils/logger';
  */
 export async function fetchAccommodationService(
     serviceId: number
-): Promise<ServiceDetailResponse> {
+): Promise<ApiResponse<AccommodationServiceDetail>> {
     try {
         logger.info(`[ServiceDetail] Fetching accommodation service: ${serviceId}`);
-        const response = await api.get<ServiceDetailResponse>(`/provider/accommodation/${serviceId}`);
+        const response = await api.get<ApiResponse<AccommodationServiceDetail>>(`/provider/accommodation/${serviceId}`);
         return response.data;
     } catch (error) {
         logger.error('[ServiceDetail] Error fetching accommodation service:', error);
@@ -30,10 +31,10 @@ export async function fetchAccommodationService(
  */
 export async function fetchActivityService(
     serviceId: number
-): Promise<ServiceDetailResponse> {
+): Promise<ApiResponse<ActivityServiceDetail>> {
     try {
         logger.info(`[ServiceDetail] Fetching activity service: ${serviceId}`);
-        const response = await api.get<ServiceDetailResponse>(`/provider/activity-service/${serviceId}`);
+        const response = await api.get<ApiResponse<ActivityServiceDetail>>(`/provider/activity-service/${serviceId}`);
         return response.data;
     } catch (error) {
         logger.error('[ServiceDetail] Error fetching activity service:', error);
@@ -46,10 +47,10 @@ export async function fetchActivityService(
  */
 export async function fetchFoodBeverageService(
     serviceId: number
-): Promise<ServiceDetailResponse> {
+): Promise<ApiResponse<FoodBeverageServiceDetail>> {
     try {
         logger.info(`[ServiceDetail] Fetching food & beverage service: ${serviceId}`);
-        const response = await api.get<ServiceDetailResponse>(`/provider/food-beverage/${serviceId}`);
+        const response = await api.get<ApiResponse<FoodBeverageServiceDetail>>(`/provider/food-beverage/${serviceId}`);
         return response.data;
     } catch (error) {
         logger.error('[ServiceDetail] Error fetching food & beverage service:', error);
@@ -62,10 +63,10 @@ export async function fetchFoodBeverageService(
  */
 export async function fetchTourGuideService(
     serviceId: number
-): Promise<ServiceDetailResponse> {
+): Promise<ApiResponse<TourGuideServiceDetail>> {
     try {
         logger.info(`[ServiceDetail] Fetching tour guide service: ${serviceId}`);
-        const response = await api.get<ServiceDetailResponse>(`/provider/tour-guide/${serviceId}`);
+        const response = await api.get<ApiResponse<TourGuideServiceDetail>>(`/provider/tour-guide/${serviceId}`);
         return response.data;
     } catch (error) {
         logger.error('[ServiceDetail] Error fetching tour guide service:', error);
@@ -78,10 +79,10 @@ export async function fetchTourGuideService(
  */
 export async function fetchTransportService(
     serviceId: number
-): Promise<ServiceDetailResponse> {
+): Promise<ApiResponse<TransportServiceDetail>> {
     try {
         logger.info(`[ServiceDetail] Fetching transport service: ${serviceId}`);
-        const response = await api.get<ServiceDetailResponse>(`/provider/transport/${serviceId}`);
+        const response = await api.get<ApiResponse<TransportServiceDetail>>(`/provider/transport/${serviceId}`);
         return response.data;
     } catch (error) {
         logger.error('[ServiceDetail] Error fetching transport service:', error);
@@ -96,7 +97,7 @@ export async function fetchTransportService(
 export async function fetchServiceDetail(
     serviceId: number,
     category: 'ACCOMMODATION' | 'ACTIVITY' | 'FOOD_BEVERAGE' | 'TOUR_GUIDE' | 'TRANSPORT'
-): Promise<ServiceDetailResponse> {
+): Promise<ApiResponse<ServiceDetail>> {
     switch (category) {
         case 'ACCOMMODATION':
             return fetchAccommodationService(serviceId);

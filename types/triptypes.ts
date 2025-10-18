@@ -1,3 +1,9 @@
+import { Service } from './serviceTypes';
+import { Location, ServiceType } from '@/types/commonTypes';
+
+// Re-export Location for other components
+export { Location };
+
 export type TripStatus = "PLANNING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "ARCHIVED";
 
 export type TripTagType =
@@ -19,19 +25,7 @@ export type TripTagType =
 
 export type TripItemType = "PLACE" | "SERVICE";
 
-export type ServiceType = 'ACTIVITY' | 'TOUR_GUIDE' | 'TRANSPORT' | 'ACCOMMODATION' | 'FOOD_BEVERAGE';
-
-export interface Location {
-    locationId?: number | null;
-    formattedAddress: string;
-    city: string;
-    district: string;
-    province: string;
-    country: string;
-    postalCode: string;
-    latitude: number;
-    longitude: number;
-}
+export type TripRole = "EDITOR" | "ADMIN" | "MEMBER" | "VIEWER";
 
 export interface Trip {
     tripId: number;
@@ -70,12 +64,6 @@ export interface tripRequest {
     tags?: TripTagType[]; // Trip tags/vibes
 }
 
-export interface ApiResponse<T> {
-    success: boolean;
-    data: T;
-    message?: string;
-    details?: string;
-}
 
 export interface PlaceDTO {
     placeId: string;
@@ -86,18 +74,38 @@ export interface PlaceDTO {
     rating?: number | null;
 }
 
-export interface ServiceDTO {
-    serviceId: number;
-    serviceName: string | null;
-    category: ServiceType | null;
-    locationBased: Location | null;
-    mainImageUrl?: string | null;
-}
-
 export interface TripItem {
     type: TripItemType;
-    place?: PlaceDTO;
-    service?: ServiceDTO;
+    place?: PlaceDTO | null;
+    service?: Service | null;
     startTime: string; // ISO date-time string format
     endTime: string; // ISO date-time string format
+    noOfUnits: number;
+    numberOfAdults: number;
+    numberOfChildren: number;
+}
+
+export interface TripInvitationRequest {
+    tripId: number;
+    role: TripRole;
+    isGroupInvitation: boolean;
+}
+
+export interface AvailabilityDto {
+    childCount: number;
+    adultCount: number;
+    startDateTime: string; // ISO date-time string format
+    endDateTime: string; // ISO date-time string format
+    serviceId: number;
+    tripId: number;
+    noOfUnits: number;
+}
+
+export interface TimeSlotsRequestDTO {
+    slotStartTime: string; // Format: "HH:mm"
+    slotEndTime: string; // Format: "HH:mm"
+}
+
+export interface TimeSlotsResponseDTO {
+    content: TimeSlotsRequestDTO[];
 }

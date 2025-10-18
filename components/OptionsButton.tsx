@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef } from "react";
 import {
   View,
   TouchableOpacity,
@@ -7,12 +7,18 @@ import {
   Dimensions,
   Modal,
   TouchableWithoutFeedback,
-} from 'react-native';
+} from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
-import { router } from 'expo-router';
+import { router } from "expo-router";
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
+interface OptionsButtonProps {
+  tripId?: string;
+  tripName?: string;
+}
+
+const OptionsButton: React.FC<OptionsButtonProps> = ({ tripId, tripName }) => {
 interface OptionsButtonProps {
   tripId?: string;
 }
@@ -110,36 +116,50 @@ const OptionsButton: React.FC<OptionsButtonProps> = ({ tripId }) => {
   };
 
   const handleOptionPress = (option: string) => {
-    console.log(`${option} pressed`);
+    console.log(`${option} pressed, tripId:`, tripId);
     toggleMenu();
-    // Add your navigation logic here
-    if (option === 'Budget') {
+
+    // Add your navigation logic here with proper tripId
+    if (option === "Budget") {
+      router.push(`/(tabs)/trips/${tripId}/BudgetView`);
+    } else if (option === "Map") {
       if (tripId) {
-        router.push(`/(tabs)/trips/${tripId}/BudgetView` as any);
+        router.push(`/(tabs)/trips/${tripId}/MapView`);
       } else {
-        alert('Trip ID not available');
+        console.error("Trip ID is required for map navigation");
       }
-    } else if (option === 'Map') {
-      alert("Route -> map view!");
-    } else if (option === 'Chat') {
-      router.push('../../../screens/Chat');
+    } else if (option === "Chat") {
+      if (tripId) {
+        // Navigate to group chat for the trip
+        router.push({
+          pathname: "/screens/Chat",
+          params: {
+            chatType: "group",
+            tripId: tripId,
+            tripName: tripName || `Trip ${tripId}`, // Use actual trip name if provided
+          },
+        });
+      } else {
+        console.error("Trip ID is required for group chat navigation");
+        // Could show an alert or navigate to a chat list instead
+        router.push("/screens/Chat");
+      }
     }
   };
 
   const options = [
-    { name: 'Budget', icon: 'wallet-outline', color: '#008080' },
-    { name: 'Map', icon: 'map-outline', color: '#008080' },
-    { name: 'Chat', icon: 'chatbubble-outline', color: '#008080' },
-   
+    { name: "Budget", icon: "wallet-outline", color: "#008080" },
+    { name: "Map", icon: "map-outline", color: "#008080" },
+    { name: "Chat", icon: "chatbubble-outline", color: "#008080" },
   ];
 
   const animationValues = [option1Anim, option2Anim, option3Anim, option4Anim];
 
   const getOptionStyle = (index: number) => {
     const animValue = animationValues[index];
-    const angle = (index * 60) + 150; // Spread options in an arc
+    const angle = index * 60 + 150; // Spread options in an arc
     const radius = 80;
-    
+
     return {
       opacity: animValue,
       transform: [
@@ -164,7 +184,7 @@ const OptionsButton: React.FC<OptionsButtonProps> = ({ tripId }) => {
         {
           rotate: animValue.interpolate({
             inputRange: [0, 1],
-            outputRange: ['180deg', '0deg'],
+            outputRange: ["180deg", "0deg"],
           }),
         },
       ],
@@ -187,7 +207,7 @@ const OptionsButton: React.FC<OptionsButtonProps> = ({ tripId }) => {
                 {
                   rotate: rotateAnim.interpolate({
                     inputRange: [0, 1],
-                    outputRange: ['0deg', '135deg'],
+                    outputRange: ["0deg", "135deg"],
                   }),
                 },
                 {
@@ -224,24 +244,21 @@ const OptionsButton: React.FC<OptionsButtonProps> = ({ tripId }) => {
                 },
               ]}
             />
-            
+
             {/* Options Container */}
             <View style={styles.optionsContainer}>
               {options.map((option, index) => (
                 <Animated.View
                   key={option.name}
-                  style={[
-                    styles.optionWrapper,
-                    getOptionStyle(index),
-                  ]}
+                  style={[styles.optionWrapper, getOptionStyle(index)]}
                 >
                   <TouchableOpacity
                     style={[
-                      styles.optionButton, 
-                      { 
+                      styles.optionButton,
+                      {
                         backgroundColor: option.color,
                         shadowColor: option.color,
-                      }
+                      },
                     ]}
                     onPress={() => handleOptionPress(option.name)}
                     activeOpacity={0.8}
@@ -251,7 +268,7 @@ const OptionsButton: React.FC<OptionsButtonProps> = ({ tripId }) => {
                 </Animated.View>
               ))}
             </View>
-            
+
             {/* Main FAB in overlay */}
             <View style={styles.fabInOverlay}>
               <TouchableOpacity
@@ -267,7 +284,7 @@ const OptionsButton: React.FC<OptionsButtonProps> = ({ tripId }) => {
                         {
                           rotate: rotateAnim.interpolate({
                             inputRange: [0, 1],
-                            outputRange: ['0deg', '135deg'],
+                            outputRange: ["0deg", "135deg"],
                           }),
                         },
                         {
@@ -296,10 +313,10 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#008080',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#008080',
+    backgroundColor: "#008080",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#008080",
     shadowOffset: {
       width: 0,
       height: 6,
@@ -310,42 +327,42 @@ const styles = StyleSheet.create({
     marginBottom: 120,
   },
   fabIcon: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   overlay: {
     flex: 1,
     width: screenWidth,
     height: screenHeight,
-    position: 'relative',
+    position: "relative",
   },
   blurBackground: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.28)',
-    backdropFilter: 'blur(9px)',
+    backgroundColor: "rgba(0, 0, 0, 0.28)",
+    backdropFilter: "blur(9px)",
   },
   optionsContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 180,
     right: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   optionWrapper: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: "absolute",
+    alignItems: "center",
+    justifyContent: "center",
   },
   optionButton: {
     width: 52,
     height: 52,
     borderRadius: 26,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     shadowOffset: {
       width: 0,
       height: 4,
@@ -354,16 +371,16 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
   fabInOverlay: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 30,
     right: 20,
   },
   fabInOverlayButton: {
-    backgroundColor: '#008080',
-    shadowColor: '#008080',
+    backgroundColor: "#008080",
+    shadowColor: "#008080",
   },
 });
 

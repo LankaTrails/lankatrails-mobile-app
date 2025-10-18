@@ -64,11 +64,32 @@ export default function DestinationModal({
     console.log("Search query:", searchQuery);
     console.log("Loading cities:", loadingCities);
 
-    let filtered = cities.filter(
-      (city) =>
-        city.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        city.formattedAddress.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    if (!searchQuery.trim()) {
+      // Return all cities if no search query
+      return cities;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+
+    let filtered = cities.filter((city) => {
+      // Search in city name
+      const cityMatch = city.city?.toLowerCase().includes(query);
+
+      // Search in district name
+      const districtMatch = city.district?.toLowerCase().includes(query);
+
+      // Search in province name
+      const provinceMatch = city.province?.toLowerCase().includes(query);
+
+      // Search in formatted address (only if it exists and is not null)
+      const formattedAddressMatch = city.formattedAddress
+        ?.toLowerCase()
+        .includes(query);
+
+      return (
+        cityMatch || districtMatch || provinceMatch || formattedAddressMatch
+      );
+    });
 
     console.log("Filtered destinations:", filtered.length);
 
@@ -119,8 +140,19 @@ export default function DestinationModal({
 
   const toggleDestination = (destination: Location) => {
     setSelectedDestinations((prev) =>
-      prev.some((d) => d.city === destination.city)
-        ? prev.filter((d) => d.city !== destination.city)
+      prev.some((d) =>
+        d.locationId
+          ? d.locationId === destination.locationId
+          : d.city === destination.city && d.district === destination.district
+      )
+        ? prev.filter((d) =>
+            d.locationId
+              ? d.locationId !== destination.locationId
+              : !(
+                  d.city === destination.city &&
+                  d.district === destination.district
+                )
+          )
         : [...prev, destination]
     );
   };
@@ -176,17 +208,16 @@ export default function DestinationModal({
         >
           {/* Header with back button */}
           <View style={styles.headerRow}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={onClose}
-            >
+            <TouchableOpacity style={styles.backButton} onPress={onClose}>
               <Ionicons name="arrow-back" size={24} color="#008080" />
             </TouchableOpacity>
-            <Text style={[styles.modalTitle, styles.headerTitle]}>Where do you want to go?</Text>
+            <Text style={[styles.modalTitle, styles.headerTitle]}>
+              Where do you want to go?
+            </Text>
             <View style={styles.headerSpacer} />
           </View>
 
-          <Text style={styles.sectionTitle}>What&apos;s Your Trip Vibe?</Text>
+          {/* <Text style={styles.sectionTitle}>What&apos;s Your Trip Vibe?</Text>
           <View style={styles.vibesScrollContainer}>
             <ScrollView
               horizontal
@@ -242,7 +273,7 @@ export default function DestinationModal({
                 </View>
               </View>
             </ScrollView>
-          </View>
+          </View> */}
 
           <Text style={styles.sectionTitle}>
             {selectedVibes.length > 0
@@ -255,46 +286,56 @@ export default function DestinationModal({
               style={styles.searchInput}
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholder="Type to search..."
+              placeholder="Search by city, district, or province..."
               placeholderTextColor="#9CA3AF"
             />
           </View>
 
           <FlatList
             data={filteredDestinations}
-            keyExtractor={(item) => `${item.city}-${item.district}`}
+            keyExtractor={(item) =>
+              item.locationId
+                ? `location-${item.locationId}`
+                : `${item.city}-${item.district}-${item.latitude}-${item.longitude}`
+            }
             showsVerticalScrollIndicator={false}
             style={styles.destinationsList}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[
-                  styles.destinationItem,
-                  selectedDestinations.some((d) => d.city === item.city) &&
-                    styles.selectedDestinationItem,
-                ]}
-                onPress={() => toggleDestination(item)}
-              >
-                <View style={styles.destinationContent}>
-                  <Text
-                    style={[
-                      styles.destinationText,
-                      selectedDestinations.some((d) => d.city === item.city) &&
-                        styles.selectedDestinationText,
-                    ]}
-                  >
-                    {item.city}
-                  </Text>
-                  <Text style={styles.destinationSubText}>
-                    {item.district}, {item.province}
-                  </Text>
-                  <View style={styles.destinationIndicators}>
-                    {selectedDestinations.some((d) => d.city === item.city) && (
-                      <Text style={styles.selectedIndicator}>✓</Text>
-                    )}
+            renderItem={({ item }) => {
+              const isSelected = selectedDestinations.some((d) =>
+                d.locationId
+                  ? d.locationId === item.locationId
+                  : d.city === item.city && d.district === item.district
+              );
+
+              return (
+                <TouchableOpacity
+                  style={[
+                    styles.destinationItem,
+                    isSelected && styles.selectedDestinationItem,
+                  ]}
+                  onPress={() => toggleDestination(item)}
+                >
+                  <View style={styles.destinationContent}>
+                    <Text
+                      style={[
+                        styles.destinationText,
+                        isSelected && styles.selectedDestinationText,
+                      ]}
+                    >
+                      {item.city}
+                    </Text>
+                    <Text style={styles.destinationSubText}>
+                      {item.district}, {item.province}
+                    </Text>
+                    <View style={styles.destinationIndicators}>
+                      {isSelected && (
+                        <Text style={styles.selectedIndicator}>✓</Text>
+                      )}
+                    </View>
                   </View>
-                </View>
-              </TouchableOpacity>
-            )}
+                </TouchableOpacity>
+              );
+            }}
             ListEmptyComponent={
               loadingCities ? (
                 <View style={styles.loadingContainer}>

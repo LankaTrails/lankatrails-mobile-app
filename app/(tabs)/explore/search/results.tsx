@@ -1,6 +1,7 @@
 import EmptyState from "@/components/EmptyState";
 import FilterBar from "@/components/FilterBar";
 import { searchServices } from "@/services/serviceSearch";
+import { ServiceCategory } from "@/types/commonTypes";
 import {
   AccommodationType,
   ActivityType,
@@ -9,7 +10,6 @@ import {
   ProviderSearchResponse,
   SearchResponse,
   Service,
-  ServiceCategory,
   ServiceSearchRequest,
   ServiceSearchResponse,
   TourGuideType,
@@ -295,7 +295,7 @@ const convertServiceToCardItem = (service: Service): CardItem => ({
       : Number(service.serviceId),
   title: service.serviceName,
   subtitle:
-    service.locationBased.city || service.locationBased.formattedAddress,
+    service.locations?.[0]?.city || service.locations?.[0]?.formattedAddress,
   rating: 4.5, // Default rating
   image: service.mainImageUrl
     ? `http://192.168.1.9:8080${service.mainImageUrl}`
@@ -881,18 +881,21 @@ const GalleApp: React.FC = () => {
                       ? (item as any).providerId
                       : (item as any).serviceId,
                     serviceName: item.displayName,
-                    locationBased: {
-                      city: item.isProvider ? "Provider" : "Service",
-                      district: "",
-                      province: "",
-                      country: "",
-                      formattedAddress: "",
-                      postalCode: "",
-                      latitude: 0,
-                      longitude: 0,
-                    },
+                    locations: [
+                      {
+                        city: item.isProvider ? "Provider" : "Service",
+                        district: "",
+                        province: "",
+                        country: "",
+                        formattedAddress: "",
+                        postalCode: "",
+                        latitude: 0,
+                        longitude: 0,
+                      },
+                    ],
                     mainImageUrl: item.displayImage,
                     category: item.displayCategory,
+                    prices: [], // Add empty prices array for compatibility
                   }))}
                   maxItems={6}
                   onItemPress={(itemId) => {
@@ -935,18 +938,21 @@ const GalleApp: React.FC = () => {
               ? (item as any).providerId
               : (item as any).serviceId,
             serviceName: item.displayName,
-            locationBased: {
-              city: item.isProvider ? "Provider" : "Service",
-              district: "",
-              province: "",
-              country: "",
-              formattedAddress: "",
-              postalCode: "",
-              latitude: 0,
-              longitude: 0,
-            },
+            locations: [
+              {
+                city: item.isProvider ? "Provider" : "Service",
+                district: "",
+                province: "",
+                country: "",
+                formattedAddress: "",
+                postalCode: "",
+                latitude: 0,
+                longitude: 0,
+              },
+            ],
             mainImageUrl: item.displayImage,
             category: item.displayCategory,
+            prices: [], // Add empty prices array for compatibility
           }))}
           onItemPress={(itemId) => {
             const item = filteredItems.find(

@@ -21,8 +21,8 @@ import {
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
 import LongButton from "./LongButton";
-import { BlurView } from 'expo-blur';
-import { Animated as RNAnimated } from 'react-native';
+import { BlurView } from "expo-blur";
+import { Animated as RNAnimated } from "react-native";
 
 interface StartLocationModalProps {
   visible: boolean;
@@ -352,7 +352,6 @@ export default function StartLocationModal({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
-
         {/* Blur background with fade-in animation */}
         <TouchableWithoutFeedback
           onPress={() => {
@@ -360,17 +359,23 @@ export default function StartLocationModal({
             onClose();
           }}
         >
-          <RNAnimated.View style={[StyleSheet.absoluteFill, { opacity: blurAnim }]}> 
-            <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
+          <RNAnimated.View
+            style={[StyleSheet.absoluteFill, { opacity: blurAnim }]}
+          >
+            <BlurView
+              intensity={50}
+              tint="dark"
+              style={StyleSheet.absoluteFill}
+            />
           </RNAnimated.View>
         </TouchableWithoutFeedback>
 
         <Animated.View
           style={[
             styles.modal,
-            { 
+            {
               transform: [{ translateY: modalTranslateY }],
-              height: selectedLocation ? "80%" : "70%" // Increase height when location is selected
+              height: selectedLocation ? "80%" : "70%", // Increase height when location is selected
             },
           ]}
         >
@@ -385,7 +390,9 @@ export default function StartLocationModal({
               >
                 <Ionicons name="arrow-back" size={24} color="#008080" />
               </TouchableOpacity>
-              <Text style={[styles.modalTitle, styles.mapHeaderTitle]}>Choose Start Location</Text>
+              <Text style={[styles.modalTitle, styles.mapHeaderTitle]}>
+                Choose Start Location
+              </Text>
               <View style={styles.mapHeaderSpacer} />
             </View>
           )}
@@ -396,7 +403,6 @@ export default function StartLocationModal({
               <Text style={styles.sectionTitle}>
                 How would you like to set your start location?
               </Text>
-
 
               {/* Row of location selection buttons */}
               <View style={styles.buttonRow}>
@@ -428,7 +434,9 @@ export default function StartLocationModal({
               <Text style={styles.sectionTitle}>Popular Start Locations</Text>
               <FlatList
                 data={popularLocations}
-                keyExtractor={(item, index) => `${item.name}-${item.city}-${index}`}
+                keyExtractor={(item, index) =>
+                  `${item.name}-${item.city}-${index}`
+                }
                 style={styles.popularLocationsList}
                 renderItem={({ item }) => (
                   <TouchableOpacity
@@ -504,7 +512,11 @@ export default function StartLocationModal({
                 <View style={styles.searchResultsContainer}>
                   <FlatList
                     data={searchResults}
-                    keyExtractor={(item, index) => index.toString()}
+                    keyExtractor={(item, index) =>
+                      item.locationId
+                        ? `search-location-${item.locationId}`
+                        : `search-${item.city}-${item.district}-${index}`
+                    }
                     style={styles.searchResultsList}
                     renderItem={({ item }) => (
                       <TouchableOpacity
@@ -609,7 +621,7 @@ const styles = StyleSheet.create({
     marginRight: 0,
   },
   buttonRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
     marginBottom: 16,
   },

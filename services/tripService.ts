@@ -1,5 +1,6 @@
 import api from '@/api/axiosInstance';
-import { ApiResponse, Location, Trip, TripItem, tripRequest } from '@/types/triptypes';
+import { Trip, TripInvitationRequest, TripItem, tripRequest, AvailabilityDto, TimeSlotsResponseDTO } from '@/types/triptypes';
+import type { ApiResponse, Location } from '@/types/commonTypes';
 
 /**
  * Creates a new trip
@@ -9,9 +10,12 @@ import { ApiResponse, Location, Trip, TripItem, tripRequest } from '@/types/trip
 export const createTrip = async (tripData: tripRequest): Promise<ApiResponse<Trip>> => {
     try {
         console.log('Creating trip with data:', tripData);
+        console.log('Person count - Adults:', tripData.numberOfAdults, 'Children:', tripData.numberOfChildren);
         const response = await api.post<ApiResponse<Trip>>('/trips/create', tripData);
+        console.log('Trip creation response:', response.data);
         return response.data;
     } catch (error) {
+        console.error('Error creating trip:', error);
         throw error;
     }
 };
@@ -58,15 +62,20 @@ export const getTripItemsByTripId = async (tripId: number): Promise<ApiResponse<
 };
 
 /**
- * Creates a new trip
- * @param tripData The trip data to create
- * @returns Promise containing the API response with the created trip
+ * Adds an item to a trip
+ * @param tripId The ID of the trip
+ * @param tripitem The trip item to add
+ * @returns Promise containing the API response with the success status
  */
-export const addToTrip = async (tripId: number, tripitem: TripItem): Promise<ApiResponse<Trip>> => {
+export const addToTrip = async (tripId: number, tripitem: TripItem): Promise<ApiResponse<string>> => {
     try {
-        const response = await api.post<ApiResponse<Trip>>(`/trips/add-trip-item/${tripId}`, tripitem);
+        console.log('Adding to trip:', tripId, tripitem);
+        console.log('Trip item details - Adults:', tripitem.numberOfAdults, 'Children:', tripitem.numberOfChildren, 'Units:', tripitem.noOfUnits);
+        const response = await api.post<ApiResponse<string>>(`/trips/add-trip-item/${tripId}`, tripitem);
+        console.log('Add to trip response:', response.data);
         return response.data;
     } catch (error) {
+        console.error('Error adding to trip:', error);
         throw error;
     }
 };
@@ -85,9 +94,9 @@ export const fetchAllCities = async (): Promise<ApiResponse<Location[]>> => {
 };
 
 // Generate invitation for the trip
-export const generateTripInvitation = async (tripId: number): Promise<ApiResponse<string>> => {
+export const generateTripInvitation = async (tripId: number, invitationData: TripInvitationRequest): Promise<ApiResponse<string>> => {
     try {
-        const response = await api.post<ApiResponse<string>>(`/trips/invitations/${tripId}/generate`);
+        const response = await api.post<ApiResponse<string>>(`/trips/invitations/generate`, invitationData);
         return response.data;
     } catch (error) {
         throw error;
@@ -98,6 +107,21 @@ export const generateTripInvitation = async (tripId: number): Promise<ApiRespons
 export const acceptTripInvitation = async (token: string): Promise<ApiResponse<Trip>> => {
     try {
         const response = await api.post<ApiResponse<Trip>>(`/trips/invitations/${token}/accept`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+/**
+ * Gets available time slots for a service
+ * @param availabilityDto The availability criteria
+ * @param serviceId The ID of the service
+ * @returns Promise containing the API response with available time slots
+ */
+export const getAvailableTimeSlots = async (availabilityDto: AvailabilityDto, serviceId: number): Promise<ApiResponse<TimeSlotsResponseDTO>> => {
+    try {
+        const response = await api.post<ApiResponse<TimeSlotsResponseDTO>>(`/tourist/booking/available-slots/${serviceId}`, availabilityDto);
         return response.data;
     } catch (error) {
         throw error;
