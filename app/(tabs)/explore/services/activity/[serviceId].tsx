@@ -50,6 +50,7 @@ const convertToService = (detail: ActivityServiceDetail): Service => ({
     : [],
   mainImageUrl:
     detail.images && detail.images.length > 0 ? detail.images[0].imageUrl : "",
+  provider: detail.provider ?? null,
 });
 
 const ActivityServiceDetailPage = () => {
@@ -260,10 +261,12 @@ const ActivityServiceDetailPage = () => {
           <View className="flex-row items-start mt-1">
             <Ionicons name="location" size={24} color="#008080" />
             <Text className="ml-2 text-gray-700 w-[85%]">
-              {serviceDetail.locationBased?.formattedAddress ||
-                (serviceDetail.locationBased
-                  ? `${serviceDetail.locationBased.city}, ${serviceDetail.locationBased.district}`
-                  : "Location not available")}
+              {serviceDetail.locations && serviceDetail.locations.length > 0
+                ? serviceDetail.locations[0].formattedAddress ||
+                  (serviceDetail.locations[0].city && serviceDetail.locations[0].district
+                    ? `${serviceDetail.locations[0].city}, ${serviceDetail.locations[0].district}`
+                    : "Location not available")
+                : "Location not available"}
             </Text>
           </View>
 

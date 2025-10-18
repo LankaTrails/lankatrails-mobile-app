@@ -50,6 +50,7 @@ const convertToService = (detail: FoodBeverageServiceDetail): Service => ({
     : [],
   mainImageUrl:
     detail.images && detail.images.length > 0 ? detail.images[0].imageUrl : "",
+  provider: detail.provider || null,
 });
 
 const FoodBeverageServiceDetailPage = () => {
@@ -500,14 +501,14 @@ const FoodBeverageServiceDetailPage = () => {
         )}
 
         {/* Leave a Review Section */}
-        <View className="px-4 mb-20">
-          <Text className="text-3xl font-semibold text-gray-500 mb-4">
+        {/* <View className="px-4 mb-20"> */}
+          {/* <Text className="text-3xl font-semibold text-gray-500 mb-4">
             Leave a Review
-          </Text>
+          </Text> */}
 
           <View className="bg-white rounded-xl shadow-sm p-4">
             {/* Rating Stars */}
-            <Text className="text-gray-500 font-medium text-lg mb-2">
+            {/* <Text className="text-gray-500 font-medium text-lg mb-2">
               Your Rating
             </Text>
             <View className="flex-row mb-4">
@@ -524,10 +525,10 @@ const FoodBeverageServiceDetailPage = () => {
                   />
                 </TouchableOpacity>
               ))}
-            </View>
+            </View> */}
 
             {/* Review Input */}
-            <Text className="text-gray-500 font-medium mb-1 text-lg">
+            {/* <Text className="text-gray-500 font-medium mb-1 text-lg">
               Your Review
             </Text>
             <View className="bg-gray-100 rounded-lg px-3 py-2 mb-4">
@@ -539,19 +540,19 @@ const FoodBeverageServiceDetailPage = () => {
                 className="text-sm text-gray-800"
                 style={{ minHeight: 80 }}
               />
-            </View>
+            </View> */}
 
             {/* Submit Button */}
-            <TouchableOpacity
+            {/* <TouchableOpacity
               onPress={handleSubmitReview}
               className="bg-primary py-3 rounded-lg items-center"
             >
               <Text className="text-white text-lg font-medium">
                 Submit Review
               </Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
-            <TouchableOpacity
+            {/* <TouchableOpacity
               onPress={() => router.push("../../support/complaints" as any)}
               className="border-4 border-primary mt-5 bg-white py-3 items-center rounded-full"
             >
@@ -559,7 +560,7 @@ const FoodBeverageServiceDetailPage = () => {
                 Report an Issue
               </Text>
             </TouchableOpacity>
-          </View>
+          </View> */}
         </View>
       </ScrollView>
     </>

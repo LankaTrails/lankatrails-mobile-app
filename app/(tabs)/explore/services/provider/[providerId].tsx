@@ -443,16 +443,16 @@ const ProviderDetailView = () => {
 
         {/* Leave a Review Section */}
         <View className="px-4 mb-20">
-          <Text className="text-2xl font-semibold text-gray-700 mb-4">
+          {/* <Text className="text-2xl font-semibold text-gray-700 mb-4">
             Leave a Review
-          </Text>
+          </Text> */}
 
           <View className="bg-white rounded-xl shadow-sm p-4">
             {/* Rating Stars */}
-            <Text className="text-gray-600 font-medium text-lg mb-2">
+            {/* <Text className="text-gray-600 font-medium text-lg mb-2">
               Your Rating
-            </Text>
-            <View className="flex-row mb-4">
+            </Text> */}
+            {/* <View className="flex-row mb-4">
               {[1, 2, 3, 4, 5].map((star) => (
                 <TouchableOpacity
                   key={star}
@@ -466,10 +466,10 @@ const ProviderDetailView = () => {
                   />
                 </TouchableOpacity>
               ))}
-            </View>
+            </View> */}
 
             {/* Review Input */}
-            <Text className="text-gray-600 font-medium mb-1 text-lg">
+            {/* <Text className="text-gray-600 font-medium mb-1 text-lg">
               Your Review
             </Text>
             <View className="bg-gray-100 rounded-lg px-3 py-2 mb-4">
@@ -481,27 +481,27 @@ const ProviderDetailView = () => {
                 className="text-sm text-gray-800"
                 style={{ minHeight: 80 }}
               />
-            </View>
+            </View> */}
 
             {/* Submit Button */}
-            <TouchableOpacity
+            {/* <TouchableOpacity
               onPress={handleSubmitReview}
               className="bg-primary py-3 rounded-lg items-center mb-4"
             >
               <Text className="text-white text-lg font-medium">
                 Submit Review
               </Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             {/* Report Issue Button */}
-            <TouchableOpacity
+            {/* <TouchableOpacity
               onPress={() => router.push("../../support/complaints")}
               className="border-2 border-primary bg-white py-3 items-center rounded-lg"
             >
               <Text className="text-primary text-lg font-bold">
                 Report an Issue
               </Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </View>
       </ScrollView>
