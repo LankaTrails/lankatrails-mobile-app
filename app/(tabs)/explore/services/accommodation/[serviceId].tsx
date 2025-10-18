@@ -1,5 +1,6 @@
 import AddToTripButton from "@/components/AddToTripButtonNew";
 import HeaderSection from "@/components/explorer-components/HeaderSection";
+import ReviewsSection from "@/components/ReviewsSection";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { Star } from "lucide-react-native";
@@ -60,8 +61,6 @@ const AccommodationServiceDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFavourite, setIsFavourite] = useState(false);
-  const [userRating, setUserRating] = useState(0);
-  const [userReview, setUserReview] = useState("");
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [showMap, setShowMap] = useState(false); // Map visibility state
   const [expandedTabs, setExpandedTabs] = useState<{ [key: number]: boolean }>(
@@ -131,20 +130,6 @@ const AccommodationServiceDetailPage = () => {
     } else {
       Alert.alert("Share", message);
     }
-  };
-
-  const handleSubmitReview = () => {
-    if (userRating === 0 || userReview.trim() === "") {
-      Alert.alert("Please add a rating and write a review.");
-      return;
-    }
-
-    // TODO: Implement API call to submit review
-    Alert.alert("Thank you!", "Your review has been submitted.");
-
-    // Reset inputs
-    setUserRating(0);
-    setUserReview("");
   };
 
   const renderAmenity = (label: string, value: boolean) => {
@@ -444,67 +429,19 @@ const AccommodationServiceDetailPage = () => {
           </View>
         )}
 
-        {/* Leave a Review Section */}
+        {/* Reviews and Ratings Section */}
+        <ReviewsSection serviceId={parseInt(serviceId)} />
+
+        {/* Report Issue Section */}
         <View className="px-4 mb-20">
-          <Text className="text-3xl font-semibold text-gray-500 mb-4">
-            Leave a Review
-          </Text>
-
-          <View className="bg-white rounded-xl shadow-sm p-4">
-            {/* Rating Stars */}
-            <Text className="text-gray-500 font-medium text-lg mb-2">
-              Your Rating
+          <TouchableOpacity
+            onPress={() => router.push("../../support/complaints" as any)}
+            className="border-2 border-primary bg-white py-3 items-center rounded-xl"
+          >
+            <Text className="text-primary text-lg font-semibold">
+              Report an Issue
             </Text>
-            <View className="flex-row mb-4">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <TouchableOpacity
-                  key={star}
-                  onPress={() => setUserRating(star)}
-                >
-                  <Star
-                    size={24}
-                    color={userRating >= star ? "#FBB03B" : "#E5E7EB"}
-                    fill={userRating >= star ? "#FBB03B" : "none"}
-                    className="mr-1"
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Review Input */}
-            <Text className="text-gray-500 font-medium mb-1 text-lg">
-              Your Review
-            </Text>
-            <View className="bg-gray-100 rounded-lg px-3 py-2 mb-4">
-              <TextInput
-                multiline
-                placeholder="Share your experience..."
-                value={userReview}
-                onChangeText={setUserReview}
-                className="text-sm text-gray-800"
-                style={{ minHeight: 80 }}
-              />
-            </View>
-
-            {/* Submit Button */}
-            <TouchableOpacity
-              onPress={handleSubmitReview}
-              className="bg-primary py-3 rounded-lg items-center"
-            >
-              <Text className="text-white text-lg font-medium">
-                Submit Review
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => router.push("../../support/complaints" as any)}
-              className="border-4 border-primary mt-5 bg-white py-3 items-center rounded-full"
-            >
-              <Text className="text-primary text-lg font-bold">
-                Report an Issue
-              </Text>
-            </TouchableOpacity>
-          </View>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
