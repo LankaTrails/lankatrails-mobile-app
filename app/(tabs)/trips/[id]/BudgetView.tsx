@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,7 @@ import BackButton from '../../../../components/BackButton';
 import FilterButton from '../../../../components/FilterButton';
 import Svg, { Circle } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from "@expo/vector-icons";
+
 import { BudgetService } from '@/services/budgetService';
 import { ExpenseService } from '@/services/expenseService';
 import { BudgetCategorys, BudgetCategoryDisplayNames, BudgetCategoryIcons, BudgetCategoryColors, CreateExpenseRequest, TripBudgetCategoryDto } from '@/types/budgetTypes';
@@ -27,6 +27,7 @@ import { getToken } from '@/utils/tokenStorage';
 import { getTripParticipants } from '@/services/tripService';
 import AddExpenseModal from '../../../../components/AddExpenseModal';
 import ExpenseDetailsModal from '../../../../components/ExpenseDetailsModal';
+import CategoryDetailsModal from '../../../../components/CategoryDetailsModal';
 
 
 
@@ -81,8 +82,10 @@ const BudgetView = () => {
   const [showBudgetModal, setBudgetModal] = useState(false);
   const [showCategorySelector, setShowCategorySelector] = useState(false);
   const [showExpenseDetailsModal, setShowExpenseDetailsModal] = useState(false);
+  const [showCategoryDetailsModal, setShowCategoryDetailsModal] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedCategoryData, setSelectedCategoryData] = useState<BudgetCategory | null>(null);
   const [modalType, setModalType] = useState<'expense' | 'budget'>('expense');
   
   // Navigation state
@@ -179,9 +182,11 @@ const BudgetView = () => {
     }
   }, [numericTripId]);
 
-  const loadBudgetData = useCallback(async () => {
+  const loadBudgetData = useCallback(async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
       setError(null);
       
       // Validate trip ID before making API call
@@ -195,11 +200,27 @@ const BudgetView = () => {
       const accessToken = await getToken('ACCESS_TOKEN');
       console.log('[BudgetView] Access token available:', !!accessToken);
       
-      console.log('[BudgetView] Loading budget data for trip:', numericTripId);
+      console.log('[BudgetView] 🕐 Loading budget data for trip:', numericTripId, 'at', new Date().toISOString());
       const budgetResponse = await BudgetService.getTripBudgetDetails(numericTripId);
-      console.log('[BudgetView] Budget response received:', budgetResponse);
+      console.log('[BudgetView] 📥 Budget response received at:', new Date().toISOString(), budgetResponse);
       
       if (budgetResponse.success && budgetResponse.data) {
+        console.log('[BudgetView] 📊 RAW API RESPONSE DETAILED ANALYSIS:');
+        console.log('[BudgetView] - Response success:', budgetResponse.success);
+        console.log('[BudgetView] - Total budget limit:', budgetResponse.data.totalBudgetLimit);
+        console.log('[BudgetView] - Trip budget categories count:', budgetResponse.data.tripBudgetCategories?.length || 0);
+        
+        budgetResponse.data.tripBudgetCategories?.forEach((apiCategory, index) => {
+          console.log(`[BudgetView] - Category ${index + 1}:`, {
+            category: apiCategory.budgetCategory,
+            limitId: apiCategory.limitId,
+            limitAmount: apiCategory.limitAmount,
+            spentAmount: apiCategory.spentAmount,
+            rawData: apiCategory
+          });
+        });
+        
+        console.log('[BudgetView] Setting total budget to:', budgetResponse.data.totalBudgetLimit || 0);
         setTotalBudget(budgetResponse.data.totalBudgetLimit || 0);
         
         // Convert API data to local format
@@ -213,8 +234,33 @@ const BudgetView = () => {
           budgetCategory: apiCategory.budgetCategory as BudgetCategorys
         }));
         
-       setBudgetCategories(convertedCategories);
-       console.log('[BudgetView] Converted categories:', convertedCategories);
+        console.log('[BudgetView] Raw API data:', budgetResponse.data.tripBudgetCategories.map(cat => ({ 
+          category: cat.budgetCategory, 
+          limitAmount: cat.limitAmount, 
+          spentAmount: cat.spentAmount 
+        })));
+        console.log('[BudgetView] Converting to local format...');
+        console.log('[BudgetView] Setting budget categories to:', convertedCategories.map(cat => ({ name: cat.name, spent: cat.spent, allocated: cat.allocated })));
+        
+        // Use functional update to ensure React detects the change
+        setBudgetCategories(prevCategories => {
+          console.log('[BudgetView] 🔄 STATE UPDATE - setBudgetCategories called at:', new Date().toISOString());
+          console.log('[BudgetView] - Previous categories:', prevCategories.map(cat => ({ 
+            name: cat.name, 
+            spent: cat.spent, 
+            allocated: cat.allocated,
+            id: cat.id 
+          })));
+          console.log('[BudgetView] - New categories:', convertedCategories.map(cat => ({ 
+            name: cat.name, 
+            spent: cat.spent, 
+            allocated: cat.allocated,
+            id: cat.id 
+          })));
+          console.log('[BudgetView] - Are they different?', JSON.stringify(prevCategories) !== JSON.stringify(convertedCategories));
+          return convertedCategories;
+        });
+        console.log('[BudgetView] ✅ Budget categories state update completed');
         
         // Load expenses after budget categories are set
         await loadExpensesWithCategories(convertedCategories);
@@ -230,7 +276,9 @@ const BudgetView = () => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to load budget data';
       setError(`Error loading budget: ${errorMessage}`);
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   }, [numericTripId, loadExpensesWithCategories, loadTripParticipants, tripId]);
 
@@ -253,7 +301,7 @@ const BudgetView = () => {
 
   // Effect to handle blur animation
   useEffect(() => {
-    const isAnyModalVisible = showAddExpenseModal || showBudgetModal || showCategorySelector || showExpenseDetailsModal;
+    const isAnyModalVisible = showAddExpenseModal || showBudgetModal || showCategorySelector || showExpenseDetailsModal || showCategoryDetailsModal;
     if (isAnyModalVisible) {
       Animated.timing(blurOpacity, {
         toValue: 1,
@@ -263,15 +311,61 @@ const BudgetView = () => {
     } else {
       blurOpacity.setValue(0);
     }
-  }, [showAddExpenseModal, showBudgetModal, showCategorySelector, showExpenseDetailsModal, blurOpacity]);
+  }, [showAddExpenseModal, showBudgetModal, showCategorySelector, showExpenseDetailsModal, showCategoryDetailsModal, blurOpacity]);
 
-  // Filter categories with budget > 0
-  const categoriesWithBudget = budgetCategories.filter(cat => cat.allocated > 0);
+
+
+  // Calculate expense totals by category from actual expenses
+  const calculateCategoryExpenses = useMemo(() => {
+    const categoryTotals: { [key: string]: number } = {};
+    
+    expenses.forEach(expense => {
+      if (categoryTotals[expense.categoryId]) {
+        categoryTotals[expense.categoryId] += expense.amount;
+      } else {
+        categoryTotals[expense.categoryId] = expense.amount;
+      }
+    });
+    
+    console.log('[BudgetView] 🧮 CALCULATED EXPENSE TOTALS BY CATEGORY:', categoryTotals);
+    return categoryTotals;
+  }, [expenses]);
+
+  // Update budget categories with calculated expense totals
+  const budgetCategoriesWithCalculatedSpent = useMemo(() => {
+    const updatedCategories = budgetCategories.map(category => ({
+      ...category,
+      spent: calculateCategoryExpenses[category.id] || 0
+    }));
+    
+    console.log('[BudgetView] � UPDATED CATEGORIES WITH CALCULATED SPENT:');
+    updatedCategories.forEach(cat => {
+      console.log(`[BudgetView] - ${cat.name}: spent ${cat.spent} (was ${budgetCategories.find(bc => bc.id === cat.id)?.spent || 0})`);
+    });
+    
+    return updatedCategories;
+  }, [budgetCategories, calculateCategoryExpenses]);
+
+  // Filter categories with budget > 0 - with memoization using calculated spent values
+  const categoriesWithBudget = useMemo(() => {
+    return budgetCategoriesWithCalculatedSpent.filter(cat => cat.allocated > 0);
+  }, [budgetCategoriesWithCalculatedSpent]);
+  
   const hasAnyBudgetCategories = categoriesWithBudget.length > 0;
 
-  // Calculate totals - include all spending even for categories without budget
-  const totalSpent = budgetCategories.reduce((sum, cat) => sum + cat.spent, 0);
-  const remainingBudget = totalBudget - totalSpent;
+  // Calculate total spent from actual expenses (not from API spent values)
+  const totalSpent = useMemo(() => {
+    const spent = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+    console.log('[BudgetView] 🔢 RECALCULATING TOTAL SPENT FROM EXPENSES:');
+    console.log('[BudgetView] - Total calculated from expenses:', spent);
+    console.log('[BudgetView] - Number of expenses:', expenses.length);
+    console.log('[BudgetView] - Expense amounts:', expenses.map(e => ({ name: e.name, amount: e.amount, category: e.categoryId })));
+    return spent;
+  }, [expenses]);
+  
+  const remainingBudget = useMemo(() => {
+    return totalBudget - totalSpent;
+  }, [totalBudget, totalSpent]);
 
   const getProgressPercentage = (spent: number, allocated: number) => {
     return Math.min((spent / allocated) * 100, 100);
@@ -337,13 +431,7 @@ const BudgetView = () => {
     setShowAddExpenseModal(true);
   };
 
-  const openBudgetModal = () => {
-    setModalType('budget');
-    setBudgetValues({ amount: '' });
-    setSelectedCategory('');
-    // For budget setting, always show selector (we generate all available categories)
-    setShowCategorySelector(true);
-  };
+
 
   const handleCategorySelect = (categoryId: string) => {
     console.log('[BudgetView] Category selected:', categoryId, 'for modalType:', modalType);
@@ -380,8 +468,14 @@ const BudgetView = () => {
         return;
       }
 
-      // Get the selected category
-      let selectedCategoryData = budgetCategories.find(cat => cat.id === expenseData.categoryId);
+      // Get the selected category - check both existing categories and all available categories
+      let selectedCategoryData = budgetCategoriesWithCalculatedSpent.find(cat => cat.id === expenseData.categoryId);
+      
+      // If not found in existing categories, check all available categories (includes categories without limits)
+      if (!selectedCategoryData) {
+        const allAvailableCategories = getAllAvailableCategories();
+        selectedCategoryData = allAvailableCategories.find(cat => cat.id === expenseData.categoryId);
+      }
       
       // If "OTHER" was selected, use MISCELLANEOUS budget category
       if (expenseData.categoryId === 'OTHER') {
@@ -458,7 +552,7 @@ const BudgetView = () => {
         console.log('[BudgetView] Expense created successfully, reloading data');
         
         // Reload budget data which will also reload expenses
-        await loadBudgetData();
+        await loadBudgetData(false);
         
         // Close modal
         setShowAddExpenseModal(false);
@@ -489,7 +583,7 @@ const BudgetView = () => {
 
     try {
       // For budget setting, check both existing categories and generated categories
-      let selectedCategoryData = budgetCategories.find(cat => cat.id === selectedCategory);
+      let selectedCategoryData = budgetCategoriesWithCalculatedSpent.find(cat => cat.id === selectedCategory);
       
       // If not found in existing categories, check if it's a category type from generated list
       if (!selectedCategoryData) {
@@ -499,7 +593,7 @@ const BudgetView = () => {
       
       if (!selectedCategoryData || !selectedCategoryData.budgetCategory) {
         console.log('[BudgetView] Selected category not found:', selectedCategory);
-        console.log('[BudgetView] Available categories:', budgetCategories.map(cat => ({ id: cat.id, budgetCategory: cat.budgetCategory })));
+        console.log('[BudgetView] Available categories:', budgetCategoriesWithCalculatedSpent.map(cat => ({ id: cat.id, budgetCategory: cat.budgetCategory })));
         Alert.alert('Error', 'Invalid category selected');
         return;
       }
@@ -518,7 +612,7 @@ const BudgetView = () => {
       
       if (response.success) {
         // Reload data to reflect changes
-        await loadBudgetData();
+        await loadBudgetData(false);
         
         setBudgetValues({ amount: '' });
         setSelectedCategory('');
@@ -539,14 +633,39 @@ const BudgetView = () => {
     setShowExpenseDetailsModal(true);
   };
 
-  const handleExpenseUpdated = () => {
-    // Reload budget data which will also reload expenses
-    loadBudgetData();
+  const handleCategoryCardClick = (category: BudgetCategory) => {
+    console.log('[BudgetView] Category card clicked:', category.name);
+    setSelectedCategoryData(category);
+    setSelectedCategory(category.id);
+    setShowCategoryDetailsModal(true);
   };
 
-  const handleExpenseDeleted = () => {
-    // Reload budget data which will also reload expenses
-    loadBudgetData();
+  const handleExpenseUpdated = async () => {
+    console.log('[BudgetView] ⭐ EXPENSE UPDATED - Starting reload process...');
+    
+    // Add a small delay to ensure backend has processed the update
+    console.log('[BudgetView] Waiting 500ms for backend to process update...');
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Reload budget data which will also reload expenses (without showing loading spinner)
+    console.log('[BudgetView] Calling loadBudgetData to refresh data...');
+    await loadBudgetData(false);
+    
+    console.log('[BudgetView] ✅ Data reload completed after expense update');
+  };
+
+  const handleExpenseDeleted = async () => {
+    console.log('[BudgetView] ⭐ EXPENSE DELETED - Starting reload process...');
+    
+    // Add a small delay to ensure backend has processed the deletion
+    console.log('[BudgetView] Waiting 500ms for backend to process deletion...');
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Reload budget data which will also reload expenses (without showing loading spinner)
+    console.log('[BudgetView] Calling loadBudgetData to refresh data...');
+    await loadBudgetData(false);
+    
+    console.log('[BudgetView] ✅ Data reload completed after expense deletion');
   };
 
   const handleCloseModal = () => {
@@ -559,6 +678,9 @@ const BudgetView = () => {
     } else if (showExpenseDetailsModal) {
       setShowExpenseDetailsModal(false);
       setSelectedExpense(null);
+    } else if (showCategoryDetailsModal) {
+      setShowCategoryDetailsModal(false);
+      setSelectedCategoryData(null);
     }
     
     // Reset budget form data
@@ -567,12 +689,21 @@ const BudgetView = () => {
   };
 
   const getCategoryName = (categoryId: string) => {
-    return budgetCategories.find(cat => cat.id === categoryId)?.name || 'Unknown';
+    // First check existing budget categories with calculated spent
+    let category = budgetCategoriesWithCalculatedSpent.find(cat => cat.id === categoryId);
+    
+    // If not found, check all available categories (includes categories without limits)
+    if (!category) {
+      const allAvailableCategories = getAllAvailableCategories();
+      category = allAvailableCategories.find(cat => cat.id === categoryId);
+    }
+    
+    return category?.name || 'Unknown';
   };
 
   const getSelectedCategoryName = () => {
-    // First check existing budget categories
-    let category = budgetCategories.find(cat => cat.id === selectedCategory);
+    // First check existing budget categories with calculated spent
+    let category = budgetCategoriesWithCalculatedSpent.find(cat => cat.id === selectedCategory);
     
     // If not found, check generated categories (for budget setting)
     if (!category) {
@@ -591,18 +722,19 @@ const BudgetView = () => {
     
     // Create entries for all budget category types
     Object.values(BudgetCategorys).forEach((categoryType) => {
-      const existingCategory = budgetCategories.find(cat => cat.budgetCategory === categoryType);
+      const existingCategory = budgetCategoriesWithCalculatedSpent.find(cat => cat.budgetCategory === categoryType);
       
       if (existingCategory) {
-        // Use existing category data
+        // Use existing category data with calculated spent
         allCategories.push(existingCategory);
       } else {
-        // Create a new category with zero values
+        // Create a new category with calculated spent amount
+        const calculatedSpent = calculateCategoryExpenses[categoryType] || 0;
         allCategories.push({
           id: categoryType,
           name: BudgetCategoryDisplayNames[categoryType],
           allocated: 0,
-          spent: 0,
+          spent: calculatedSpent,
           color: BudgetCategoryColors[categoryType],
           icon: BudgetCategoryIcons[categoryType],
           budgetCategory: categoryType
@@ -614,10 +746,12 @@ const BudgetView = () => {
     return allCategories;
   };
 
-  // Get all categories for display (both with and without budget limits)
+  // Get all categories for display (both with and without budget limits) - use calculated spent values
   const allDisplayCategories = getAllAvailableCategories();
 
   const recentExpenses = expenses.slice().reverse(); // Show all expenses, most recent first
+
+
 
   // Check for invalid trip ID
   if (isNaN(numericTripId)) {
@@ -634,7 +768,7 @@ const BudgetView = () => {
   return (
     <>
       {/* Animated Blur Overlay */}
-      {(showAddExpenseModal || showBudgetModal || showCategorySelector || showExpenseDetailsModal) && (
+      {(showAddExpenseModal || showBudgetModal || showCategorySelector || showExpenseDetailsModal || showCategoryDetailsModal) && (
         <Animated.View style={[styles.overlay, { opacity: blurOpacity }]}>
           <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
         </Animated.View>
@@ -650,11 +784,7 @@ const BudgetView = () => {
   <Text style={styles.currencyText}>{currencyType}</Text>
 </Text>
           </View>
-          <TouchableOpacity 
-            onPress={openBudgetModal}
-          >
-            <Ionicons name="options-outline" size={25} color={theme.colors.primary} />
-          </TouchableOpacity>
+          <View style={styles.headerRightSpace}></View>
         </View>
 
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 150 }}>
@@ -689,7 +819,7 @@ const BudgetView = () => {
           {!loading && !error && (
             <>
           {/* Enhanced Budget Overview Card - Always show */}
-          <View style={styles.overviewCard}>
+          <View key={`overview-${totalSpent}-${totalBudget}-${expenses.length}`} style={styles.overviewCard}>
             <View style={styles.overviewHeader}>
             </View>
             
@@ -700,13 +830,19 @@ const BudgetView = () => {
               </View>
               <View style={styles.overviewItem}>
                 <Text style={[styles.overviewValue, { color: '#EF4444' }]}>
-                   {totalSpent.toLocaleString()}
+                  {(() => {
+                    console.log('[BudgetView] 🎯 RENDERING SPENT VALUE:', totalSpent);
+                    return totalSpent.toLocaleString();
+                  })()}
                 </Text>
                 <Text style={styles.overviewLabel}>Spent</Text>
               </View>
               <View style={styles.overviewItem}>
                 <Text style={[styles.overviewValue, { color: remainingBudget >= 0 ? '#008080' : '#EF4444' }]}>
-                  {hasAnyBudgetCategories ? Math.abs(remainingBudget).toLocaleString() : totalSpent.toLocaleString()}
+                  {(() => {
+                    console.log('[BudgetView] 🎯 RENDERING REMAINING VALUE:', remainingBudget);
+                    return hasAnyBudgetCategories ? Math.abs(remainingBudget).toLocaleString() : totalSpent.toLocaleString();
+                  })()}
                 </Text>
                 <Text style={styles.overviewLabel}>
                   {hasAnyBudgetCategories 
@@ -763,9 +899,14 @@ const BudgetView = () => {
           {activeTab === 'categories' ? (
             <View style={styles.contentContainer}>
               {/* Enhanced Categories Grid - Show All Categories */}
-              <View style={styles.categoriesGrid}>
+              <View key={`categories-${expenses.length}-${totalSpent}`} style={styles.categoriesGrid}>
                 {allDisplayCategories.map((category) => (
-                  <View key={category.id} style={styles.categoryGridCard}>
+                  <TouchableOpacity 
+                    key={`${category.id}-${category.spent}-${category.allocated}`} 
+                    style={styles.categoryGridCard}
+                    onPress={() => handleCategoryCardClick(category)}
+                    activeOpacity={0.7}
+                  >
                     <View style={styles.categoryCardHeader}>
                       <View style={[styles.categoryIconContainer, { backgroundColor: category.color + '15' }]}>
                         <Text style={styles.categoryIcon}>{category.icon}</Text>
@@ -826,7 +967,7 @@ const BudgetView = () => {
                         )}
                       </View>
                     )}
-                  </View>
+                  </TouchableOpacity>
                 ))}
               </View>
             </View>
@@ -850,7 +991,7 @@ const BudgetView = () => {
                       <View style={styles.expenseLeft}>
                         <View style={styles.expenseIconContainer}>
                           <Text style={styles.expenseIcon}>
-                            {budgetCategories.find(cat => cat.id === expense.categoryId)?.icon || '💳'}
+                            {getAllAvailableCategories().find(cat => cat.id === expense.categoryId)?.icon || '💳'}
                           </Text>
                         </View>
                         <View style={styles.expenseInfo}>
@@ -934,6 +1075,28 @@ const BudgetView = () => {
           onExpenseUpdated={handleExpenseUpdated}
           onExpenseDeleted={handleExpenseDeleted}
         />
+
+        {/* Category Details Modal */}
+        <CategoryDetailsModal
+          visible={showCategoryDetailsModal}
+          category={selectedCategoryData}
+          expenses={expenses}
+          currencyType={currencyType}
+          onClose={handleCloseModal}
+          onEditBudget={() => {
+            if (selectedCategoryData) {
+              setModalType('budget');
+              setBudgetValues({ amount: selectedCategoryData.allocated.toString() || '' });
+              setShowCategoryDetailsModal(false);
+              setBudgetModal(true);
+            }
+          }}
+          onExpensePress={(expense) => {
+            setSelectedExpense(expense);
+            setShowCategoryDetailsModal(false);
+            setShowExpenseDetailsModal(true);
+          }}
+        />
       </SafeAreaView>
     </>
   );
@@ -980,6 +1143,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: theme.colors.primary,
+  },
+  headerRightSpace: {
+    width: 25, // Same width as the icon that was removed
   },
   currencyText: {
     fontSize: 14, // smaller font size
@@ -1406,6 +1572,7 @@ const styles = StyleSheet.create({
     color: '#334155',
     fontWeight: '600',
   },
+
 });
 
 export default BudgetView;
