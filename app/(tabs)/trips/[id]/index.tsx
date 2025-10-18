@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 14,
-    paddingTop: 60, // Add padding to account for fixed header
+    paddingTop: 90, // Add padding to account for fixed header
   },
   tabContainer: {
     flexDirection: "row",
@@ -438,41 +438,6 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 400,
     marginBottom: 80, // Add margin to prevent content from being hidden behind FAB
-  },
-  comingSoonContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 60,
-  },
-  comingSoonContent: {
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 32,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  comingSoonIcon: {
-    fontSize: 48,
-    marginBottom: 16,
-  },
-  comingSoonTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#111827",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  comingSoonText: {
-    fontSize: 16,
-    color: "#6B7280",
-    textAlign: "center",
-    lineHeight: 24,
-    maxWidth: 280,
   },
   fabContainer: {
     position: "absolute",

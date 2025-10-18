@@ -294,7 +294,7 @@ const TravelApp = () => {
         </View>
 
         <View className="px-4 mb-24">
-          <Text className="text-center text-gray-400">LankaTrails © 2025</Text>
+          <Text className="text-center text-gray-400">LankaTrails ©️ 2025</Text>
         </View>
       </ScrollView>
 
