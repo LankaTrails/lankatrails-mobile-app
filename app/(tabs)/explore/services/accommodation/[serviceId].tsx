@@ -29,6 +29,12 @@ import {
 import type { AccommodationServiceDetail } from "@/types/serviceTypes";
 import { ApiResponse } from "@/types/commonTypes";
 import { Service } from "@/types/serviceTypes";
+import {
+  getFavorites,
+  addFavorites,
+  removeFavorites,
+} from "@/services/favouriteService";
+import { FavoriteItem } from "@/types/triptypes";
 
 const BASE_URL = process.env.EXPO_PUBLIC_URL;
 
@@ -66,6 +72,35 @@ const AccommodationServiceDetailPage = () => {
   const [expandedTabs, setExpandedTabs] = useState<{ [key: number]: boolean }>(
     {}
   );
+  const [favourites, setFavourites] = useState<FavoriteItem[]>([]);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+
+  // Check if current service is in favorites
+  const checkIfFavorite = (
+    serviceDetail: AccommodationServiceDetail,
+    favorites: FavoriteItem[]
+  ) => {
+    return favorites.some(
+      (fav) =>
+        fav.type === "SERVICE" &&
+        fav.service?.serviceId === serviceDetail.serviceId
+    );
+  };
+
+  // Fetch favorites
+  const fetchFavorites = async () => {
+    try {
+      const favorites = await getFavorites();
+      setFavourites(favorites);
+
+      // Check if current service is favorite
+      if (serviceDetail) {
+        setIsFavourite(checkIfFavorite(serviceDetail, favorites));
+      }
+    } catch (error) {
+      console.error("Error fetching favorites:", error);
+    }
+  };
 
   // Toggle function for individual tabs
   const toggleTab = (tabId: number) => {
@@ -89,6 +124,15 @@ const AccommodationServiceDetailPage = () => {
 
         if (response.success && isAccommodationService(response.data)) {
           setServiceDetail(response.data);
+
+          // Fetch favorites after getting service details
+          try {
+            const favorites = await getFavorites();
+            setFavourites(favorites);
+            setIsFavourite(checkIfFavorite(response.data, favorites));
+          } catch (favError) {
+            console.error("Error fetching favorites:", favError);
+          }
         } else {
           setError(response.message || "Failed to load service details");
         }
@@ -103,21 +147,51 @@ const AccommodationServiceDetailPage = () => {
     fetchServiceDetails();
   }, [serviceId]);
 
-  const handleFavourite = () => {
-    setIsFavourite((prev) => {
-      const newState = !prev;
-      if (Platform.OS === "android") {
-        ToastAndroid.show(
-          newState ? "Added to favourites" : "Removed from favourites",
-          ToastAndroid.SHORT
-        );
+  const handleFavourite = async () => {
+    if (!serviceDetail || favoriteLoading) return;
+
+    const favoriteItem: FavoriteItem = {
+      type: "SERVICE",
+      service: convertToService(serviceDetail),
+      place: null,
+    };
+
+    try {
+      setFavoriteLoading(true);
+
+      if (isFavourite) {
+        // Remove from favorites
+        const updatedFavorites = await removeFavorites(favoriteItem);
+        setFavourites(updatedFavorites);
+        setIsFavourite(false);
+
+        if (Platform.OS === "android") {
+          ToastAndroid.show("Removed from favourites", ToastAndroid.SHORT);
+        } else {
+          Alert.alert("Removed from favourites");
+        }
       } else {
-        Alert.alert(
-          newState ? "Added to favourites" : "Removed from favourites"
-        );
+        // Add to favorites
+        const updatedFavorites = await addFavorites(favoriteItem);
+        setFavourites(updatedFavorites);
+        setIsFavourite(true);
+
+        if (Platform.OS === "android") {
+          ToastAndroid.show("Added to favourites", ToastAndroid.SHORT);
+        } else {
+          Alert.alert("Added to favourites");
+        }
       }
-      return newState;
-    });
+    } catch (error) {
+      console.error("Error handling favorite:", error);
+      if (Platform.OS === "android") {
+        ToastAndroid.show("Failed to update favorites", ToastAndroid.SHORT);
+      } else {
+        Alert.alert("Error", "Failed to update favorites");
+      }
+    } finally {
+      setFavoriteLoading(false);
+    }
   };
 
   const handleShare = () => {
