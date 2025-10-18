@@ -19,6 +19,7 @@ import {
   getMyTrips,
   getAvailableTimeSlots,
 } from "../services/tripService";
+import { fetchServiceDetail } from "../services/serviceDetail";
 import {
   Trip,
   TripItem,
@@ -115,21 +116,24 @@ const DateSelectionWidget: React.FC<{
 
   const isDateSelected = (date: Date) => {
     if (bookingType === "MULTI_DAY") {
+      // Check-in date
       if (checkInDate && date.toDateString() === checkInDate.toDateString())
-        return true;
+        return "checkIn";
+      // Check-out date
       if (checkOutDate && date.toDateString() === checkOutDate.toDateString())
-        return true;
+        return "checkOut";
+      // Dates in between
       if (
         checkInDate &&
         checkOutDate &&
         date > checkInDate &&
         date < checkOutDate
       )
-        return true;
+        return "between";
     } else {
-      return selectedDates.some(
-        (d) => d.toDateString() === date.toDateString()
-      );
+      return selectedDates.some((d) => d.toDateString() === date.toDateString())
+        ? "selected"
+        : false;
     }
     return false;
   };
@@ -140,12 +144,27 @@ const DateSelectionWidget: React.FC<{
 
     if (bookingType === "MULTI_DAY") {
       if (selectionMode === "checkIn" || (!checkInDate && !checkOutDate)) {
+        // Reset any existing selection and set check-in
         onDatesChange([], selectedDate, undefined);
         setSelectionMode("checkOut");
       } else if (selectionMode === "checkOut") {
         if (checkInDate && selectedDate > checkInDate) {
+          // Valid check-out date
           onDatesChange([], checkInDate, selectedDate);
+          // Keep in checkOut mode to allow changing check-out date
+        } else if (checkInDate && selectedDate < checkInDate) {
+          // Selected date is before check-in, make it the new check-in
+          onDatesChange([], selectedDate, undefined);
+          setSelectionMode("checkOut");
+        } else if (
+          checkInDate &&
+          selectedDate.toDateString() === checkInDate.toDateString()
+        ) {
+          // Clicked on check-in date, clear selection and start over
+          onDatesChange([], undefined, undefined);
+          setSelectionMode("checkIn");
         } else {
+          // Same date as check-in or invalid, reset
           onDatesChange([], selectedDate, undefined);
           setSelectionMode("checkOut");
         }
@@ -196,32 +215,55 @@ const DateSelectionWidget: React.FC<{
     // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(currentYear, currentMonth, day);
-      const isSelected = isDateSelected(date);
+      const selectionType = isDateSelected(date);
       const isDisabled = isDateDisabled(date);
       const isToday = new Date().toDateString() === date.toDateString();
+
+      // Determine styling based on selection type for multi-day
+      let dayButtonStyle: any[] = [styles.dayButton];
+      let dayTextStyle: any[] = [styles.dayText];
+
+      if (isDisabled) {
+        dayButtonStyle.push(styles.disabledDay);
+        dayTextStyle.push(styles.disabledDayText);
+      } else if (bookingType === "MULTI_DAY") {
+        if (selectionType === "checkIn") {
+          dayButtonStyle.push(styles.selectedDay);
+          dayButtonStyle.push({ backgroundColor: "#059669" });
+          dayTextStyle.push(styles.selectedDayText);
+        } else if (selectionType === "checkOut") {
+          dayButtonStyle.push(styles.selectedDay);
+          dayButtonStyle.push({ backgroundColor: "#DC2626" });
+          dayTextStyle.push(styles.selectedDayText);
+        } else if (selectionType === "between") {
+          dayButtonStyle.push({
+            backgroundColor: "#E0F2FE",
+            borderColor: "#0EA5E9",
+            borderWidth: 1,
+          });
+          dayTextStyle.push({ color: "#0EA5E9" });
+        } else if (isToday) {
+          dayButtonStyle.push(styles.todayDay);
+          dayTextStyle.push(styles.todayDayText);
+        }
+      } else {
+        if (selectionType) {
+          dayButtonStyle.push(styles.selectedDay);
+          dayTextStyle.push(styles.selectedDayText);
+        } else if (isToday) {
+          dayButtonStyle.push(styles.todayDay);
+          dayTextStyle.push(styles.todayDayText);
+        }
+      }
 
       days.push(
         <View key={day} style={styles.dayCell}>
           <TouchableOpacity
-            style={[
-              styles.dayButton,
-              isSelected && styles.selectedDay,
-              isDisabled && styles.disabledDay,
-              isToday && !isSelected && styles.todayDay,
-            ]}
+            style={dayButtonStyle}
             onPress={() => handleDateSelect(day)}
             disabled={isDisabled}
           >
-            <Text
-              style={[
-                styles.dayText,
-                isSelected && styles.selectedDayText,
-                isDisabled && styles.disabledDayText,
-                isToday && !isSelected && styles.todayDayText,
-              ]}
-            >
-              {day}
-            </Text>
+            <Text style={dayTextStyle}>{day}</Text>
           </TouchableOpacity>
         </View>
       );
@@ -232,6 +274,137 @@ const DateSelectionWidget: React.FC<{
 
   return (
     <View style={styles.dateSelectionContainer}>
+      {/* Multi-day Selection Status */}
+      {bookingType === "MULTI_DAY" && (
+        <View
+          style={{
+            padding: 16,
+            backgroundColor: "#F0F9FF",
+            borderRadius: 8,
+            marginBottom: 16,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: "600",
+              color: "#1E40AF",
+              marginBottom: 8,
+            }}
+          >
+            Select Check-in & Check-out Dates
+          </Text>
+
+          <View
+            style={{ flexDirection: "row", justifyContent: "space-between" }}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 12, color: "#6B7280", marginBottom: 4 }}>
+                Check-in
+              </Text>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "500",
+                  color: checkInDate ? "#059669" : "#9CA3AF",
+                }}
+              >
+                {checkInDate ? checkInDate.toLocaleDateString() : "Select date"}
+              </Text>
+            </View>
+
+            <View
+              style={{
+                width: 20,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Ionicons name="arrow-forward" size={16} color="#6B7280" />
+            </View>
+
+            <View style={{ flex: 1, alignItems: "flex-end" }}>
+              <Text style={{ fontSize: 12, color: "#6B7280", marginBottom: 4 }}>
+                Check-out
+              </Text>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "500",
+                  color: checkOutDate ? "#059669" : "#9CA3AF",
+                }}
+              >
+                {checkOutDate
+                  ? checkOutDate.toLocaleDateString()
+                  : "Select date"}
+              </Text>
+            </View>
+          </View>
+
+          {checkInDate && checkOutDate && (
+            <View
+              style={{
+                marginTop: 12,
+                padding: 8,
+                backgroundColor: "#ECFDF5",
+                borderRadius: 6,
+              }}
+            >
+              <Text
+                style={{ fontSize: 13, color: "#059669", textAlign: "center" }}
+              >
+                {(() => {
+                  const diffTime = Math.abs(
+                    checkOutDate.getTime() - checkInDate.getTime()
+                  );
+                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                  return `${diffDays} night${diffDays > 1 ? "s" : ""} selected`;
+                })()}
+              </Text>
+            </View>
+          )}
+
+          <Text
+            style={{
+              fontSize: 12,
+              color: "#6B7280",
+              marginTop: 8,
+              textAlign: "center",
+            }}
+          >
+            {selectionMode === "checkIn"
+              ? "Tap a date to set check-in"
+              : selectionMode === "checkOut"
+              ? "Tap a date to set check-out"
+              : "Tap dates to modify your selection"}
+          </Text>
+
+          {/* Clear selection button */}
+          {(checkInDate || checkOutDate) && (
+            <TouchableOpacity
+              style={{
+                marginTop: 12,
+                paddingVertical: 8,
+                paddingHorizontal: 16,
+                backgroundColor: "#FEF2F2",
+                borderRadius: 6,
+                alignSelf: "center",
+              }}
+              onPress={() => {
+                onDatesChange([], undefined, undefined);
+                setSelectionMode("checkIn");
+              }}
+            >
+              <Text
+                style={{ fontSize: 12, color: "#DC2626", fontWeight: "500" }}
+              >
+                Clear Selection
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
       {/* Month Navigation */}
       <View style={styles.monthNavigation}>
         <TouchableOpacity
@@ -539,34 +712,6 @@ const TimeSelectionWidget: React.FC<{
     </View>
   );
 
-  const renderFixedTime = () => (
-    <View style={styles.fixedTimeContainer}>
-      <Ionicons name="time" size={48} color="#008080" />
-      <Text style={styles.fixedTimeTitle}>Fixed Time Service</Text>
-      <Text style={styles.fixedTimeText}>
-        This service operates at fixed times according to its schedule.
-      </Text>
-      {serviceDetail?.availableTimeDTOS &&
-        serviceDetail.availableTimeDTOS.length > 0 && (
-          <View style={styles.scheduleContainer}>
-            <Text style={styles.scheduleTitle}>Service Hours</Text>
-            {serviceDetail.availableTimeDTOS.map((schedule, index) => (
-              <View key={index} style={styles.scheduleItem}>
-                <Text style={styles.scheduleDayText}>{schedule.dayOfWeek}</Text>
-                <Text style={styles.timeText}>
-                  {schedule.isClosed
-                    ? "Closed"
-                    : schedule.is24Hours
-                    ? "24 Hours"
-                    : `${schedule.openTime} - ${schedule.closeTime}`}
-                </Text>
-              </View>
-            ))}
-          </View>
-        )}
-    </View>
-  );
-
   const renderEventBased = () => (
     <View style={styles.fixedTimeContainer}>
       <Ionicons name="calendar" size={48} color="#008080" />
@@ -588,6 +733,38 @@ const TimeSelectionWidget: React.FC<{
     </View>
   );
 
+  const renderFixedTime = () => (
+    <View style={styles.fixedTimeContainer}>
+      <Ionicons name="time" size={48} color="#008080" />
+      <Text style={styles.fixedTimeTitle}>Fixed Time Service</Text>
+      <Text style={styles.fixedTimeText}>
+        This service operates at fixed times according to its schedule.
+      </Text>
+      {serviceDetail?.availableTimeDTOS &&
+        serviceDetail.availableTimeDTOS.length > 0 && (
+          <View style={styles.scheduleContainer}>
+            <Text style={styles.scheduleTitle}>Service Hours</Text>
+            {serviceDetail.availableTimeDTOS.map(
+              (schedule: any, index: number) => (
+                <View key={index} style={styles.scheduleItem}>
+                  <Text style={styles.scheduleDayText}>
+                    {schedule.dayOfWeek}
+                  </Text>
+                  <Text style={styles.timeText}>
+                    {schedule.isClosed
+                      ? "Closed"
+                      : schedule.is24Hours
+                      ? "24 Hours"
+                      : `${schedule.openTime} - ${schedule.closeTime}`}
+                  </Text>
+                </View>
+              )
+            )}
+          </View>
+        )}
+    </View>
+  );
+
   switch (bookingType) {
     case "TIME_SLOTS":
       return renderTimeSlots();
@@ -602,7 +779,7 @@ const TimeSelectionWidget: React.FC<{
     case "MULTI_DAY":
       return renderWholeDayService(); // Multi-day doesn't need time selection
     default:
-      return renderFixedTime();
+      return renderFixedTime(); // Default to fixed time
   }
 };
 
@@ -624,6 +801,9 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
   const [trips, setTrips] = useState<Trip[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [fetchedServiceDetail, setFetchedServiceDetail] =
+    useState<ServiceDetail | null>(null);
+  const [isLoadingServiceDetail, setIsLoadingServiceDetail] = useState(false);
 
   // Trip item data
   const [adults, setAdults] = useState(1);
@@ -646,6 +826,44 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
   const slideAnim = useRef(new Animated.Value(0)).current;
   const screenHeight = Dimensions.get("window").height;
 
+  // Helper to get current service detail (prop or fetched)
+  const getCurrentServiceDetail = (): ServiceDetail | undefined => {
+    return serviceDetail || fetchedServiceDetail || undefined;
+  };
+
+  // Fetch service details if not provided
+  const fetchServiceDetails = async () => {
+    if (serviceDetail || fetchedServiceDetail || isLoadingServiceDetail) {
+      return; // Already have details or currently loading
+    }
+
+    try {
+      setIsLoadingServiceDetail(true);
+      console.log(
+        `🔍 Fetching service details for ${service.serviceId} (${service.category})`
+      );
+
+      const response = await fetchServiceDetail(
+        service.serviceId,
+        service.category as any
+      );
+      if (response.success && response.data) {
+        setFetchedServiceDetail(response.data);
+        console.log(
+          `✅ Service details fetched successfully for ${service.serviceName}`
+        );
+      } else {
+        console.error(
+          `❌ Failed to fetch service details: ${response.message}`
+        );
+      }
+    } catch (error) {
+      console.error(`❌ Error fetching service details:`, error);
+    } finally {
+      setIsLoadingServiceDetail(false);
+    }
+  };
+
   useEffect(() => {
     console.log(
       "Main useEffect triggered - visible:",
@@ -661,6 +879,10 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
       }).start();
       if (currentStep === FlowStep.TRIP_SELECTION) {
         loadTrips();
+      }
+      // Fetch service details if not available
+      if (!serviceDetail && !fetchedServiceDetail && !isLoadingServiceDetail) {
+        fetchServiceDetails();
       }
     } else {
       console.log("Modal closing - calling resetFlow");
@@ -730,9 +952,10 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
 
   // Auto-suggest units when travelers change
   useEffect(() => {
+    const currentServiceDetail = getCurrentServiceDetail();
     if (
       currentStep === FlowStep.TRAVELERS_UNITS &&
-      serviceDetail?.bookingConfig?.manageCapacity
+      currentServiceDetail?.bookingConfig?.manageCapacity
     ) {
       const suggested = getSuggestedUnits();
       // Only auto-update if current units is 1 (default) and suggestion is different
@@ -764,9 +987,10 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
 
   // Helper function to determine if pricing should be shown
   const shouldShowPricing = () => {
+    const currentServiceDetail = getCurrentServiceDetail();
     return (
-      serviceDetail?.priceConfig !== undefined &&
-      serviceDetail?.priceConfig !== null
+      currentServiceDetail?.priceConfig !== undefined &&
+      currentServiceDetail?.priceConfig !== null
     );
   };
 
@@ -796,7 +1020,8 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
     checkIn?: Date,
     checkOut?: Date
   ): { isValid: boolean; errorMessage?: string } => {
-    const bookingConfig = serviceDetail?.bookingConfig;
+    const currentServiceDetail = getCurrentServiceDetail();
+    const bookingConfig = currentServiceDetail?.bookingConfig;
     const bookingType = bookingConfig?.bookingType;
 
     // Check if dates are selected
@@ -911,7 +1136,8 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
     if (checkIn) setCheckInDate(checkIn);
     if (checkOut) setCheckOutDate(checkOut);
 
-    const bookingType = serviceDetail?.bookingConfig?.bookingType;
+    const currentServiceDetail = getCurrentServiceDetail();
+    const bookingType = currentServiceDetail?.bookingConfig?.bookingType;
 
     // For TIME_SLOTS, fetch available slots before proceeding
     if (bookingType === "TIME_SLOTS" && dates.length > 0) {
@@ -973,8 +1199,9 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
       let startTime: string;
       let endTime: string;
 
-      const bookingType = serviceDetail?.bookingConfig?.bookingType;
-      const bookingConfig = serviceDetail?.bookingConfig;
+      const currentServiceDetail = getCurrentServiceDetail();
+      const bookingType = currentServiceDetail?.bookingConfig?.bookingType;
+      const bookingConfig = currentServiceDetail?.bookingConfig;
 
       console.log("🔍 Debug time calculation:");
       console.log("🔍 bookingType:", bookingType);
@@ -1062,7 +1289,8 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
         const day = selectedDate.getDate();
 
         // Use service operating hours if available, otherwise full day
-        const serviceHours = serviceDetail?.availableTimeDTOS?.find(
+        const currentServiceDetail = getCurrentServiceDetail();
+        const serviceHours = currentServiceDetail?.availableTimeDTOS?.find(
           (schedule) =>
             !schedule.isClosed &&
             schedule.dayOfWeek ===
@@ -1125,7 +1353,8 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
         ][selectedDate.getDay()];
 
         // Find the service hours for the selected day
-        const serviceHours = serviceDetail?.availableTimeDTOS?.find(
+        const currentServiceDetail = getCurrentServiceDetail();
+        const serviceHours = currentServiceDetail?.availableTimeDTOS?.find(
           (schedule) => schedule.dayOfWeek === dayName && !schedule.isClosed
         );
 
@@ -1293,7 +1522,8 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
   };
 
   const goBack = () => {
-    const bookingType = serviceDetail?.bookingConfig?.bookingType;
+    const currentServiceDetail = getCurrentServiceDetail();
+    const bookingType = currentServiceDetail?.bookingConfig?.bookingType;
 
     switch (currentStep) {
       case FlowStep.TRAVELERS_UNITS:
@@ -1369,8 +1599,9 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
     isValid: boolean;
     errorMessage?: string;
   } => {
-    const bookingConfig = serviceDetail?.bookingConfig;
-    const priceConfig = serviceDetail?.priceConfig;
+    const currentServiceDetail = getCurrentServiceDetail();
+    const bookingConfig = currentServiceDetail?.bookingConfig;
+    const priceConfig = currentServiceDetail?.priceConfig;
 
     // Basic validation - at least one traveler required
     if (adults + children === 0) {
@@ -1673,7 +1904,8 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
 
   // Helper function to suggest optimal units based on travelers and configuration
   const getSuggestedUnits = (): number => {
-    const bookingConfig = serviceDetail?.bookingConfig;
+    const currentServiceDetail = getCurrentServiceDetail();
+    const bookingConfig = currentServiceDetail?.bookingConfig;
 
     if (!bookingConfig?.manageCapacity) {
       return 1; // Default to 1 if no capacity management
@@ -1730,7 +1962,8 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
 
   // Helper function to get smart unit counter limits
   const getUnitCounterLimits = () => {
-    const bookingConfig = serviceDetail?.bookingConfig;
+    const currentServiceDetail = getCurrentServiceDetail();
+    const bookingConfig = currentServiceDetail?.bookingConfig;
 
     let minUnits = 1;
     let maxUnits = 999; // Large default
@@ -1757,7 +1990,8 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
   };
 
   const renderTravelersUnitsContent = () => {
-    const bookingConfig = serviceDetail?.bookingConfig;
+    const currentServiceDetail = getCurrentServiceDetail();
+    const bookingConfig = currentServiceDetail?.bookingConfig;
 
     return (
       <View style={styles.content}>
@@ -2232,13 +2466,14 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
   );
 
   const renderDateSelectionContent = () => {
+    const currentServiceDetail = getCurrentServiceDetail();
     const bookingType =
-      serviceDetail?.bookingConfig?.bookingType || "WHOLE_DAY";
+      currentServiceDetail?.bookingConfig?.bookingType || "WHOLE_DAY";
 
-    console.log("Date selection - serviceDetail:", serviceDetail);
+    console.log("Date selection - serviceDetail:", currentServiceDetail);
     console.log(
       "Date selection - bookingConfig:",
-      serviceDetail?.bookingConfig
+      currentServiceDetail?.bookingConfig
     );
     console.log("Date selection - bookingType:", bookingType);
 
@@ -2280,7 +2515,7 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
                 : "Continue to Confirmation"
             }
             onPress={() => {
-              // Validate dates before proceeding
+              // Enhanced validation for dates before proceeding
               const validation = validateDateSelection(
                 selectedDates,
                 checkInDate || undefined,
@@ -2294,6 +2529,25 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
                 return;
               }
 
+              // Additional check for multi-day bookings
+              if (bookingType === "MULTI_DAY") {
+                if (!checkInDate || !checkOutDate) {
+                  Alert.alert(
+                    "Incomplete Selection",
+                    "Please select both check-in and check-out dates."
+                  );
+                  return;
+                }
+
+                if (checkOutDate <= checkInDate) {
+                  Alert.alert(
+                    "Invalid Date Range",
+                    "Check-out date must be after check-in date."
+                  );
+                  return;
+                }
+              }
+
               const nextStep = getNextStepAfterDates(bookingType);
               setCurrentStep(nextStep);
             }}
@@ -2304,8 +2558,9 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
   };
 
   const renderTimeSelectionContent = () => {
+    const currentServiceDetail = getCurrentServiceDetail();
     const bookingType =
-      serviceDetail?.bookingConfig?.bookingType || "WHOLE_DAY";
+      currentServiceDetail?.bookingConfig?.bookingType || "WHOLE_DAY";
 
     console.log("Rendering time selection content");
     console.log("Booking type:", bookingType);
@@ -2324,7 +2579,7 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
 
         <TimeSelectionWidget
           bookingType={bookingType}
-          serviceDetail={serviceDetail}
+          serviceDetail={getCurrentServiceDetail()}
           selectedTimeSlot={selectedTimeSlot}
           selectedDate={selectedDates[0] || checkInDate}
           availableTimeSlots={availableTimeSlots}
@@ -2370,11 +2625,12 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
 
   // Pricing calculation helper
   const calculatePricing = () => {
-    if (!serviceDetail?.priceConfig) return null;
+    const currentServiceDetail = getCurrentServiceDetail();
+    if (!currentServiceDetail?.priceConfig) return null;
 
-    const priceConfig = serviceDetail.priceConfig;
+    const priceConfig = currentServiceDetail.priceConfig;
     const priceType = priceConfig.priceType;
-    const bookingType = serviceDetail?.bookingConfig?.bookingType;
+    const bookingType = currentServiceDetail?.bookingConfig?.bookingType;
     let basePrice = 0;
     let breakdown: Array<{ label: string; amount: number }> = [];
 
