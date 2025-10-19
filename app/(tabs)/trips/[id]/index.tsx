@@ -49,8 +49,9 @@ import {
   generateTripInvitation,
   getTripById,
   getTripItemsByTripId,
+  updateTrip,
 } from "@/services/tripService";
-import { TripInvitationRequest } from "@/types/triptypes";
+import { TripInvitationRequest, tripRequest } from "@/types/triptypes";
 
 const TripDetails = () => {
   const tripID = useLocalSearchParams().id as string;
@@ -271,24 +272,62 @@ const TripDetails = () => {
     );
   };
   const handleEditModalClose = () => setShowEditModal(false);
-  const handleEditModalConfirm = (updatedDetails: TripDetailsType) => {
-    // Update both tripDetails state and trip state
-    setTripDetails(updatedDetails);
-    
-    // Update the trip state with the new values
-    if (trip) {
-      setTrip({
-        ...trip,
+  const handleEditModalConfirm = async (updatedDetails: TripDetailsType) => {
+    if (!trip || !tripID) return;
+
+    try {
+      setLoading(true);
+      
+      // Prepare the trip data for API call
+      const tripUpdateData: tripRequest = {
         tripName: updatedDetails.title || trip.tripName,
-        startDate: updatedDetails.startDate.toISOString().split('T')[0], // Convert back to date string
-        endDate: updatedDetails.endDate.toISOString().split('T')[0], // Convert back to date string
-        totalBudgetLimit: Number(updatedDetails.budget) || trip.totalBudgetLimit,
-        numberOfAdults: updatedDetails.numberOfAdults || trip.numberOfAdults,
-        numberOfChildren: updatedDetails.numberOfChildren || trip.numberOfChildren,
-      });
+        startDate: updatedDetails.startDate.toISOString().split('T')[0], // Convert to YYYY-MM-DD format
+        endDate: updatedDetails.endDate.toISOString().split('T')[0], // Convert to YYYY-MM-DD format
+        startLocation: trip.startLocation, // Keep existing start location
+        locations: trip.locations || [], // Keep existing locations
+        numberOfAdults: updatedDetails.numberOfAdults,
+        numberOfChildren: updatedDetails.numberOfChildren,
+        totalBudgetLimit: Number(updatedDetails.budget) || 0,
+        // Keep existing budget breakdown values (use 0 as defaults since these might not exist in current Trip interface)
+        totalBudget: trip.totalBudget || 0,
+        totalDistance: trip.totalDistance || 0,
+        accommodationLimit: (trip as any).accommodationLimit || 0,
+        foodLimit: (trip as any).foodLimit || 0,
+        transportLimit: (trip as any).transportLimit || 0,
+        activityLimit: (trip as any).activityLimit || 0,
+        shoppingLimit: (trip as any).shoppingLimit || 0,
+        miscellaneousLimit: (trip as any).miscellaneousLimit || 0,
+        tripStatus: trip.status || 'PLANNING',
+        tags: trip.tags || [],
+      };
+
+      console.log('Updating trip with data:', tripUpdateData);
+      
+      // Call the API to update the trip
+      const response = await updateTrip(Number(tripID), tripUpdateData);
+      
+      if (response.success && response.data) {
+        // Update local state with the response from the API
+        setTrip(response.data);
+        
+        // Update tripDetails for fallback
+        setTripDetails({
+          ...updatedDetails,
+          title: response.data.tripName,
+        });
+        
+        console.log('Trip updated successfully:', response.data);
+        Alert.alert("Success", "Trip updated successfully!");
+      } else {
+        Alert.alert("Error", response.message || "Failed to update trip");
+      }
+    } catch (error: any) {
+      console.error('Error updating trip:', error);
+      Alert.alert("Error", "Failed to update trip. Please try again.");
+    } finally {
+      setLoading(false);
+      setShowEditModal(false);
     }
-    
-    setShowEditModal(false);
   };
 
   const renderCurrentView = () => {

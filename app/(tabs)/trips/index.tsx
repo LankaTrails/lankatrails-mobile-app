@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   RefreshControl,
   ScrollView,
@@ -10,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useFocusEffect } from '@react-navigation/native';
 import EmptyState from "../../../components/EmptyState";
 import NewTripButton from "../../../components/FAB";
 import FilterButton from "../../../components/FilterButton";
@@ -29,12 +29,48 @@ export default function TripsScreen() {
 
   const filters = ["All", "Upcoming", "Completed"];
 
-  // Load trips when component mounts
-  useEffect(() => {
-    loadTrips();
+  // Helper functions
+  const calculateDurationFromDates = useCallback((startDate: string, endDate: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return `${diffDays} Day${diffDays > 1 ? "s" : ""}`;
   }, []);
 
-  const loadTrips = async () => {
+  const mapTripStatus = useCallback((status: string) => {
+    switch (status) {
+      case "PLANNING":
+        return "Upcoming";
+      case "IN_PROGRESS":
+        return "Ongoing";
+      case "COMPLETED":
+        return "Completed";
+      case "CANCELLED":
+        return "Cancelled";
+      case "ARCHIVED":
+        return "Archived";
+      default:
+        return "Upcoming";
+    }
+  }, []);
+
+  const convertTripToCardFormat = useCallback((trip: Trip) => {
+    return {
+      id: trip.tripId.toString(),
+      title: trip.tripName,
+      details: `${trip.locations?.length || 0} location${
+        (trip.locations?.length || 0) > 1 ? "s" : ""
+      } | ${trip.numberOfAdults + trip.numberOfChildren} traveler${
+        trip.numberOfAdults + trip.numberOfChildren > 1 ? "s" : ""
+      }`,
+      budget: `Rs. ${(trip.totalBudgetLimit || 0).toLocaleString()}`, // Use budget limit instead of spent budget
+      duration: calculateDurationFromDates(trip.startDate, trip.endDate),
+      status: mapTripStatus(trip.status || "PLANNING"),
+    };
+  }, [calculateDurationFromDates, mapTripStatus]);
+
+  const loadTrips = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -67,28 +103,25 @@ export default function TripsScreen() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [convertTripToCardFormat]);
+
+  // Load trips on component mount
+  useEffect(() => {
+    loadTrips();
+  }, [loadTrips]);
+
+  // Refresh trips when screen gains focus (for instant updates after editing)
+  useFocusEffect(
+    useCallback(() => {
+      loadTrips();
+    }, [loadTrips])
+  );
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     setError(null); // Clear any existing errors
     await loadTrips();
     setIsRefreshing(false);
-  };
-
-  const convertTripToCardFormat = (trip: Trip) => {
-    return {
-      id: trip.tripId.toString(),
-      title: trip.tripName,
-      details: `${trip.locations.length} location${
-        trip.locations.length > 1 ? "s" : ""
-      } | ${trip.numberOfAdults + trip.numberOfChildren} traveler${
-        trip.numberOfAdults + trip.numberOfChildren > 1 ? "s" : ""
-      }`,
-      budget: `Rs. ${trip.totalBudget.toLocaleString()}`,
-      duration: calculateDurationFromDates(trip.startDate, trip.endDate),
-      status: mapTripStatus(trip.status || "PLANNING"),
-    };
   };
 
   const filteredTrips =
@@ -112,31 +145,6 @@ export default function TripsScreen() {
     setTimeout(() => {
       loadTrips();
     }, 1000);
-  };
-
-  const calculateDurationFromDates = (startDate: string, endDate: string) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return `${diffDays} Day${diffDays > 1 ? "s" : ""}`;
-  };
-
-  const mapTripStatus = (status: string) => {
-    switch (status) {
-      case "PLANNING":
-        return "Upcoming";
-      case "IN_PROGRESS":
-        return "Ongoing";
-      case "COMPLETED":
-        return "Completed";
-      case "CANCELLED":
-        return "Cancelled";
-      case "ARCHIVED":
-        return "Archived";
-      default:
-        return "Upcoming";
-    }
   };
 
   const handleTripCreationClose = () => {
