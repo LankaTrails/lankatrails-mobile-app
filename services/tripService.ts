@@ -67,6 +67,23 @@ export const updateTrip = async (tripId: number, tripData: tripRequest): Promise
 };
 
 /**
+ * Deletes a trip (sets status to CANCELLED)
+ * @param tripId The ID of the trip to delete
+ * @returns Promise containing the API response with success message
+ */
+export const deleteTrip = async (tripId: number): Promise<ApiResponse<string>> => {
+    try {
+        console.log('Deleting trip with ID:', tripId);
+        const response = await api.delete<ApiResponse<string>>(`/trips/delete/${tripId}`);
+        console.log('Trip deletion response:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error deleting trip:', error);
+        throw error;
+    }
+};
+
+/**
  * Creates a new trip
  * @param tripData The trip data to create
  * @returns Promise containing the API response with the created trip

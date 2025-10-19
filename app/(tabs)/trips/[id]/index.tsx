@@ -1,6 +1,6 @@
 import * as Clipboard from "expo-clipboard";
 import * as Linking from "expo-linking";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
   Alert,
@@ -50,11 +50,13 @@ import {
   getTripById,
   getTripItemsByTripId,
   updateTrip,
+  deleteTrip,
 } from "@/services/tripService";
 import { TripInvitationRequest, tripRequest } from "@/types/triptypes";
 
 const TripDetails = () => {
   const tripID = useLocalSearchParams().id as string;
+  const router = useRouter();
   const [viewMode, setViewMode] = useState<"schedule" | "bookings">("schedule");
   const [showEditModal, setShowEditModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
@@ -248,7 +250,12 @@ const TripDetails = () => {
     }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
+    if (!trip?.tripId) {
+      Alert.alert("Error", "Trip not found");
+      return;
+    }
+
     Alert.alert(
       "Delete Trip",
       `Are you sure you want to delete "${
@@ -262,10 +269,32 @@ const TripDetails = () => {
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => {
-            // Implement delete functionality
-            console.log("Deleting trip:", trip?.tripName || tripDetails.title);
-            // You would call your delete API here
+          onPress: async () => {
+            try {
+              console.log("Deleting trip:", trip.tripId);
+              const response = await deleteTrip(trip.tripId);
+              
+              if (response.success) {
+                Alert.alert(
+                  "Success", 
+                  "Trip deleted successfully",
+                  [
+                    {
+                      text: "OK",
+                      onPress: () => {
+                        // Navigate back to trips list
+                        router.back();
+                      }
+                    }
+                  ]
+                );
+              } else {
+                Alert.alert("Error", response.message || "Failed to delete trip");
+              }
+            } catch (error: any) {
+              console.error("Error deleting trip:", error);
+              Alert.alert("Error", "Failed to delete trip. Please try again.");
+            }
           },
         },
       ]
@@ -508,7 +537,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 14,
-    paddingTop: 90, // Add padding to account for fixed header
+    paddingTop: 60, // Add padding to account for fixed header
   },
   tabContainer: {
     flexDirection: "row",
@@ -517,7 +546,7 @@ const styles = StyleSheet.create({
   viewContainer: {
     flex: 1,
     minHeight: 400,
-    marginBottom: 80, // Add margin to prevent content from being hidden behind FAB
+    marginBottom: 150, // Add margin to prevent content from being hidden behind FAB
   },
   fabContainer: {
     position: "absolute",

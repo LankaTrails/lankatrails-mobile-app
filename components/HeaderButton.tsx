@@ -87,25 +87,12 @@ export default function HeaderButton({
     setShowDropdown(false);
     dropdownAnim.setValue(0);
     
-    const tripName = tripTitle || 'this trip';
-    Alert.alert(
-      "Delete Trip",
-      `Are you sure you want to delete "${tripName}"? This action cannot be undone.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Delete", 
-          style: "destructive", 
-          onPress: () => {
-            if (onDelete) {
-              onDelete();
-            } else {
-              console.log(`Trip ${tripId || 'unknown'} deleted`);
-            }
-          }
-        }
-      ]
-    );
+    // Just call the onDelete prop directly, let the parent handle confirmation
+    if (onDelete) {
+      onDelete();
+    } else {
+      console.log(`Trip ${tripId || 'unknown'} delete requested`);
+    }
   };
 
   return (
