@@ -63,6 +63,14 @@ export interface Service {
     prices: Price[] | null;
     mainImageUrl: string | null;
     provider : Provider | null;
+    booking_config_id?: number;
+    bookingType?: BookingType;
+    duration?: string;
+    description?: string;
+    locationBased?: {
+        city?: string;
+        [key: string]: any;
+    };
 }
 
 export type Provider = {
