@@ -108,6 +108,19 @@ export default function TripDetailsModal({
     );
   }, [initialAdults, initialChildren, initialDetails]);
 
+  // Update all form fields when initialDetails changes (for editing mode)
+  useEffect(() => {
+    if (initialDetails && visible) {
+      setBudget(initialDetails.budget || "");
+      setNumberOfAdults(initialDetails.numberOfAdults || 1);
+      setNumberOfChildren(initialDetails.numberOfChildren || 0);
+      setStartDate(initialDetails.startDate || new Date());
+      setEndDate(initialDetails.endDate || new Date(Date.now() + 24 * 60 * 60 * 1000));
+      setCurrency(initialDetails.currency || "LKR");
+      setTitle(initialDetails.title || "");
+    }
+  }, [initialDetails, visible]);
+
   const currencies = [
     { code: "USD", symbol: "$", name: "US Dollar" },
     { code: "LKR", symbol: "Rs.", name: "Sri Lankan Rupee" },

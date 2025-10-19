@@ -137,9 +137,9 @@ const TripDetails = () => {
           console.log('Trip data received:', JSON.stringify(tripRes.data, null, 2));
           setTrip(tripRes.data);
 
-          // Update tripDetails state with real data
+          // Update tripDetails state with real data (keep as fallback)
           const updatedTripDetails = {
-            budget: tripRes.data.totalBudget?.toString() || "0",
+            budget: tripRes.data.totalBudgetLimit?.toString() || "0", // Use budget limit
             startDate: tripRes.data.startDate ? new Date(tripRes.data.startDate) : new Date(),
             endDate: tripRes.data.endDate ? new Date(tripRes.data.endDate) : new Date(),
             currency: "LKR", // You can make this dynamic if currency is in the API
@@ -148,7 +148,7 @@ const TripDetails = () => {
             numberOfAdults: tripRes.data.numberOfAdults || 1,
             numberOfChildren: tripRes.data.numberOfChildren || 0,
           };
-          console.log('Setting tripDetails:', {
+          console.log('Setting tripDetails as fallback:', {
             ...updatedTripDetails,
             startDate: updatedTripDetails.startDate.toISOString(),
             endDate: updatedTripDetails.endDate.toISOString(),
@@ -272,7 +272,22 @@ const TripDetails = () => {
   };
   const handleEditModalClose = () => setShowEditModal(false);
   const handleEditModalConfirm = (updatedDetails: TripDetailsType) => {
+    // Update both tripDetails state and trip state
     setTripDetails(updatedDetails);
+    
+    // Update the trip state with the new values
+    if (trip) {
+      setTrip({
+        ...trip,
+        tripName: updatedDetails.title || trip.tripName,
+        startDate: updatedDetails.startDate.toISOString().split('T')[0], // Convert back to date string
+        endDate: updatedDetails.endDate.toISOString().split('T')[0], // Convert back to date string
+        totalBudgetLimit: Number(updatedDetails.budget) || trip.totalBudgetLimit,
+        numberOfAdults: updatedDetails.numberOfAdults || trip.numberOfAdults,
+        numberOfChildren: updatedDetails.numberOfChildren || trip.numberOfChildren,
+      });
+    }
+    
     setShowEditModal(false);
   };
 
@@ -333,31 +348,32 @@ const TripDetails = () => {
         >
           <SummaryCard
             tripDetails={(() => {
-              const finalTripDetails = {
-                ...tripDetails,
-                ...(trip && {
-                  title: trip.tripName || tripDetails.title,
-                  startDate: trip.startDate
-                    ? new Date(trip.startDate)
-                    : tripDetails.startDate,
-                  endDate: trip.endDate
-                    ? new Date(trip.endDate)
-                    : tripDetails.endDate,
-                  budget: trip.totalBudget ? String(trip.totalBudget) : tripDetails.budget,
-                  currency: tripDetails.currency, // Keep LKR as default
-                  distance: trip.totalDistance ? trip.totalDistance.toString() + "km" : tripDetails.distance,
-                  numberOfAdults:
-                    trip.numberOfAdults ?? tripDetails.numberOfAdults,
-                  numberOfChildren:
-                    trip.numberOfChildren ?? tripDetails.numberOfChildren,
-                }),
-              };
-              console.log('Final trip details passed to SummaryCard:', {
-                ...finalTripDetails,
-                startDate: finalTripDetails.startDate.toISOString(),
-                endDate: finalTripDetails.endDate.toISOString(),
-              });
-              return finalTripDetails;
+              // Use trip data directly if available, otherwise fall back to tripDetails
+              if (trip) {
+                const finalTripDetails = {
+                  title: trip.tripName || "Trip",
+                  startDate: new Date(trip.startDate),
+                  endDate: new Date(trip.endDate),
+                  budget: trip.totalBudgetLimit?.toString() || "0", // Use budget limit for display
+                  currency: "LKR",
+                  distance: trip.totalDistance ? trip.totalDistance.toString() + "km" : "0km",
+                  numberOfAdults: trip.numberOfAdults || 1,
+                  numberOfChildren: trip.numberOfChildren || 0,
+                };
+                console.log('Final trip details passed to SummaryCard (from trip):', {
+                  ...finalTripDetails,
+                  startDate: finalTripDetails.startDate.toISOString(),
+                  endDate: finalTripDetails.endDate.toISOString(),
+                });
+                return finalTripDetails;
+              } else {
+                console.log('Final trip details passed to SummaryCard (from tripDetails):', {
+                  ...tripDetails,
+                  startDate: tripDetails.startDate.toISOString(),
+                  endDate: tripDetails.endDate.toISOString(),
+                });
+                return tripDetails;
+              }
             })()}
           />
 
@@ -379,7 +395,16 @@ const TripDetails = () => {
         visible={showEditModal}
         onClose={handleEditModalClose}
         onConfirm={handleEditModalConfirm}
-        initialDetails={tripDetails}
+        initialDetails={trip ? {
+          title: trip.tripName || "Trip",
+          budget: trip.totalBudgetLimit?.toString() || "0", // Use budget limit for editing
+          startDate: new Date(trip.startDate),
+          endDate: new Date(trip.endDate),
+          currency: "LKR",
+          distance: trip.totalDistance ? trip.totalDistance.toString() + "km" : "0km",
+          numberOfAdults: trip.numberOfAdults || 1,
+          numberOfChildren: trip.numberOfChildren || 0,
+        } : tripDetails}
         isEditing={true}
       />
 
