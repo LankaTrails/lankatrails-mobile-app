@@ -20,6 +20,7 @@ export async function searchServices(
 ): Promise<ApiResponse<SearchResponse>> {
     try {
         const response = await api.post('/service/search', request);
+        console.log('searchServices response:', response.data);
         return response.data;
     } catch (error) {
         console.error('Error searching services:', error);

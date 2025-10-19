@@ -132,7 +132,7 @@ const TravelApp = () => {
       <View style={{ height: insets.top, backgroundColor: "#ffffff" }} />
 
       {/* Header */}
-      <View className={px-4 pt-4 pb-2 ${showNotifications ? "bg-white/80" : "bg-white"}}>
+      <View className={`px-4 pt-4 pb-2 ${showNotifications ? "bg-white/80" : "bg-white"}`}>
         <View className="flex-row justify-between items-center mb-4">
           <View>
             <Text className="text-primary mt-6 text-4xl font-bold">
@@ -154,7 +154,7 @@ const TravelApp = () => {
 
       {/* Main Content */}
       <ScrollView
-        className={flex-1 ${showNotifications ? "opacity-60" : " "}}
+        className={`flex-1 ${showNotifications ? "opacity-60" : " "}`}
         showsVerticalScrollIndicator={false}
         scrollEnabled={!showNotifications}
       >

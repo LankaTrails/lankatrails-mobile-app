@@ -91,6 +91,12 @@ export interface TripInvitationRequest {
     isGroupInvitation: boolean;
 }
 
+export interface FavoriteItem {
+    type: TripItemType;
+    place?: PlaceDTO | null;
+    service?: Service | null;
+}
+
 export interface AvailabilityDto {
     childCount: number;
     adultCount: number;

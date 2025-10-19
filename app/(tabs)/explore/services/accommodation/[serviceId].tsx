@@ -1,5 +1,6 @@
 import AddToTripButton from "@/components/AddToTripButtonNew";
 import HeaderSection from "@/components/explorer-components/HeaderSection";
+import ReviewsSection from "@/components/ReviewsSection";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { Star } from "lucide-react-native";
@@ -28,6 +29,12 @@ import {
 import type { AccommodationServiceDetail } from "@/types/serviceTypes";
 import { ApiResponse } from "@/types/commonTypes";
 import { Service } from "@/types/serviceTypes";
+import {
+  getFavorites,
+  addFavorites,
+  removeFavorites,
+} from "@/services/favouriteService";
+import { FavoriteItem } from "@/types/triptypes";
 
 const BASE_URL = process.env.EXPO_PUBLIC_URL;
 
@@ -50,6 +57,7 @@ const convertToService = (detail: AccommodationServiceDetail): Service => ({
     : [],
   mainImageUrl:
     detail.images && detail.images.length > 0 ? detail.images[0].imageUrl : "",
+  provider: null,
 });
 
 const AccommodationServiceDetailPage = () => {
@@ -59,13 +67,40 @@ const AccommodationServiceDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFavourite, setIsFavourite] = useState(false);
-  const [userRating, setUserRating] = useState(0);
-  const [userReview, setUserReview] = useState("");
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [showMap, setShowMap] = useState(false); // Map visibility state
   const [expandedTabs, setExpandedTabs] = useState<{ [key: number]: boolean }>(
     {}
   );
+  const [favourites, setFavourites] = useState<FavoriteItem[]>([]);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+
+  // Check if current service is in favorites
+  const checkIfFavorite = (
+    serviceDetail: AccommodationServiceDetail,
+    favorites: FavoriteItem[]
+  ) => {
+    return favorites.some(
+      (fav) =>
+        fav.type === "SERVICE" &&
+        fav.service?.serviceId === serviceDetail.serviceId
+    );
+  };
+
+  // Fetch favorites
+  const fetchFavorites = async () => {
+    try {
+      const favorites = await getFavorites();
+      setFavourites(favorites);
+
+      // Check if current service is favorite
+      if (serviceDetail) {
+        setIsFavourite(checkIfFavorite(serviceDetail, favorites));
+      }
+    } catch (error) {
+      console.error("Error fetching favorites:", error);
+    }
+  };
 
   // Toggle function for individual tabs
   const toggleTab = (tabId: number) => {
@@ -89,6 +124,15 @@ const AccommodationServiceDetailPage = () => {
 
         if (response.success && isAccommodationService(response.data)) {
           setServiceDetail(response.data);
+
+          // Fetch favorites after getting service details
+          try {
+            const favorites = await getFavorites();
+            setFavourites(favorites);
+            setIsFavourite(checkIfFavorite(response.data, favorites));
+          } catch (favError) {
+            console.error("Error fetching favorites:", favError);
+          }
         } else {
           setError(response.message || "Failed to load service details");
         }
@@ -103,21 +147,51 @@ const AccommodationServiceDetailPage = () => {
     fetchServiceDetails();
   }, [serviceId]);
 
-  const handleFavourite = () => {
-    setIsFavourite((prev) => {
-      const newState = !prev;
-      if (Platform.OS === "android") {
-        ToastAndroid.show(
-          newState ? "Added to favourites" : "Removed from favourites",
-          ToastAndroid.SHORT
-        );
+  const handleFavourite = async () => {
+    if (!serviceDetail || favoriteLoading) return;
+
+    const favoriteItem: FavoriteItem = {
+      type: "SERVICE",
+      service: convertToService(serviceDetail),
+      place: null,
+    };
+
+    try {
+      setFavoriteLoading(true);
+
+      if (isFavourite) {
+        // Remove from favorites
+        const updatedFavorites = await removeFavorites(favoriteItem);
+        setFavourites(updatedFavorites);
+        setIsFavourite(false);
+
+        if (Platform.OS === "android") {
+          ToastAndroid.show("Removed from favourites", ToastAndroid.SHORT);
+        } else {
+          Alert.alert("Removed from favourites");
+        }
       } else {
-        Alert.alert(
-          newState ? "Added to favourites" : "Removed from favourites"
-        );
+        // Add to favorites
+        const updatedFavorites = await addFavorites(favoriteItem);
+        setFavourites(updatedFavorites);
+        setIsFavourite(true);
+
+        if (Platform.OS === "android") {
+          ToastAndroid.show("Added to favourites", ToastAndroid.SHORT);
+        } else {
+          Alert.alert("Added to favourites");
+        }
       }
-      return newState;
-    });
+    } catch (error) {
+      console.error("Error handling favorite:", error);
+      if (Platform.OS === "android") {
+        ToastAndroid.show("Failed to update favorites", ToastAndroid.SHORT);
+      } else {
+        Alert.alert("Error", "Failed to update favorites");
+      }
+    } finally {
+      setFavoriteLoading(false);
+    }
   };
 
   const handleShare = () => {
@@ -130,20 +204,6 @@ const AccommodationServiceDetailPage = () => {
     } else {
       Alert.alert("Share", message);
     }
-  };
-
-  const handleSubmitReview = () => {
-    if (userRating === 0 || userReview.trim() === "") {
-      Alert.alert("Please add a rating and write a review.");
-      return;
-    }
-
-    // TODO: Implement API call to submit review
-    Alert.alert("Thank you!", "Your review has been submitted.");
-
-    // Reset inputs
-    setUserRating(0);
-    setUserReview("");
   };
 
   const renderAmenity = (label: string, value: boolean) => {
@@ -249,10 +309,13 @@ const AccommodationServiceDetailPage = () => {
           <View className="flex-row items-start mt-1">
             <Ionicons name="location" size={24} color="#008080" />
             <Text className="ml-2 text-gray-700 w-[85%]">
-              {serviceDetail.locationBased?.formattedAddress ||
-                (serviceDetail.locationBased
-                  ? `${serviceDetail.locationBased.city}, ${serviceDetail.locationBased.district}`
-                  : "Location not available")}
+              {serviceDetail.locations && serviceDetail.locations.length > 0
+                ? serviceDetail.locations[0].formattedAddress ||
+                  (serviceDetail.locations[0].city &&
+                  serviceDetail.locations[0].district
+                    ? `${serviceDetail.locations[0].city}, ${serviceDetail.locations[0].district}`
+                    : "Location not available")
+                : "Location not available"}
             </Text>
           </View>
 
@@ -337,9 +400,9 @@ const AccommodationServiceDetailPage = () => {
         </View>
 
         {/* Location Map */}
-        {serviceDetail.locationBased &&
-          serviceDetail.locationBased.latitude &&
-          serviceDetail.locationBased.longitude && (
+        {serviceDetail.locations[0] &&
+          serviceDetail.locations[0].latitude &&
+          serviceDetail.locations[0].longitude && (
             <View className="px-4 mb-6">
               <View className="flex-row items-center justify-between mb-3">
                 <Text className="text-2xl font-semibold text-gray-500">
@@ -359,7 +422,7 @@ const AccommodationServiceDetailPage = () => {
                       Address
                     </Text>
                     <Text className="text-sm text-gray-600">
-                      {serviceDetail.locationBased.formattedAddress}
+                      {serviceDetail.locations[0].formattedAddress}
                     </Text>
                   </View>
                   <Ionicons
@@ -379,8 +442,8 @@ const AccommodationServiceDetailPage = () => {
                   <MapView
                     style={{ flex: 1 }}
                     initialRegion={{
-                      latitude: serviceDetail.locationBased.latitude,
-                      longitude: serviceDetail.locationBased.longitude,
+                      latitude: serviceDetail.locations[0].latitude,
+                      longitude: serviceDetail.locations[0].longitude,
                       latitudeDelta: 0.01,
                       longitudeDelta: 0.01,
                     }}
@@ -392,11 +455,11 @@ const AccommodationServiceDetailPage = () => {
                   >
                     <Marker
                       coordinate={{
-                        latitude: serviceDetail.locationBased.latitude,
-                        longitude: serviceDetail.locationBased.longitude,
+                        latitude: serviceDetail.locations[0].latitude,
+                        longitude: serviceDetail.locations[0].longitude,
                       }}
                       title={serviceDetail.serviceName}
-                      description={serviceDetail.locationBased.formattedAddress}
+                      description={serviceDetail.locations[0].formattedAddress}
                     />
                   </MapView>
                 </View>
@@ -440,67 +503,19 @@ const AccommodationServiceDetailPage = () => {
           </View>
         )}
 
-        {/* Leave a Review Section */}
+        {/* Reviews and Ratings Section */}
+        <ReviewsSection serviceId={parseInt(serviceId)} />
+
+        {/* Report Issue Section */}
         <View className="px-4 mb-20">
-          <Text className="text-3xl font-semibold text-gray-500 mb-4">
-            Leave a Review
-          </Text>
-
-          <View className="bg-white rounded-xl shadow-sm p-4">
-            {/* Rating Stars */}
-            <Text className="text-gray-500 font-medium text-lg mb-2">
-              Your Rating
+          <TouchableOpacity
+            onPress={() => router.push("../../support/complaints" as any)}
+            className="border-2 border-primary bg-white py-3 items-center rounded-xl"
+          >
+            <Text className="text-primary text-lg font-semibold">
+              Report an Issue
             </Text>
-            <View className="flex-row mb-4">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <TouchableOpacity
-                  key={star}
-                  onPress={() => setUserRating(star)}
-                >
-                  <Star
-                    size={24}
-                    color={userRating >= star ? "#FBB03B" : "#E5E7EB"}
-                    fill={userRating >= star ? "#FBB03B" : "none"}
-                    className="mr-1"
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Review Input */}
-            <Text className="text-gray-500 font-medium mb-1 text-lg">
-              Your Review
-            </Text>
-            <View className="bg-gray-100 rounded-lg px-3 py-2 mb-4">
-              <TextInput
-                multiline
-                placeholder="Share your experience..."
-                value={userReview}
-                onChangeText={setUserReview}
-                className="text-sm text-gray-800"
-                style={{ minHeight: 80 }}
-              />
-            </View>
-
-            {/* Submit Button */}
-            <TouchableOpacity
-              onPress={handleSubmitReview}
-              className="bg-primary py-3 rounded-lg items-center"
-            >
-              <Text className="text-white text-lg font-medium">
-                Submit Review
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => router.push("../../support/complaints" as any)}
-              className="border-4 border-primary mt-5 bg-white py-3 items-center rounded-full"
-            >
-              <Text className="text-primary text-lg font-bold">
-                Report an Issue
-              </Text>
-            </TouchableOpacity>
-          </View>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 

@@ -1,4 +1,5 @@
-import { PriceType, ServiceType } from "./serviceTypes";
+import {  ServiceType } from "./commonTypes";
+import { PriceType } from "./serviceTypes";
 
 export type ChatRoomType = 'GROUP' | 'DIRECT';
 

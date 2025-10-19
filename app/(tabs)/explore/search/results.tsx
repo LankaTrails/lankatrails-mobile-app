@@ -288,7 +288,9 @@ const getSubTypesForCategory = (category: string): readonly string[] => {
   }
 };
 
-const convertServiceToCardItem = (service: Service): CardItem => ({
+const convertServiceToCardItem = (
+  service: ServiceSearchResponse
+): CardItem => ({
   id:
     typeof service.serviceId === "number"
       ? service.serviceId
@@ -296,7 +298,7 @@ const convertServiceToCardItem = (service: Service): CardItem => ({
   title: service.serviceName,
   subtitle:
     service.locations?.[0]?.city || service.locations?.[0]?.formattedAddress,
-  rating: 4.5, // Default rating
+  rating: service.averageRating || 0, // Use actual average rating
   image: service.mainImageUrl
     ? `http://192.168.1.9:8080${service.mainImageUrl}`
     : "https://via.placeholder.com/160x96/e2e8f0/64748b?text=No+Image",
@@ -896,6 +898,10 @@ const GalleApp: React.FC = () => {
                     mainImageUrl: item.displayImage,
                     category: item.displayCategory,
                     prices: [], // Add empty prices array for compatibility
+                    averageRating: item.isProvider
+                      ? 0
+                      : (item as any).averageRating || 0, // Add actual rating for services
+                    provider: null, // Add required provider field
                   }))}
                   maxItems={6}
                   onItemPress={(itemId) => {
@@ -953,6 +959,10 @@ const GalleApp: React.FC = () => {
             mainImageUrl: item.displayImage,
             category: item.displayCategory,
             prices: [], // Add empty prices array for compatibility
+            averageRating: item.isProvider
+              ? 0
+              : (item as any).averageRating || 0, // Add actual rating for services
+            provider: null, // Add required provider field
           }))}
           onItemPress={(itemId) => {
             const item = filteredItems.find(
