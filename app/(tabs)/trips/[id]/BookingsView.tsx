@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
+import { MaterialIcons } from '@expo/vector-icons';
 import { theme } from "../../../theme";
 import { getAllBookings } from "@/services/bookingService";
 import type { BookingItem, BookingStatus } from "@/types/bookingTypes";
@@ -28,7 +29,6 @@ interface BookingUIData extends BookingItem {
   displayDuration: string;
   displayLocation: string;
   displayProviderName: string;
-  weather: "sunny" | "cloudy" | "rainy"; // Keep hardcoded for now
 }
 
 const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
@@ -132,10 +132,7 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
       }),
       displayLocation: booking.service?.locations?.[0]?.city || "Location",
       displayProviderName:
-        booking.service?.provider?.businessName || "Service Provider",
-      weather: (["sunny", "cloudy", "rainy"] as const)[
-        Math.floor(Math.random() * 3)
-      ], // Random weather for variety
+        booking.service?.provider?.businessName || "Service Provider"
     };
   };
 
@@ -203,18 +200,6 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
     }
   };
 
-  const getWeatherIcon = (weather: "sunny" | "cloudy" | "rainy") => {
-    switch (weather) {
-      case "sunny":
-        return "☀️";
-      case "cloudy":
-        return "☁️";
-      case "rainy":
-        return "🌧️";
-      default:
-        return "☀️";
-    }
-  };
 
   // Handle payment processing with Payment Gateway
   const handlePayment = async (tripItemId: number) => {
@@ -482,10 +467,12 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
                       {service.displayDate || "Date"} •{" "}
                       {service.displayTime || "Time"}
                     </Text>
-                    <Text style={styles.serviceLocation}>
-                      📍 {service.displayLocation || "Unknown Location"}{" "}
-                      {getWeatherIcon(service.weather)}
-                    </Text>
+                    <View style={styles.serviceLocationContainer}>
+                      <MaterialIcons name="location-on" size={16} color={theme.colors.primary} style={styles.serviceLocationIcon} />
+                      <Text style={styles.serviceLocation}>
+                        {service.displayLocation || "Unknown Location"}
+                      </Text>
+                    </View>
                   </View>
                   <View style={styles.serviceStatus}>
                     {/* Status-based button in top right */}
@@ -795,6 +782,17 @@ const styles = StyleSheet.create({
   serviceLocation: {
     fontSize: 14,
     color: "#6B7280",
+  },
+  serviceLocationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  serviceLocationIcon: {
+    marginRight: 6,
+  },
+    serviceDetailText: {
+    fontSize: 14,
+    color: '#6B7280',
   },
   serviceStatus: {
     alignItems: "center",

@@ -224,9 +224,6 @@ const DayDetails = () => {
     );
   };
 
-  const toggleServiceOptions = (serviceId: string) => {
-    setExpandedServiceId(expandedServiceId === serviceId ? null : serviceId);
-  };
 
   // Function to format date for display
   const formatDate = (dateString: string) => {
@@ -282,13 +279,7 @@ const DayDetails = () => {
                 <Text style={styles.serviceDuration}>{service.duration}</Text>
               </View>
             </View>
-            <View style={styles.serviceCardFooter}>
-              <TouchableOpacity onPress={() => toggleServiceOptions(`${service.id}-checkin`)}>
-                <Text style={styles.changeDetailsButton}>
-                  {expandedServiceId === `${service.id}-checkin` ? 'Close' : 'Options'}
-                </Text>
-              </TouchableOpacity>
-            </View>
+            
 
             {/* Expanded Options */}
             {expandedServiceId === `${service.id}-checkin` && (
@@ -406,11 +397,7 @@ const DayDetails = () => {
                 </View>
               </View>
             )}
-            <TouchableOpacity onPress={() => toggleServiceOptions(service.id)}>
-              <Text style={styles.changeDetailsButton}>
-                {expandedServiceId === service.id ? 'Close' : 'Options'}
-              </Text>
-            </TouchableOpacity>
+      
           </View>
 
           {/* Expanded Options */}

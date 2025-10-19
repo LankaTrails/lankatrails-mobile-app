@@ -134,19 +134,26 @@ const TripDetails = () => {
 
         const tripRes = await getTripById(Number(tripID));
         if (tripRes.success && tripRes.data) {
+          console.log('Trip data received:', JSON.stringify(tripRes.data, null, 2));
           setTrip(tripRes.data);
 
           // Update tripDetails state with real data
-          setTripDetails({
+          const updatedTripDetails = {
             budget: tripRes.data.totalBudget?.toString() || "0",
-            startDate: new Date(tripRes.data.startDate),
-            endDate: new Date(tripRes.data.endDate),
+            startDate: tripRes.data.startDate ? new Date(tripRes.data.startDate) : new Date(),
+            endDate: tripRes.data.endDate ? new Date(tripRes.data.endDate) : new Date(),
             currency: "LKR", // You can make this dynamic if currency is in the API
-            distance: tripRes.data.totalDistance?.toString() + "km" || "0km",
+            distance: tripRes.data.totalDistance ? tripRes.data.totalDistance.toString() + "km" : "0km",
             title: tripRes.data.tripName || "Trip",
             numberOfAdults: tripRes.data.numberOfAdults || 1,
             numberOfChildren: tripRes.data.numberOfChildren || 0,
+          };
+          console.log('Setting tripDetails:', {
+            ...updatedTripDetails,
+            startDate: updatedTripDetails.startDate.toISOString(),
+            endDate: updatedTripDetails.endDate.toISOString(),
           });
+          setTripDetails(updatedTripDetails);
 
           // Fetch trip items and group by day
           const itemsRes = await getTripItemsByTripId(Number(tripID));
@@ -197,6 +204,7 @@ const TripDetails = () => {
           setError("Trip not found");
         }
       } catch (err) {
+        console.error('Error fetching trip:', err);
         setError("Failed to load trip");
       } finally {
         setLoading(false);
@@ -324,25 +332,33 @@ const TripDetails = () => {
           showsVerticalScrollIndicator={false}
         >
           <SummaryCard
-            tripDetails={{
-              ...tripDetails,
-              ...(trip && {
-                title: trip.tripName || tripDetails.title,
-                startDate: trip.startDate
-                  ? new Date(trip.startDate)
-                  : tripDetails.startDate,
-                endDate: trip.endDate
-                  ? new Date(trip.endDate)
-                  : tripDetails.endDate,
-                budget: trip.budget ? String(trip.budget) : tripDetails.budget,
-                currency: trip.currency || tripDetails.currency,
-                distance: trip.distance || tripDetails.distance,
-                numberOfAdults:
-                  trip.numberOfAdults ?? tripDetails.numberOfAdults,
-                numberOfChildren:
-                  trip.numberOfChildren ?? tripDetails.numberOfChildren,
-              }),
-            }}
+            tripDetails={(() => {
+              const finalTripDetails = {
+                ...tripDetails,
+                ...(trip && {
+                  title: trip.tripName || tripDetails.title,
+                  startDate: trip.startDate
+                    ? new Date(trip.startDate)
+                    : tripDetails.startDate,
+                  endDate: trip.endDate
+                    ? new Date(trip.endDate)
+                    : tripDetails.endDate,
+                  budget: trip.totalBudget ? String(trip.totalBudget) : tripDetails.budget,
+                  currency: tripDetails.currency, // Keep LKR as default
+                  distance: trip.totalDistance ? trip.totalDistance.toString() + "km" : tripDetails.distance,
+                  numberOfAdults:
+                    trip.numberOfAdults ?? tripDetails.numberOfAdults,
+                  numberOfChildren:
+                    trip.numberOfChildren ?? tripDetails.numberOfChildren,
+                }),
+              };
+              console.log('Final trip details passed to SummaryCard:', {
+                ...finalTripDetails,
+                startDate: finalTripDetails.startDate.toISOString(),
+                endDate: finalTripDetails.endDate.toISOString(),
+              });
+              return finalTripDetails;
+            })()}
           />
 
           <TabNavigation />
