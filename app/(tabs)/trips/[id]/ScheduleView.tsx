@@ -1,8 +1,20 @@
+import { getTripById, getTripItemsByTripId } from "@/services/tripService";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { theme } from "../../../theme";
+
 // TripDay type for hardcoded and API data
 type TripDay = {
   date: string;
   dayName: string;
-  weather: "sunny" | "cloudy" | "rainy";
+  weather: "sunny" | "cloudy" | "rainy" | "stormy" | "snowy";
   services: {
     id: string;
     name: string;
@@ -113,18 +125,6 @@ const hardcodedTrip = {
     },
   ],
 };
-import { getTripById, getTripItemsByTripId } from "@/services/tripService";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useState } from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-
-import { theme } from "../../../theme";
 
 interface Service {
   id: string;
@@ -222,26 +222,15 @@ const ScheduleView = () => {
             setError("Trip not found");
           }
         }
-      } catch (err) {
+      } catch (error) {
         setError("Failed to load trip");
+        console.error("Trip loading error:", error);
       } finally {
         setLoading(false);
       }
     };
     fetchTrip();
   }, [id]);
-  const getWeatherIcon = (weather: string) => {
-    switch (weather) {
-      case "sunny":
-        return "☀️";
-      case "cloudy":
-        return "☁️";
-      case "rainy":
-        return "🌧️";
-      default:
-        return "☀️";
-    }
-  };
 
   const handleDayClick = (day: TripDay) => {
     router.push({
@@ -298,12 +287,6 @@ const ScheduleView = () => {
                 <Text style={styles.dayDate}>{day.date}</Text>
                 <Text style={styles.dayName}>{day.dayName}</Text>
               </View>
-            </View>
-            <View style={styles.weatherContainer}>
-              <Text style={styles.weatherIcon}>
-                {getWeatherIcon(day.weather)}
-              </Text>
-              <Text style={styles.weatherText}>{day.weather}</Text>
             </View>
           </View>
 
@@ -446,24 +429,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#6B7280",
     textTransform: "capitalize",
-  },
-  weatherContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F9FAFB",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  weatherIcon: {
-    fontSize: 16,
-    marginRight: 6,
-  },
-  weatherText: {
-    fontSize: 12,
-    color: "#6B7280",
-    textTransform: "capitalize",
-    fontWeight: "500",
   },
   servicesContainer: {
     marginBottom: 16,

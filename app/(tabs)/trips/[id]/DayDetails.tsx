@@ -1,5 +1,6 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import weatherService, { WeatherData } from "@/services/weatherService";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import {
     Alert,
     Animated,
@@ -9,7 +10,8 @@ import {
     Text,
     TouchableOpacity,
     View,
-} from 'react-native';
+} from "react-native";
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import BackButton from '../../../../components/BackButton';
 import { theme } from '../../../theme';
 
@@ -21,9 +23,11 @@ interface Service {
   duration: string;
   cost: number;
   location: string;
-  weather?: 'sunny' | 'cloudy' | 'rainy';
+  weather?: 'sunny' | 'cloudy' | 'rainy' | 'stormy' | 'snowy';
+  weatherData?: WeatherData; // Add actual weather data
   bookingType?: 'TIME_SLOTS' | 'MULTI_DAY' | 'WHOLE_DAY' | 'FIXED_TIME' | 'FLEXIBLE_HOURS' | 'EVENT_BASED';
   booking_config_id?: number;
+  category_id?: number;
   startDate?: string;
   endDate?: string;
   checkInTime?: string;
@@ -40,54 +44,97 @@ const DayDetails = () => {
   
   // State for expanded service options
   const [expandedServiceId, setExpandedServiceId] = useState<string | null>(null);
+  const [servicesWithWeather, setServicesWithWeather] = useState<Service[]>([]);
+  const [weatherLoading, setWeatherLoading] = useState(false);
   
-  let services: Service[] = [];
-  try {
-    services = JSON.parse(params.services as string);
-  } catch (error) {
-    console.log('Failed to parse services, using fallback:', error);
-    // fallback for hardcoded
-    services = [
-      {
-        id: '1',
-        name: 'Sigiriya Rock Climb',
-        description: 'Climb the ancient rock fortress of Sigiriya.',
-        time: '08:00',
-        duration: '2h',
-        cost: 2500,
-        location: 'Sigiriya',
-        weather: 'sunny',
-        booking_config_id: 1,
-      },
-      {
-        id: '2',
-        name: 'Village Lunch',
-        description: 'Enjoy a traditional Sri Lankan lunch in a local village.',
-        time: '12:30',
-        duration: '1h',
-        cost: 1200,
-        location: 'Habarana',
-        weather: 'sunny',
-        booking_config_id: 2,
-      },
-      {
-        id: '3',
-        name: 'Beach Resort Stay',
-        description: 'Luxury beachfront accommodation with full amenities.',
-        time: '15:00',
-        duration: '3 days',
-        cost: 15000,
-        location: 'Bentota',
-        weather: 'sunny',
-        bookingType: 'MULTI_DAY',
-        booking_config_id: 5,
-        startDate: '2025-07-25',
-        endDate: '2025-07-28',
-        checkInTime: '15:00',
-        checkOutTime: '11:00',
-      },
-    ];
-  }
+  // Memoize services to avoid dependency issues
+  const services = useMemo(() => {
+    try {
+      return JSON.parse(params.services as string) as Service[];
+    } catch (error) {
+      console.log('Failed to parse services, using fallback:', error);
+      // fallback for hardcoded
+      return [
+        {
+          id: '1',
+          name: 'Sigiriya Rock Climb',
+          description: 'Climb the ancient rock fortress of Sigiriya.',
+          time: '08:00',
+          duration: '2h',
+          cost: 2500,
+          location: 'Sigiriya',
+          weather: 'sunny',
+          booking_config_id: 1,
+        },
+        {
+          id: '2',
+          name: 'Village Lunch',
+          description: 'Enjoy a traditional Sri Lankan lunch in a local village.',
+          time: '12:30',
+          duration: '1h',
+          cost: 1200,
+          location: 'Habarana',
+          weather: 'sunny',
+          booking_config_id: 2,
+        },
+        {
+          id: '3',
+          name: 'Beach Resort Stay',
+          description: 'Luxury beachfront accommodation with full amenities.',
+          time: '15:00',
+          duration: '3 days',
+          cost: 15000,
+          location: 'Bentota',
+          weather: 'sunny',
+          bookingType: 'MULTI_DAY',
+          booking_config_id: 5,
+          startDate: '2025-07-25',
+          endDate: '2025-07-28',
+          checkInTime: '15:00',
+          checkOutTime: '11:00',
+        },
+      ] as Service[];
+    }
+  }, [params.services]);
+
+  // Initialize servicesWithWeather and fetch weather data
+  useEffect(() => {
+    // Initialize with original services
+    setServicesWithWeather(services);
+    
+    // Function to fetch weather data for services
+    const fetchWeatherForServices = async (serviceList: Service[]) => {
+      if (serviceList.length === 0) return;
+      
+      setWeatherLoading(true);
+      try {
+        const weatherPromises = serviceList.map(async (service) => {
+          // Skip weather for transport services (category_id = 2)
+          if (service.category_id === 2) {
+            return service;
+          }
+          
+          const weatherData = await weatherService.getWeatherForecast(service.location, date);
+          
+          return {
+            ...service,
+            weatherData: weatherData || undefined,
+            weather: weatherData?.condition || service.weather || weather,
+          };
+        });
+
+        const updatedServices = await Promise.all(weatherPromises);
+        setServicesWithWeather(updatedServices);
+      } catch (error) {
+        console.error('Error fetching weather data for services:', error);
+        setServicesWithWeather(serviceList); // Keep original services on error
+      } finally {
+        setWeatherLoading(false);
+      }
+    };
+
+    fetchWeatherForServices(services);
+  }, [date, weather, services]); // Re-fetch if date, weather, or services change
 
   // Animation for header hide/show
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -134,12 +181,20 @@ const DayDetails = () => {
     }
   );
 
-  const getWeatherIcon = (weather: string) => {
+    const getWeatherIcon = (weather: string) => {
     switch (weather) {
-      case 'sunny': return '☀️';
-      case 'cloudy': return '☁️';
-      case 'rainy': return '🌧️';
-      default: return '☀️';
+      case 'sunny': 
+        return <Ionicons name="sunny" size={20} color={theme.colors.primary} />;
+      case 'cloudy': 
+        return <Ionicons name="cloudy" size={20} color={theme.colors.primary} />;
+      case 'rainy': 
+        return <Ionicons name="rainy" size={20} color={theme.colors.primary} />;
+      case 'stormy':
+        return <Ionicons name="thunderstorm" size={20} color={theme.colors.primary} />;
+      case 'snowy':
+        return <Ionicons name="snow" size={20} color={theme.colors.primary} />;
+      default: 
+        return <Ionicons name="sunny" size={20} color={theme.colors.primary} />;
     }
   };
 
@@ -209,15 +264,15 @@ const DayDetails = () => {
                 <Text style={styles.serviceCardDescription}>{service.description}</Text>
                 <View style={styles.serviceCardDetails}>
                   <View style={styles.serviceDetail}>
-                    <Text style={styles.serviceDetailIcon}>📅</Text>
+                    <MaterialIcons name="event" size={16} color={theme.colors.primary} style={styles.serviceDetailIcon} />
                     <Text style={styles.serviceDetailText}>{formatDate(service.startDate)}</Text>
                   </View>
                   <View style={styles.serviceDetail}>
-                    <Text style={styles.serviceDetailIcon}>⏰</Text>
+                    <MaterialIcons name="access-time" size={16} color={theme.colors.primary} style={styles.serviceDetailIcon} />
                     <Text style={styles.serviceDetailText}>{service.checkInTime || service.time}</Text>
                   </View>
                   <View style={styles.serviceDetail}>
-                    <Text style={styles.serviceDetailIcon}>📍</Text>
+                    <MaterialIcons name="location-on" size={16} color={theme.colors.primary} style={styles.serviceDetailIcon} />
                     <Text style={styles.serviceDetailText}>{service.location}</Text>
                   </View>
                 </View>
@@ -269,15 +324,15 @@ const DayDetails = () => {
                 <Text style={styles.serviceCardDescription}>End of service – Return or check out by the specified time to avoid additional charges.</Text>
                 <View style={styles.serviceCardDetails}>
                   <View style={styles.serviceDetail}>
-                    <Text style={styles.serviceDetailIcon}>📅</Text>
+                    <MaterialIcons name="event" size={16} color={theme.colors.primary} style={styles.serviceDetailIcon} />
                     <Text style={styles.serviceDetailText}>{formatDate(service.endDate)}</Text>
                   </View>
                   <View style={styles.serviceDetail}>
-                    <Text style={styles.serviceDetailIcon}>⏰</Text>
+                    <MaterialIcons name="access-time" size={16} color={theme.colors.primary} style={styles.serviceDetailIcon} />
                     <Text style={styles.serviceDetailText}>{service.checkOutTime || '11:00'}</Text>
                   </View>
                   <View style={styles.serviceDetail}>
-                    <Text style={styles.serviceDetailIcon}>📍</Text>
+                    <MaterialIcons name="location-on" size={16} color={theme.colors.primary} style={styles.serviceDetailIcon} />
                     <Text style={styles.serviceDetailText}>{service.location}</Text>
                   </View>
                 </View>
@@ -321,11 +376,11 @@ const DayDetails = () => {
               <Text style={styles.serviceCardDescription}>{service.description}</Text>
               <View style={styles.serviceCardDetails}>
                 <View style={styles.serviceDetail}>
-                  <Text style={styles.serviceDetailIcon}>⏰</Text>
+                  <MaterialIcons name="access-time" size={16} color={theme.colors.primary} style={styles.serviceDetailIcon} />
                   <Text style={styles.serviceDetailText}>{service.time}</Text>
                 </View>
                 <View style={styles.serviceDetail}>
-                  <Text style={styles.serviceDetailIcon}>📍</Text>
+                  <MaterialIcons name="location-on" size={16} color={theme.colors.primary} style={styles.serviceDetailIcon} />
                   <Text style={styles.serviceDetailText}>{service.location}</Text>
                 </View>
               </View>
@@ -337,10 +392,20 @@ const DayDetails = () => {
           </View>
 
           <View style={styles.serviceCardFooter}>
-            <View style={styles.serviceWeather}>
-              <Text style={styles.weatherIcon}>{getWeatherIcon(service.weather || weather)}</Text>
-              <Text style={styles.serviceWeatherText}>Weather forecast</Text>
-            </View>
+            {/* Only show weather for non-transport services */}
+            {service.category_id !== 2 && (
+              <View style={styles.serviceWeather}>
+                {getWeatherIcon(service.weather || weather)}
+                <View style={styles.weatherTextContainer}>
+                  <Text style={styles.serviceWeatherText}>
+                    {service.weatherData?.description || `${service.weather || weather} weather`}
+                  </Text>
+                  {service.weatherData && (
+                    <Text style={styles.temperatureText}>{service.weatherData.temperature}°C</Text>
+                  )}
+                </View>
+              </View>
+            )}
             <TouchableOpacity onPress={() => toggleServiceOptions(service.id)}>
               <Text style={styles.changeDetailsButton}>
                 {expandedServiceId === service.id ? 'Close' : 'Options'}
@@ -413,7 +478,7 @@ const DayDetails = () => {
             <Text style={styles.dayName}>{dayName}</Text>
         </View>
 
-        {services.map((service) => renderServiceCards(service))}
+        {servicesWithWeather.map((service) => renderServiceCards(service))}
 
           {/* Add service */}
                 <TouchableOpacity
@@ -433,11 +498,11 @@ const DayDetails = () => {
           <View style={styles.dayTotalHeader}>
             <Text style={styles.dayTotalLabel}>Day Total</Text>
             <Text style={styles.dayTotalAmount}>
-              LKR {services.reduce((sum, s) => sum + s.cost, 0)}
+              LKR {servicesWithWeather.reduce((sum, s) => sum + s.cost, 0)}
             </Text>
           </View>
           <Text style={styles.dayTotalSubtext}>
-            {services.length} activities scheduled
+            {servicesWithWeather.length} activities scheduled
           </Text>
         </View>
       </ScrollView>
@@ -526,10 +591,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
   },
-  weatherIcon: {
-    fontSize: 20,
-    marginRight: 6,
-  },
   weatherText: {
     fontSize: 14,
     color: '#6B7280',
@@ -605,7 +666,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   serviceDetailIcon: {
-    fontSize: 14,
     marginRight: 6,
   },
   serviceDetailText: {
@@ -637,9 +697,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  weatherTextContainer: {
+    marginLeft: 4,
+    flexDirection: 'column',
+  },
   serviceWeatherText: {
     fontSize: 12,
     color: '#6B7280',
+    marginLeft: 4,
+  },
+  temperatureText: {
+    fontSize: 10,
+    color: '#008080',
+    fontWeight: '600',
     marginLeft: 4,
   },
   changeDetailsButton: {
