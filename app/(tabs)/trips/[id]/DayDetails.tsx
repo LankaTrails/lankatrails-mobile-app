@@ -1,0 +1,805 @@
+import { Stack, router, useLocalSearchParams } from 'expo-router';
+import weatherService, { WeatherData } from "@/services/weatherService";
+import React, { useRef, useState, useEffect, useMemo } from "react";
+import {
+    Alert,
+    Animated,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import BackButton from '../../../../components/BackButton';
+import { theme } from '../../../theme';
+
+interface Service {
+  id: string;
+  name: string;
+  description: string;
+  time: string;
+  duration: string;
+  cost: number;
+  location: string;
+  weather?: 'sunny' | 'cloudy' | 'rainy' | 'stormy' | 'snowy';
+  weatherData?: WeatherData; // Add actual weather data
+  bookingType?: 'TIME_SLOTS' | 'MULTI_DAY' | 'WHOLE_DAY' | 'FIXED_TIME' | 'FLEXIBLE_HOURS' | 'EVENT_BASED';
+  booking_config_id?: number;
+  category_id?: number;
+  startDate?: string;
+  endDate?: string;
+  checkInTime?: string;
+  checkOutTime?: string;
+}
+
+const DayDetails = () => {
+  const params = useLocalSearchParams();
+  // Parse the data from route parameters
+  const date = params.date as string;
+  const dayName = params.dayName as string;
+  const weather = params.weather as 'sunny' | 'cloudy' | 'rainy';
+  const tripTitle = params.tripTitle as string;
+  
+  // State for expanded service options
+  const [expandedServiceId, setExpandedServiceId] = useState<string | null>(null);
+  const [servicesWithWeather, setServicesWithWeather] = useState<Service[]>([]);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  
+  // Memoize services to avoid dependency issues
+  const services = useMemo(() => {
+    try {
+      return JSON.parse(params.services as string) as Service[];
+    } catch (error) {
+      console.log('Failed to parse services, using fallback:', error);
+      // fallback for hardcoded
+      return [
+        {
+          id: '1',
+          name: 'Sigiriya Rock Climb',
+          description: 'Climb the ancient rock fortress of Sigiriya.',
+          time: '08:00',
+          duration: '2h',
+          cost: 2500,
+          location: 'Sigiriya',
+          weather: 'sunny',
+          booking_config_id: 1,
+        },
+        {
+          id: '2',
+          name: 'Village Lunch',
+          description: 'Enjoy a traditional Sri Lankan lunch in a local village.',
+          time: '12:30',
+          duration: '1h',
+          cost: 1200,
+          location: 'Habarana',
+          weather: 'sunny',
+          booking_config_id: 2,
+        },
+        {
+          id: '3',
+          name: 'Beach Resort Stay',
+          description: 'Luxury beachfront accommodation with full amenities.',
+          time: '15:00',
+          duration: '3 days',
+          cost: 15000,
+          location: 'Bentota',
+          weather: 'sunny',
+          bookingType: 'MULTI_DAY',
+          booking_config_id: 5,
+          startDate: '2025-07-25',
+          endDate: '2025-07-28',
+          checkInTime: '15:00',
+          checkOutTime: '11:00',
+        },
+      ] as Service[];
+    }
+  }, [params.services]);
+
+  // Initialize servicesWithWeather and fetch weather data
+  useEffect(() => {
+    // Initialize with original services
+    setServicesWithWeather(services);
+    
+    // Function to fetch weather data for services
+    const fetchWeatherForServices = async (serviceList: Service[]) => {
+      if (serviceList.length === 0) return;
+      
+      setWeatherLoading(true);
+      try {
+        const weatherPromises = serviceList.map(async (service) => {
+          // Skip weather for transport services (category_id = 2)
+          if (service.category_id === 2) {
+            return service;
+          }
+          
+          const weatherData = await weatherService.getWeatherForecast(service.location, date);
+          
+          return {
+            ...service,
+            weatherData: weatherData || undefined,
+            weather: weatherData?.condition || service.weather || weather,
+          };
+        });
+
+        const updatedServices = await Promise.all(weatherPromises);
+        setServicesWithWeather(updatedServices);
+      } catch (error) {
+        console.error('Error fetching weather data for services:', error);
+        setServicesWithWeather(serviceList); // Keep original services on error
+      } finally {
+        setWeatherLoading(false);
+      }
+    };
+
+    fetchWeatherForServices(services);
+  }, [date, weather, services]); // Re-fetch if date, weather, or services change
+
+  // Animation for header hide/show
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const headerTranslateY = useRef(new Animated.Value(0)).current;
+  const lastScrollY = useRef(0);
+
+  // Header animation based on scroll direction
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    {
+      useNativeDriver: false,
+      listener: (event: any) => {
+        const currentScrollY = event.nativeEvent.contentOffset.y;
+        const scrollDelta = currentScrollY - lastScrollY.current;
+        
+        // Only start hiding header after scrolling past the day header (around 100px)
+        if (currentScrollY > 100) {
+          if (scrollDelta > 5 && currentScrollY > lastScrollY.current) {
+            // Scrolling down - hide header
+            Animated.timing(headerTranslateY, {
+              toValue: -100,
+              duration: 200,
+              useNativeDriver: true,
+            }).start();
+          } else if (scrollDelta < -5 && currentScrollY < lastScrollY.current) {
+            // Scrolling up - show header
+            Animated.timing(headerTranslateY, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: true,
+            }).start();
+          }
+        } else {
+          // Always show header when at the top
+          Animated.timing(headerTranslateY, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+        }
+        
+        lastScrollY.current = currentScrollY;
+      },
+    }
+  );
+
+    const getWeatherIcon = (weather: string) => {
+    switch (weather) {
+      case 'sunny': 
+        return <Ionicons name="sunny" size={20} color={theme.colors.primary} />;
+      case 'cloudy': 
+        return <Ionicons name="cloudy" size={20} color={theme.colors.primary} />;
+      case 'rainy': 
+        return <Ionicons name="rainy" size={20} color={theme.colors.primary} />;
+      case 'stormy':
+        return <Ionicons name="thunderstorm" size={20} color={theme.colors.primary} />;
+      case 'snowy':
+        return <Ionicons name="snow" size={20} color={theme.colors.primary} />;
+      default: 
+        return <Ionicons name="sunny" size={20} color={theme.colors.primary} />;
+    }
+  };
+
+  const handleViewServiceDetails = (serviceId: string) => {
+    // Navigate to service details page
+    console.log('View service details:', serviceId);
+  };
+
+  const handleRemoveService = (serviceId: string) => {
+    Alert.alert(
+      'Remove Service',
+      'Are you sure you want to remove this service from your trip?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            // Implement service removal logic here
+            console.log('Removing service:', serviceId);
+          },
+        },
+      ]
+    );
+  };
+
+
+  // Function to format date for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  // Function to render service cards based on booking type
+  const renderServiceCards = (service: Service) => {
+    // Check for multi-day service in multiple ways
+    const isMultiDay = (
+      service.booking_config_id === 5 || 
+      service.bookingType === 'MULTI_DAY' ||
+      (service.startDate && service.endDate && service.startDate !== service.endDate)
+    );
+    
+    if (isMultiDay && service.startDate && service.endDate) {
+      const isCheckInDay = service.startDate === date;
+      const isCheckOutDay = service.endDate === date;
+      
+      // Only show check-in card on the start date
+      if (isCheckInDay) {
+        return (
+          <View key={`${service.id}-checkin`} style={[styles.serviceCard, styles.multiDayCard]}>
+            <View style={styles.multiDayBadge}>
+              <Text style={styles.multiDayBadgeText}>CHECK-IN</Text>
+            </View>
+            <View style={styles.serviceCardHeader}>
+              <View style={styles.serviceCardInfo}>
+                <Text style={styles.serviceCardName}>{service.name}</Text>
+                <Text style={styles.serviceCardDescription}>{service.description}</Text>
+                <View style={styles.serviceCardDetails}>
+                  <View style={styles.serviceDetail}>
+                    <MaterialIcons name="event" size={16} color={theme.colors.primary} style={styles.serviceDetailIcon} />
+                    <Text style={styles.serviceDetailText}>{formatDate(service.startDate)}</Text>
+                  </View>
+                  <View style={styles.serviceDetail}>
+                    <MaterialIcons name="access-time" size={16} color={theme.colors.primary} style={styles.serviceDetailIcon} />
+                    <Text style={styles.serviceDetailText}>{service.checkInTime || service.time}</Text>
+                  </View>
+                  <View style={styles.serviceDetail}>
+                    <MaterialIcons name="location-on" size={16} color={theme.colors.primary} style={styles.serviceDetailIcon} />
+                    <Text style={styles.serviceDetailText}>{service.location}</Text>
+                  </View>
+                </View>
+              </View>
+              <View style={styles.serviceCardPrice}>
+                <Text style={styles.serviceCost}>LKR {service.cost}</Text>
+                <Text style={styles.serviceDuration}>{service.duration}</Text>
+              </View>
+            </View>
+            
+
+            {/* Expanded Options */}
+            {expandedServiceId === `${service.id}-checkin` && (
+              <View style={styles.expandedOptions}>
+                <TouchableOpacity 
+                  style={styles.optionButton}
+                  onPress={() => handleViewServiceDetails(service.id)}
+                >
+                  <Text style={styles.optionButtonText}>View Details</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.optionButton, styles.removeButton]}
+                  onPress={() => handleRemoveService(service.id)}
+                >
+                  <Text style={[styles.optionButtonText, styles.removeButtonText]}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        );
+      }
+      
+      // Only show check-out card on the end date
+      if (isCheckOutDay) {
+        return (
+          <View key={`${service.id}-checkout`} style={[styles.serviceCard, styles.multiDayCard, styles.checkoutCard]}>
+            <View style={[styles.multiDayBadge, styles.checkoutBadge]}>
+              <Text style={styles.multiDayBadgeText}>CHECK-OUT</Text>
+            </View>
+            <View style={styles.serviceCardHeader}>
+              <View style={styles.serviceCardInfo}>
+                <Text style={styles.serviceCardName}>{service.name}</Text>
+                <Text style={styles.serviceCardDescription}>End of service – Return or check out by the specified time to avoid additional charges.</Text>
+                <View style={styles.serviceCardDetails}>
+                  <View style={styles.serviceDetail}>
+                    <MaterialIcons name="event" size={16} color={theme.colors.primary} style={styles.serviceDetailIcon} />
+                    <Text style={styles.serviceDetailText}>{formatDate(service.endDate)}</Text>
+                  </View>
+                  <View style={styles.serviceDetail}>
+                    <MaterialIcons name="access-time" size={16} color={theme.colors.primary} style={styles.serviceDetailIcon} />
+                    <Text style={styles.serviceDetailText}>{service.checkOutTime || '11:00'}</Text>
+                  </View>
+                  <View style={styles.serviceDetail}>
+                    <MaterialIcons name="location-on" size={16} color={theme.colors.primary} style={styles.serviceDetailIcon} />
+                    <Text style={styles.serviceDetailText}>{service.location}</Text>
+                  </View>
+                </View>
+              </View>
+              <View style={styles.serviceCardPrice}>
+                <Text style={styles.serviceCost}>Included</Text>
+                <Text style={styles.serviceDuration}>Departure</Text>
+              </View>
+            </View>
+
+            {/* Expanded Options */}
+            {expandedServiceId === `${service.id}-checkout` && (
+              <View style={styles.expandedOptions}>
+                <TouchableOpacity 
+                  style={styles.optionButton}
+                  onPress={() => handleViewServiceDetails(service.id)}
+                >
+                  <Text style={styles.optionButtonText}>View Details</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.optionButton, styles.removeButton]}
+                  onPress={() => handleRemoveService(service.id)}
+                >
+                  <Text style={[styles.optionButtonText, styles.removeButtonText]}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        );
+      }
+      
+      // If it's neither check-in nor check-out day for this multi-day service, don't show it
+      return null;
+    } else {
+      // Regular single card for other booking types
+      return (
+        <View key={service.id} style={styles.serviceCard}>
+          <View style={styles.serviceCardHeader}>
+            <View style={styles.serviceCardInfo}>
+              <Text style={styles.serviceCardName}>{service.name}</Text>
+              <Text style={styles.serviceCardDescription}>{service.description}</Text>
+              <View style={styles.serviceCardDetails}>
+                <View style={styles.serviceDetail}>
+                  <MaterialIcons name="access-time" size={16} color={theme.colors.primary} style={styles.serviceDetailIcon} />
+                  <Text style={styles.serviceDetailText}>{service.time}</Text>
+                </View>
+                <View style={styles.serviceDetail}>
+                  <MaterialIcons name="location-on" size={16} color={theme.colors.primary} style={styles.serviceDetailIcon} />
+                  <Text style={styles.serviceDetailText}>{service.location}</Text>
+                </View>
+              </View>
+            </View>
+            <View style={styles.serviceCardPrice}>
+              <Text style={styles.serviceCost}>LKR {service.cost}</Text>
+              <Text style={styles.serviceDuration}>{service.duration}</Text>
+            </View>
+          </View>
+
+          <View style={styles.serviceCardFooter}>
+            {/* Only show weather for non-transport services */}
+            {service.category_id !== 2 && (
+              <View style={styles.serviceWeather}>
+                {getWeatherIcon(service.weather || weather)}
+                <View style={styles.weatherTextContainer}>
+                  <Text style={styles.serviceWeatherText}>
+                    {service.weatherData?.description || `${service.weather || weather} weather`}
+                  </Text>
+                  {service.weatherData && (
+                    <Text style={styles.temperatureText}>{service.weatherData.temperature}°C</Text>
+                  )}
+                </View>
+              </View>
+            )}
+      
+          </View>
+
+          {/* Expanded Options */}
+          {expandedServiceId === service.id && (
+            <View style={styles.expandedOptions}>
+              <TouchableOpacity 
+                style={styles.optionButton}
+                onPress={() => handleViewServiceDetails(service.id)}
+              >
+                <Text style={styles.optionButtonText}>View Details</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.optionButton, styles.removeButton]}
+                onPress={() => handleRemoveService(service.id)}
+              >
+                <Text style={[styles.optionButtonText, styles.removeButtonText]}>Remove</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      );
+    }
+  };
+
+  return (
+    <>
+    <Stack.Screen options={{ headerShown: false }} />
+    <SafeAreaView style={styles.container}>
+      <Animated.View 
+        style={[
+          styles.header,
+          {
+            transform: [{ translateY: headerTranslateY }],
+          }
+        ]}
+      >
+       <BackButton/>
+        <View style={styles.headerText}>
+          <Text 
+            style={[
+              styles.headerTitle,
+              // Dynamically adjust font size based on title length
+              tripTitle.length > 15 && styles.headerTitleLong,
+              tripTitle.length > 25 && styles.headerTitleVeryLong
+            ]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {tripTitle}
+          </Text>
+        </View>
+        <View style={styles.headerSpacer} />
+      </Animated.View>
+
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
+        <View style={styles.dayHeader}>
+          <View style={styles.dayHeaderLeft}>
+            <Text style={styles.dayDate}>{date}</Text>
+          </View>
+            <Text style={styles.dayName}>{dayName}</Text>
+        </View>
+
+        {servicesWithWeather.map((service) => renderServiceCards(service))}
+
+          {/* Add service */}
+                <TouchableOpacity
+                  style={styles.addDayCard}
+                  onPress={() => router.push('../../explore')}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.addDayContent}>
+                    <View style={styles.addIcon}>
+                      <Text style={styles.addIconText}>+</Text>
+                    </View>
+                    <Text style={styles.addDaySubtext}>Plan more activities</Text>
+                  </View>
+                </TouchableOpacity>
+
+        <View style={styles.dayTotal}>
+          <View style={styles.dayTotalHeader}>
+            <Text style={styles.dayTotalLabel}>Day Total</Text>
+            <Text style={styles.dayTotalAmount}>
+              LKR {servicesWithWeather.reduce((sum, s) => sum + s.cost, 0)}
+            </Text>
+          </View>
+          <Text style={styles.dayTotalSubtext}>
+            {servicesWithWeather.length} activities scheduled
+          </Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+    </>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 15,
+    paddingVertical: 16,
+    paddingTop: 50, // Add extra padding for status bar
+    flexDirection: 'row',
+    borderRadius: 30,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  headerSpacer: {
+    width: 30, // Same width as BackButton to balance the layout
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  headerTitleLong: {
+    fontSize: 20,
+  },
+  headerTitleVeryLong: {
+    fontSize: 16,
+  },
+  
+  headerText: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingTop: 50, // Add padding to account for fixed header
+  },
+  dayHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 24,
+    backgroundColor: theme.colors.lightPrimary,
+    borderRadius: 26,
+    padding: 15,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 2,
+  },
+  dayHeaderLeft: {
+    flex: 1,
+  },
+  dayDate: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  dayName: {
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  weatherContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  weatherText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textTransform: 'capitalize',
+    fontWeight: '500',
+  },
+  serviceCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 15,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 2,
+  },
+  multiDayCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#008080',
+    position: 'relative',
+  },
+  checkoutCard: {
+    borderLeftColor: '#F59E0B',
+  },
+  multiDayBadge: {
+    position: 'absolute',
+    top: -8,
+    right: 15,
+    backgroundColor: '#008080',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    zIndex: 1,
+  },
+  checkoutBadge: {
+    backgroundColor: '#F59E0B',
+  },
+  multiDayBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  serviceCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  serviceCardInfo: {
+    flex: 1,
+    marginRight: 16,
+  },
+  serviceCardName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  serviceCardDescription: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 12,
+    lineHeight: 20,
+  },
+  serviceCardDetails: {
+    flexDirection: 'column',
+  },
+  serviceDetail: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  serviceDetailIcon: {
+    marginRight: 6,
+  },
+  serviceDetailText: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  serviceCardPrice: {
+    alignItems: 'flex-end',
+  },
+  serviceCost: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  serviceDuration: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  serviceCardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  serviceWeather: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  weatherTextContainer: {
+    marginLeft: 4,
+    flexDirection: 'column',
+  },
+  serviceWeatherText: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginLeft: 4,
+  },
+  temperatureText: {
+    fontSize: 10,
+    color: '#008080',
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  changeDetailsButton: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#008080',
+  },
+  dayTotal: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 70,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  dayTotalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  dayTotalLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  dayTotalAmount: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  dayTotalSubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+   addDayCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addDayContent: {
+    alignItems: 'center',
+  },
+  addIcon: {
+    width: 48,
+    height: 48,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  addIconText: {
+    fontSize: 24,
+    color: '#6B7280',
+    fontWeight: '300',
+  },
+  addDayText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  addDaySubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  expandedOptions: {
+    paddingTop: 12,
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    flexDirection: 'row',
+    gap: 12,
+  },
+  optionButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: theme.colors.lightPrimary,
+    borderWidth: 1,
+    borderColor: '#008080',
+    alignItems: 'center',
+  },
+  removeButton: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+  },
+  optionButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#008080',
+  },
+  removeButtonText: {
+    color: '#DC2626',
+  },
+});
+
+export default DayDetails;

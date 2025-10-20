@@ -1,51 +1,121 @@
 import React from "react";
-import { View, Text, StyleSheet, Dimensions } from "react-native";
-import Icon from "react-native-vector-icons/Ionicons"; // You can change to Feather if needed
-import { theme } from "../app/theme"; 
+import {
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  TouchableOpacity,
+} from "react-native";
+import Icon from "react-native-vector-icons/Ionicons";
+import { theme } from "../app/theme";
 
 const screenHeight = Dimensions.get("window").height;
 
-const EmptyState = ({ selectedFilter }) => {
+interface EmptyStateProps {
+  selectedFilter: string;
+  onCreateTrip?: () => void;
+}
+
+const EmptyState: React.FC<EmptyStateProps> = ({
+  selectedFilter,
+  onCreateTrip,
+}) => {
+  const getEmptyStateContent = () => {
+    return {
+      icon: "map-outline",
+      title: "No trips created yet",
+      subtitle: "Start planning your Sri Lankan adventure",
+      showButton: false,
+    };
+  };
+
+  const content = getEmptyStateContent();
+
   return (
     <View style={styles.container}>
-      <Icon
-        name="airplane-outline" // or "map-outline"
-        size={64}
-        color={theme.colors.primary} // use primary from theme
-        style={styles.icon}
-      />
-      <Text style={styles.title}>No trips found</Text>
-      <Text style={styles.subtitle}>
-        {selectedFilter === "All"
-          ? "Start planning your first adventure!"
-          : `No ${selectedFilter.toLowerCase()} trips yet.`}
-      </Text>
+      <View style={styles.iconContainer}>
+        <Icon
+          name={content.icon}
+          size={80}
+          color={theme.colors.primary}
+          style={styles.icon}
+        />
+      </View>
+
+      <Text style={styles.title}>{content.title}</Text>
+      <Text style={styles.subtitle}>{content.subtitle}</Text>
+
+      {content.showButton && onCreateTrip && (
+        <TouchableOpacity style={styles.createButton} onPress={onCreateTrip}>
+          <Icon
+            name="add"
+            size={20}
+            color={theme.colors.white}
+            style={styles.buttonIcon}
+          />
+          <Text style={styles.buttonText}>Create Trip</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    height: screenHeight * 0.5,
+    height: screenHeight * 0.4,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 32,
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#ffffff",
+    marginTop: 40,
+  },
+  iconContainer: {
+    backgroundColor: theme.colors.lightPrimary,
+    borderRadius: 40,
+    padding: 16,
+    marginBottom: 20,
   },
   icon: {
-    marginBottom: 16,
+    marginBottom: 0,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#1f2937",
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#374151",
     marginBottom: 8,
+    textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    color: "#6b7280",
+    color: "#9CA3AF",
     textAlign: "center",
     lineHeight: 22,
+    marginBottom: 28,
+    paddingHorizontal: 16,
+  },
+  createButton: {
+    backgroundColor: theme.colors.primary,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    elevation: 1,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  buttonIcon: {
+    marginRight: 6,
+  },
+  buttonText: {
+    color: theme.colors.white,
+    fontSize: 15,
+    fontWeight: "600",
   },
 });
 

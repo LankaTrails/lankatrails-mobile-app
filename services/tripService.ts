@@ -47,6 +47,42 @@ export const getTripById = async (tripId: number): Promise<ApiResponse<Trip>> =>
         throw error;
     }
 };
+
+/**
+ * Updates an existing trip
+ * @param tripId The ID of the trip to update
+ * @param tripData The updated trip data
+ * @returns Promise containing the API response with the updated trip
+ */
+export const updateTrip = async (tripId: number, tripData: tripRequest): Promise<ApiResponse<Trip>> => {
+    try {
+        console.log('Updating trip with ID:', tripId, 'and data:', tripData);
+        const response = await api.put<ApiResponse<Trip>>(`/trips/edit/${tripId}`, tripData);
+        console.log('Trip update response:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error updating trip:', error);
+        throw error;
+    }
+};
+
+/**
+ * Deletes a trip (sets status to CANCELLED)
+ * @param tripId The ID of the trip to delete
+ * @returns Promise containing the API response with success message
+ */
+export const deleteTrip = async (tripId: number): Promise<ApiResponse<string>> => {
+    try {
+        console.log('Deleting trip with ID:', tripId);
+        const response = await api.delete<ApiResponse<string>>(`/trips/delete/${tripId}`);
+        console.log('Trip deletion response:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error deleting trip:', error);
+        throw error;
+    }
+};
+
 /**
  * Creates a new trip
  * @param tripData The trip data to create

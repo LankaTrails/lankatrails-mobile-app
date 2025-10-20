@@ -1,16 +1,36 @@
+import { getTripById, getTripItemsByTripId } from "@/services/tripService";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { theme } from "../../../theme";
+
 // TripDay type for hardcoded and API data
 type TripDay = {
   date: string;
   dayName: string;
-  weather: "sunny" | "cloudy" | "rainy";
-  services: Array<{
+  weather: "sunny" | "cloudy" | "rainy" | "stormy" | "snowy";
+  services: {
     id: string;
     name: string;
     time: string;
     cost: number;
     location: string;
     weather?: "sunny" | "cloudy" | "rainy";
-  }>;
+    booking_config_id?: number;
+    bookingType?: 'TIME_SLOTS' | 'MULTI_DAY' | 'WHOLE_DAY' | 'FIXED_TIME' | 'FLEXIBLE_HOURS' | 'EVENT_BASED';
+    startDate?: string;
+    endDate?: string;
+    checkInTime?: string;
+    checkOutTime?: string;
+    duration?: string;
+    description?: string;
+  }[];
 };
 // Hardcoded trip object for demo purposes
 const hardcodedTrip = {
@@ -29,6 +49,9 @@ const hardcodedTrip = {
           cost: 2500,
           location: "Sigiriya",
           weather: "sunny",
+          booking_config_id: 1,
+          duration: "2h",
+          description: "Climb the ancient rock fortress of Sigiriya.",
         },
         {
           id: "2",
@@ -37,6 +60,25 @@ const hardcodedTrip = {
           cost: 1200,
           location: "Habarana",
           weather: "sunny",
+          booking_config_id: 2,
+          duration: "1h",
+          description: "Enjoy a traditional Sri Lankan lunch in a local village.",
+        },
+        {
+          id: "4",
+          name: "Beach Resort Stay",
+          time: "15:00",
+          cost: 15000,
+          location: "Bentota",
+          weather: "sunny",
+          booking_config_id: 5,
+          bookingType: "MULTI_DAY",
+          startDate: "2025-07-22",
+          endDate: "2025-07-25",
+          checkInTime: "15:00",
+          checkOutTime: "11:00",
+          duration: "3 days",
+          description: "Luxury beachfront accommodation with full amenities.",
         },
       ],
     },
@@ -52,23 +94,37 @@ const hardcodedTrip = {
           cost: 3500,
           location: "Minneriya",
           weather: "cloudy",
+          booking_config_id: 3,
+          duration: "3h",
+          description: "Wildlife safari experience at Minneriya National Park.",
+        },
+      ],
+    },
+    {
+      date: "2025-07-25",
+      dayName: "Friday",
+      weather: "sunny",
+      services: [
+        {
+          id: "4-checkout",
+          name: "Beach Resort Stay",
+          time: "11:00",
+          cost: 0, // Checkout doesn't have additional cost
+          location: "Bentota",
+          weather: "sunny",
+          booking_config_id: 5,
+          bookingType: "MULTI_DAY",
+          startDate: "2025-07-22",
+          endDate: "2025-07-25",
+          checkInTime: "15:00",
+          checkOutTime: "11:00",
+          duration: "3 days",
+          description: "Luxury beachfront accommodation with full amenities.",
         },
       ],
     },
   ],
 };
-import { getTripById, getTripItemsByTripId } from "@/services/tripService";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useState } from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-
-import { theme } from "../../../theme";
 
 interface Service {
   id: string;
@@ -103,40 +159,62 @@ const ScheduleView = () => {
             if (itemsRes.success && itemsRes.data) {
               // Group items by date (assuming item has startTime)
               const grouped: { [date: string]: TripDay } = {};
+              
               itemsRes.data.forEach((item: any) => {
-                const date = item.startTime.split("T")[0];
-                if (!grouped[date]) {
-                  grouped[date] = {
-                    date,
-                    dayName: new Date(date).toLocaleDateString("en-US", {
-                      weekday: "long",
-                    }),
-                    weather: "sunny", // Placeholder, could be from trip or item
+                const startDate = item.startTime.split("T")[0];
+                const endDate = item.endTime ? item.endTime.split("T")[0] : startDate;
+                
+                const serviceData = {
+                  id: item.service?.serviceId?.toString() || item.place?.placeId?.toString() || item.id?.toString() || "",
+                  name: item.service?.serviceName || item.place?.placeName || "Unknown",
+                  cost: item.price || 0,
+                  location: item.service?.locationBased?.city || item.place?.location?.city || "",
+                  weather: "sunny" as const, // Placeholder
+                  booking_config_id: item.service?.booking_config_id || item.bookingConfigId || undefined,
+                  bookingType: item.service?.bookingType || item.bookingType || undefined,
+                  startDate: item.startTime ? item.startTime.split("T")[0] : undefined,
+                  endDate: item.endTime ? item.endTime.split("T")[0] : undefined,
+                  checkInTime: item.startTime ? item.startTime.split("T")[1]?.slice(0, 5) : undefined,
+                  checkOutTime: item.endTime ? item.endTime.split("T")[1]?.slice(0, 5) : undefined,
+                  duration: item.service?.duration || item.duration || undefined,
+                  description: item.service?.description || item.description || undefined,
+                };
+                
+                // Add service to start date
+                if (!grouped[startDate]) {
+                  grouped[startDate] = {
+                    date: startDate,
+                    dayName: new Date(startDate).toLocaleDateString("en-US", { weekday: "long" }),
+                    weather: "sunny",
                     services: [],
                   };
                 }
-                grouped[date].services.push({
-                  id:
-                    item.service?.serviceId?.toString() ||
-                    item.place?.placeId?.toString() ||
-                    item.id?.toString() ||
-                    "",
-                  name:
-                    item.service?.serviceName ||
-                    item.place?.placeName ||
-                    "Unknown",
-                  time: item.startTime
-                    ? item.startTime.split("T")[1]?.slice(0, 5)
-                    : "",
-                  cost: item.price || 0,
-                  location:
-                    item.service?.locationBased?.city ||
-                    item.place?.location?.city ||
-                    "",
-                  weather: "sunny", // Placeholder
+                grouped[startDate].services.push({
+                  ...serviceData,
+                  time: item.startTime ? item.startTime.split("T")[1]?.slice(0, 5) : "",
                 });
+                
+                // For multi-day services, also add to end date if different
+                const isMultiDay = endDate !== startDate;
+                if (isMultiDay && endDate !== startDate) {
+                  if (!grouped[endDate]) {
+                    grouped[endDate] = {
+                      date: endDate,
+                      dayName: new Date(endDate).toLocaleDateString("en-US", { weekday: "long" }),
+                      weather: "sunny",
+                      services: [],
+                    };
+                  }
+                  grouped[endDate].services.push({
+                    ...serviceData,
+                    id: `${serviceData.id}-checkout`, // Different ID for checkout
+                    time: item.endTime ? item.endTime.split("T")[1]?.slice(0, 5) : "",
+                    cost: 0, // Checkout typically doesn't have additional cost
+                  });
+                }
               });
-              setTripDays(Object.values(grouped));
+              
+              setTripDays(Object.values(grouped).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
             } else {
               setTripDays([]);
             }
@@ -144,26 +222,15 @@ const ScheduleView = () => {
             setError("Trip not found");
           }
         }
-      } catch (err) {
+      } catch (error) {
         setError("Failed to load trip");
+        console.error("Trip loading error:", error);
       } finally {
         setLoading(false);
       }
     };
     fetchTrip();
   }, [id]);
-  const getWeatherIcon = (weather: string) => {
-    switch (weather) {
-      case "sunny":
-        return "☀️";
-      case "cloudy":
-        return "☁️";
-      case "rainy":
-        return "🌧️";
-      default:
-        return "☀️";
-    }
-  };
 
   const handleDayClick = (day: TripDay) => {
     router.push({
@@ -221,25 +288,68 @@ const ScheduleView = () => {
                 <Text style={styles.dayName}>{day.dayName}</Text>
               </View>
             </View>
-            <View style={styles.weatherContainer}>
-              <Text style={styles.weatherIcon}>
-                {getWeatherIcon(day.weather)}
-              </Text>
-              <Text style={styles.weatherText}>{day.weather}</Text>
-            </View>
           </View>
 
           <View style={styles.servicesContainer}>
-            {day.services.map((service) => (
-              <View key={service.id} style={styles.serviceItem}>
-                <View style={styles.serviceInfo}>
-                  <Text style={styles.serviceName}>{service.name}</Text>
+            {day.services.map((service) => {
+              // Check if it's a multi-day service using the same logic as DayDetails
+              const isMultiDay = (
+                service.booking_config_id === 5 || 
+                service.bookingType === 'MULTI_DAY' ||
+                (service.startDate && service.endDate && service.startDate !== service.endDate)
+              );
+              
+              const isCheckIn = isMultiDay && service.startDate === day.date;
+              const isCheckOut = isMultiDay && service.endDate === day.date && !isCheckIn;
+              
+              // Debug only for multi-day services
+              if (isMultiDay) {
+                console.log(`Multi-day service ${service.id}:`, {
+                  serviceName: service.name,
+                  isCheckIn,
+                  isCheckOut,
+                  serviceStartDate: service.startDate,
+                  serviceEndDate: service.endDate,
+                  currentDayDate: day.date,
+                  booking_config_id: service.booking_config_id,
+                  startEqualsDay: service.startDate === day.date,
+                  endEqualsDay: service.endDate === day.date
+                });
+              }
+              
+              return (
+                <View key={service.id} style={[
+                  styles.serviceItem,
+                  isMultiDay && styles.multiDayServiceItem,
+                  isCheckOut && styles.checkOutServiceItem
+                ]}>
+                  {/* Multi-day badge */}
+                  {isMultiDay && (
+                    <View style={[
+                      styles.multiDayBadge,
+                      isCheckOut && styles.checkOutBadge
+                    ]}>
+                      <Text style={styles.multiDayBadgeText}>
+                        {isCheckIn ? 'CHECK-IN' : 'CHECK-OUT'}
+                      </Text>
+                    </View>
+                  )}
+                  
+                  <View style={styles.serviceInfo}>
+                    <Text style={styles.serviceName}>{service.name}</Text>
+                    {service.description && (
+                      <Text style={styles.serviceDescription}>{service.description}</Text>
+                    )}
+                  </View>
+                  <View style={styles.serviceDetails}>
+                    <Text style={styles.serviceTime}>{service.time}</Text>
+                    {service.duration && (
+                      <Text style={styles.serviceDuration}>{service.duration}</Text>
+                    )}
+                  </View>
                 </View>
-                <View style={styles.serviceDetails}>
-                  <Text style={styles.serviceTime}>{service.time}</Text>
-                </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
 
           <View style={styles.dayFooter}>
@@ -320,24 +430,6 @@ const styles = StyleSheet.create({
     color: "#6B7280",
     textTransform: "capitalize",
   },
-  weatherContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F9FAFB",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  weatherIcon: {
-    fontSize: 16,
-    marginRight: 6,
-  },
-  weatherText: {
-    fontSize: 12,
-    color: "#6B7280",
-    textTransform: "capitalize",
-    fontWeight: "500",
-  },
   servicesContainer: {
     marginBottom: 16,
   },
@@ -349,6 +441,34 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
+    position: "relative",
+  },
+  multiDayServiceItem: {
+    borderLeftWidth: 4,
+    borderLeftColor: "#008080",
+    paddingTop: 20, // Add space for the badge
+  },
+  checkOutServiceItem: {
+    borderLeftColor: "#F59E0B",
+  },
+  multiDayBadge: {
+    position: "absolute",
+    top: -8,
+    right: 12,
+    backgroundColor: "#008080",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    zIndex: 1,
+  },
+  checkOutBadge: {
+    backgroundColor: "#F59E0B",
+  },
+  multiDayBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "bold",
+    letterSpacing: 0.5,
   },
   serviceInfo: {
     flex: 1,

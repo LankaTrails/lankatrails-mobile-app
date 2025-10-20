@@ -9,24 +9,31 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Share,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
+import * as Clipboard from "expo-clipboard";
+import * as Linking from "expo-linking";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import BackButton from "@/components/BackButton";
+import TripSharingModal from "@/components/TripSharingModal";
 import {
   getDirectChatRoom,
   getChatRoomById,
   getGroupChatRoomByTripId,
   getRoomMessages,
+  ChatRoomNotFoundError,
 } from "@/services/chatService";
+import { generateTripInvitation } from "@/services/tripService";
 import {
   DirectChatRoom,
   GroupChatRoom,
   ChatMessage,
   ChatMessageType,
 } from "@/types/chatTypes";
+import { TripInvitationRequest, TripRole } from "@/types/triptypes";
 import { getToken } from "@/utils/tokenStorage";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -74,6 +81,11 @@ export default function Chat() {
     GroupChatRoom | DirectChatRoom | null
   >(null);
   const [isLoadingChatRoom, setIsLoadingChatRoom] = useState(false);
+  const [showInvitationFlow, setShowInvitationFlow] = useState(false);
+  const [invitationError, setInvitationError] =
+    useState<ChatRoomNotFoundError | null>(null);
+  const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
+  const [showSharingModal, setShowSharingModal] = useState(false);
 
   const flatListRef = useRef<FlatList>(null);
   const stompClientRef = useRef<Client | null>(null);
@@ -640,7 +652,17 @@ export default function Chat() {
         throw new Error(errorMsg);
       }
     } catch (error) {
+      // Handle ChatRoomNotFoundError specifically for invitation flow
+      if (error instanceof ChatRoomNotFoundError) {
+        console.log("✨ Chat room not available, showing invitation flow");
+        setInvitationError(error);
+        setShowInvitationFlow(true);
+        return; // Don't show alert, let the UI handle this gracefully
+      }
+
+      // Only log actual errors, not expected invitation flows
       console.error("Error initializing chat room:", error);
+
       if (error instanceof Error) {
         if (error.message.includes("Authentication required")) {
           Alert.alert(
@@ -658,6 +680,19 @@ export default function Chat() {
       setIsLoadingChatRoom(false);
     }
   }, [chatType, tripId, providerId, roomId]);
+
+  // Retry chat room initialization
+  const retryInitialization = useCallback((): void => {
+    setShowInvitationFlow(false);
+    setInvitationError(null);
+    initializeChatRoom();
+  }, [initializeChatRoom]);
+
+  // Handle share trip invitation
+  const handleShareTripInvitation = useCallback((): void => {
+    console.log("Opening trip sharing modal for:", { tripId, tripName });
+    setShowSharingModal(true);
+  }, [tripId, tripName]);
 
   // Load existing messages for the chat room
   const loadChatHistory = useCallback(
@@ -941,6 +976,101 @@ export default function Chat() {
     }
   }, [messages.length]);
 
+  // Render invitation flow UI
+  const renderInvitationFlow = () => {
+    if (!invitationError) return null;
+
+    const isGroupChat = chatType === "group" && tripId;
+
+    return (
+      <View style={styles.invitationContainer}>
+        <View style={styles.invitationContent}>
+          {/* Icon */}
+          <View style={styles.invitationIconContainer}>
+            <Ionicons
+              name={isGroupChat ? "people" : "chatbubble"}
+              size={60}
+              color="#008080"
+            />
+          </View>
+
+          {/* Title */}
+          <Text style={styles.invitationTitle}>
+            {isGroupChat
+              ? "Group Chat Not Available"
+              : "Start Your Conversation"}
+          </Text>
+
+          {/* Description */}
+          <Text style={styles.invitationDescription}>
+            {isGroupChat
+              ? `The group chat for "${
+                  tripName || "this trip"
+                }" isn't active yet. Invite more people to join your trip and start chatting together!`
+              : "Start a conversation with this service provider by sending your first message."}
+          </Text>
+
+          {/* Action Buttons */}
+          <View style={styles.invitationActions}>
+            {isGroupChat && (
+              <TouchableOpacity
+                style={[
+                  styles.invitationButton,
+                  styles.primaryInvitationButton,
+                  isGeneratingInvite && styles.disabledButton,
+                ]}
+                onPress={handleShareTripInvitation}
+                disabled={isGeneratingInvite}
+              >
+                <Ionicons
+                  name="share"
+                  size={20}
+                  color="#fff"
+                  style={styles.buttonIcon}
+                />
+                <Text style={styles.primaryInvitationButtonText}>
+                  {isGeneratingInvite
+                    ? "Generating..."
+                    : "Share Trip Invitation"}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  // Show invitation flow if chat room not found
+  if (showInvitationFlow) {
+    return (
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        <View style={styles.header}>
+          <BackButton />
+          <View style={styles.headerText}>
+            <Text style={styles.headerTitle}>{getChatRoomTitle()}</Text>
+          </View>
+        </View>
+
+        {renderInvitationFlow()}
+
+        {/* Trip Sharing Modal */}
+        {tripId && tripName && (
+          <TripSharingModal
+            visible={showSharingModal}
+            onClose={() => setShowSharingModal(false)}
+            tripId={tripId}
+            tripName={tripName}
+          />
+        )}
+      </KeyboardAvoidingView>
+    );
+  }
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -1036,6 +1166,16 @@ export default function Chat() {
           />
         </TouchableOpacity>
       </View>
+
+      {/* Trip Sharing Modal */}
+      {tripId && tripName && (
+        <TripSharingModal
+          visible={showSharingModal}
+          onClose={() => setShowSharingModal(false)}
+          tripId={tripId}
+          tripName={tripName}
+        />
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -1221,5 +1361,87 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: "#d1d5db",
+  },
+  // Invitation Flow Styles
+  invitationContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+    backgroundColor: "#f9fafb",
+  },
+  invitationContent: {
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    padding: 32,
+    alignItems: "center",
+    maxWidth: 400,
+    width: "100%",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
+  invitationIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "#f0fdf4",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  invitationTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#111827",
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  invitationDescription: {
+    fontSize: 16,
+    color: "#6b7280",
+    textAlign: "center",
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  invitationActions: {
+    width: "100%",
+    gap: 12,
+  },
+  invitationButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    minHeight: 56,
+  },
+  primaryInvitationButton: {
+    backgroundColor: "#008080",
+  },
+  secondaryInvitationButton: {
+    backgroundColor: "#ffffff",
+    borderWidth: 2,
+    borderColor: "#008080",
+  },
+  disabledButton: {
+    backgroundColor: "#d1d5db",
+    opacity: 0.6,
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
+  primaryInvitationButtonText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  secondaryInvitationButtonText: {
+    color: "#008080",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
