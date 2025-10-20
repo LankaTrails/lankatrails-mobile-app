@@ -39,6 +39,8 @@ import { ArrowLeftIcon } from "react-native-heroicons/outline";
 import {
   fetchGroupedPlaces,
   geocodeLocation,
+  type PlaceGroup as GooglePlaceGroup,
+  type GooglePlace,
 } from "../../../../services/googlePlacesService";
 
 // Import modular components
@@ -181,12 +183,12 @@ const SAMPLE_PLACES_DATA: PlaceGroup[] = [
   }
 ];
 
-// Types
+// Types - Updated to match PlaceGrid component expectations
 type Place = {
   place_id: string;
   name: string;
   vicinity: string;
-  rating?: number | string;
+  rating?: number;
   photos?: { photo_reference: string }[];
 };
 
@@ -475,7 +477,6 @@ const GalleApp: React.FC = () => {
   const isMountedRef = useRef(true);
   const lastServiceCallRef = useRef<string>("");
   const lastPlaceCallRef = useRef<string>("");
-  const debounceTimerRef = useRef<number | null>(null);
 
   // Animation values
   const fadeInValue = useAnimatedValue(0);
@@ -541,9 +542,6 @@ const GalleApp: React.FC = () => {
 
     return () => {
       clearTimeout(timer);
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
       isMountedRef.current = false;
     };
   }, [params.location]); // Only depend on location to prevent unnecessary re-runs
@@ -749,8 +747,22 @@ const GalleApp: React.FC = () => {
       let groups: PlaceGroup[] = [];
       
       try {
-        groups = await fetchGroupedPlaces(lat, lng);
-        console.log("📊 Fetched place groups from API:", groups.length);
+        const googlePlaceGroups = await fetchGroupedPlaces(lat, lng);
+        console.log("📊 Fetched place groups from API:", googlePlaceGroups.length);
+        
+        // Convert Google Places to local format
+        groups = googlePlaceGroups.map(group => ({
+          group: group.group,
+          places: group.places.map(place => ({
+            place_id: place.place_id,
+            name: place.name,
+            vicinity: place.vicinity || place.name || "Unknown location",
+            rating: place.rating || 0,
+            photos: place.photos?.map(photo => ({
+              photo_reference: photo.photo_reference
+            })) || []
+          }))
+        }));
         
         // Check if API returned an error (like REQUEST_DENIED)
         if (groups.length === 0) {
@@ -791,35 +803,24 @@ const GalleApp: React.FC = () => {
     }
   }, [coordinates, searchLocation]);
 
+  // Effect to fetch places data with debounce
   useEffect(() => {
-    // Skip if still in initial loading state
     if (loading) return;
-
-    // Clear any existing timer
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
-    // Debounce the fetchPlaces call
-    debounceTimerRef.current = setTimeout(() => {
+    const timer = setTimeout(() => {
       fetchPlaces();
     }, 300);
+    return () => clearTimeout(timer);
   }, [fetchPlaces, loading]);
 
+  // Effect to fetch services and providers data with debounce
   useEffect(() => {
-    // Skip if still in initial loading state
     if (loading) return;
-
-    // Clear any existing timer
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
-    // Debounce the fetchServices call
-    debounceTimerRef.current = setTimeout(() => {
+    const timer = setTimeout(() => {
       fetchServices();
     }, 300);
+    return () => clearTimeout(timer);
   }, [fetchServices, loading]);
+
 
   // Event handlers
   const handleTabChange = useCallback((newTab: string) => {
@@ -832,13 +833,11 @@ const GalleApp: React.FC = () => {
       console.log("🔍 handleServicePress called with serviceId:", serviceId);
       console.log("📋 Available services count:", services?.length || 0);
 
-      // Add null check for serviceId
       if (!serviceId) {
         console.error("❌ ServiceId is null or undefined");
         return;
       }
 
-      // Find the service to get its category
       const service = services?.find(
         (s) => s?.serviceId?.toString() === serviceId
       );
@@ -867,7 +866,6 @@ const GalleApp: React.FC = () => {
         console.log(
           "⚠️ Using fallback navigation - service or category missing"
         );
-        // Fallback to generic route if service not found
         router.push({
           pathname: "/explore/services/[serviceId]" as any,
           params: { serviceId },
@@ -887,7 +885,6 @@ const GalleApp: React.FC = () => {
         searchLocation,
       });
 
-      // Add null check for providerId
       if (!providerId) {
         console.error("❌ ProviderId is null or undefined");
         return;
@@ -899,7 +896,6 @@ const GalleApp: React.FC = () => {
         providerId: providerId.toString(),
       };
 
-      // Category is required
       if (category && category.trim() !== "" && category !== "undefined") {
         navParams.category = category;
         console.log("✅ Category added to navigation params:", category);
@@ -907,15 +903,12 @@ const GalleApp: React.FC = () => {
         console.warn("⚠️ Category is missing or invalid:", category);
       }
 
-      // Add search location parameters
       if (isNearbySearch && coordinates) {
-        // For nearby search, pass coordinates
         navParams.lat = coordinates.lat.toString();
         navParams.lng = coordinates.lng.toString();
-        navParams.radiusKm = "10"; // Default radius for nearby search
+        navParams.radiusKm = "10";
         console.log("📍 Using coordinate-based navigation");
       } else {
-        // For city search, pass city name
         navParams.city = searchLocation;
         console.log("🏙️ Using city-based navigation:", searchLocation);
       }
@@ -940,7 +933,6 @@ const GalleApp: React.FC = () => {
         displayName: item?.displayName,
       });
 
-      // Add null check for item
       if (!item) {
         console.error("❌ Item is null or undefined");
         return;
@@ -948,18 +940,13 @@ const GalleApp: React.FC = () => {
 
       if (item.isProvider) {
         console.log("🏢 Processing provider item");
-        console.log("Provider item category:", item.category);
-        console.log("Provider item:", item);
-
         if (!item.providerId) {
           console.error("❌ Provider ID is missing");
           return;
         }
-
         handleProviderPress(item.providerId, item.category);
       } else {
         console.log("⚙️ Processing service item");
-        // For services, navigate to service detail using category-specific route
         if (!item.serviceId) {
           console.error("❌ Service ID is missing");
           return;
@@ -976,7 +963,6 @@ const GalleApp: React.FC = () => {
           );
         } else {
           console.log("⚠️ Category missing, using fallback navigation");
-          // Fallback to generic route if category not available
           router.push({
             pathname: "/explore/services/[serviceId]" as any,
             params: {
@@ -989,23 +975,53 @@ const GalleApp: React.FC = () => {
     [handleProviderPress]
   );
 
-  const handlePlacePress = useCallback((placeId: string) => {
-    console.log("🎯 Navigating to place details:", placeId);
+  const handlePlacePress = useCallback(async (placeId: string) => {
+    console.log("🗺️ Place selected:", placeId);
+    
     router.push({
-      pathname: "/(tabs)/explore/search/results" as any,
-      params: {
-        placeId: placeId,
-      },
+      pathname: "/(tabs)/explore/places/[placeId]" as any,
+      params: { placeId }
     });
   }, []);
 
   const handleSeeMore = useCallback((category: string) => {
-    // Redirect to the filtered tab within the current page
     setSelectedTab(category);
-    setSelectedSubType("All"); // Reset sub-type when switching to new category
+    setSelectedSubType("All");
   }, []);
 
   // Render functions
+  const renderSearchStatus = () => {
+    const totalPlaces = groupedPlaces.reduce((sum, group) => sum + group.places.length, 0);
+    const totalServicesAndProviders = providers.length + services.length;
+    
+    return (
+      <View className="px-4 py-3 bg-blue-50 border-b border-blue-100">
+        <View className="flex-row items-center justify-between">
+          <View>
+            <Text className="text-blue-800 font-semibold text-lg">
+              {searchLocation}
+            </Text>
+            <Text className="text-blue-600 text-sm">
+              {totalPlaces} places • {totalServicesAndProviders} services & providers found
+            </Text>
+          </View>
+          <View className="flex-row space-x-2">
+            {placesLoading && (
+              <View className="bg-blue-200 px-2 py-1 rounded-full">
+                <Text className="text-blue-700 text-xs">Loading places...</Text>
+              </View>
+            )}
+            {servicesLoading && (
+              <View className="bg-green-200 px-2 py-1 rounded-full">
+                <Text className="text-green-700 text-xs">Loading services...</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   const renderLoadingState = () => (
     <SearchLoadingState fadeInValue={fadeInValue} />
   );
@@ -1017,7 +1033,6 @@ const GalleApp: React.FC = () => {
       return <PlacesLoadingState />;
     }
 
-    // Filter out groups with no places
     const groupsWithPlaces = groupedPlaces.filter(
       ({ places }) => places.length > 0
     );
@@ -1053,6 +1068,11 @@ const GalleApp: React.FC = () => {
           location={searchLocation}
           isNearby={isNearbySearch}
         />
+        <View className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <Text className="text-blue-700 text-sm text-center">
+            💡 Tap on any place to view detailed information, photos, and nearby services
+          </Text>
+        </View>
         {groupsWithPlaces.map(({ group, places }, index) => (
           <View key={group} className="mb-6">
             <AnimatedCard delay={300 + index * 100}>
@@ -1139,8 +1159,8 @@ const GalleApp: React.FC = () => {
                     ],
                     mainImageUrl: item.displayImage,
                     category: item.displayCategory,
-                    prices: [], // Add empty prices array for compatibility
-                    provider: null, // Add required provider field
+                    prices: [],
+                    provider: null,
                   }))}
                   maxItems={6}
                   onItemPress={(itemId) => {
@@ -1197,8 +1217,8 @@ const GalleApp: React.FC = () => {
             ],
             mainImageUrl: item.displayImage,
             category: item.displayCategory,
-            prices: [], // Add empty prices array for compatibility
-            provider: null, // Add required provider field
+            prices: [],
+            provider: null,
           }))}
           onItemPress={(itemId) => {
             const item = filteredItems.find(
@@ -1241,6 +1261,9 @@ const GalleApp: React.FC = () => {
           </Text>
         </View>
       </View>
+
+      {/* Search Status */}
+      {renderSearchStatus()}
 
       <Animated.View
         style={{
