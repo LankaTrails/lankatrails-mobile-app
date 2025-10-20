@@ -69,7 +69,7 @@ const convertServiceToCardItem = (service: Service): CardItem => {
       service?.locations?.[0]?.formattedAddress ||
       service?.category?.replace("_", " ") ||
       "Service",
-    rating: 4.5, // Default rating
+    rating: (service as any)?.averageRating || 0, // Use actual average rating
     image: service?.mainImageUrl
       ? service.mainImageUrl.startsWith("http")
         ? service.mainImageUrl
