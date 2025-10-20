@@ -91,6 +91,8 @@ export interface ServiceSearchResponse {
     locations: Location[];
     category: ServiceType;
     prices: Price[];
+    averageRating: number;
+    totalBookingsForPastMonth: number;
 }
 
 export interface ProviderSearchResponse {

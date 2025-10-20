@@ -288,17 +288,17 @@ const getSubTypesForCategory = (category: string): readonly string[] => {
   }
 };
 
-const convertServiceToCardItem = (service: Service): CardItem => ({
+const convertServiceToCardItem = (
+  service: ServiceSearchResponse
+): CardItem => ({
   id:
     typeof service.serviceId === "number"
       ? service.serviceId
       : Number(service.serviceId),
   title: service.serviceName || "Unnamed Service",
   subtitle:
-    service.locations?.[0]?.city ||
-    service.locations?.[0]?.formattedAddress ||
-    "Location not specified",
-  rating: 4.5, // Default rating
+    service.locations?.[0]?.city || service.locations?.[0]?.formattedAddress,
+  rating: service.averageRating || 0, // Use actual average rating
   image: service.mainImageUrl
     ? `http://192.168.1.9:8080${service.mainImageUrl}`
     : "https://via.placeholder.com/160x96/e2e8f0/64748b?text=No+Image",
