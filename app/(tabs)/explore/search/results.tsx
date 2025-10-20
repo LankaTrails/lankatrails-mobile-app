@@ -295,7 +295,9 @@ const convertServiceToCardItem = (service: Service): CardItem => ({
       : Number(service.serviceId),
   title: service.serviceName,
   subtitle:
-    service.locations?.[0]?.city || service.locations?.[0]?.formattedAddress,
+    service.locations?.[0]?.city ??
+    service.locations?.[0]?.formattedAddress ??
+    "",
   rating: 4.5, // Default rating
   image: service.mainImageUrl
     ? `http://192.168.1.9:8080${service.mainImageUrl}`

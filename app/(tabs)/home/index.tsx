@@ -18,6 +18,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SearchBar from '@/components/SearchBar';
+import { useAuth } from '@/hooks/useAuth';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -43,6 +44,7 @@ const TravelAppHome = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [likedPlaces, setLikedPlaces] = useState(new Set<number>());
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -61,36 +63,6 @@ const TravelAppHome = () => {
     "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800&h=400&fit=crop"
   ];
 
-  const quickActions = [
-    { 
-      id: 1, 
-      icon: "compass-outline", 
-      title: "Explore", 
-      subtitle: "Discover new places", 
-      color: "#008080" 
-    },
-    { 
-      id: 2, 
-      icon: "calendar-outline", 
-      title: "Plan Trip", 
-      subtitle: "Create itinerary", 
-      color: "#008080" ,
-    },
-    { 
-      id: 3, 
-      icon: "camera-outline", 
-      title: "Capture", 
-      subtitle: "Save memories", 
-      color: "#008080" 
-    },
-    { 
-      id: 4, 
-      icon: "navigate-outline", 
-      title: "Navigate", 
-      subtitle: "Get directions", 
-      color: "#008080" 
-    }
-  ];
 
   const trendingDestinations: Place[] = [
     {
@@ -144,40 +116,7 @@ const TravelAppHome = () => {
     { id: 6, icon: "🎭", name: "Culture", count: 41 }
   ];
 
-  const notifications = [
-    {
-      id: 1,
-      title: "Trip Reminder",
-      message: "Your Kandy adventure starts in 3 days! Don't forget to pack your camera.",
-      time: "2 hours ago",
-      icon: "🎒",
-      color: "#008080"
-    },
-    {
-      id: 2,
-      title: "New Photos Added",
-      message: "Check out 15 stunning new photos from Sigiriya Rock Fortress.",
-      time: "5 hours ago",
-      icon: "🌟",
-      color: "#20B2AA"
-    },
-    {
-      id: 3,
-      title: "Special Offer",
-      message: "Save 20% on guided tours this weekend. Limited time offer!",
-      time: "1 day ago",
-      icon: "💫",
-      color: "#40E0D0"
-    },
-    {
-      id: 4,
-      title: "Travel Buddy Request",
-      message: "Alex wants to join your upcoming trip to Ella. View request.",
-      time: "2 days ago",
-      icon: "👥",
-      color: "#5F9EA0"
-    }
-  ];
+
 
   // Initial animations
   useEffect(() => {
@@ -531,39 +470,13 @@ const TravelAppHome = () => {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
           <View>
             <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#1f2937', marginBottom: 4 }}>
-              Hello, Sarah 👋
+              Hello, {user?.firstName ?? 'Traveler'}!
             </Text>
             <Text style={{ fontSize: 16, color: '#6b7280' }}>
               Ready for your next adventure?
             </Text>
           </View>
-          <View style={{ position: 'relative' }}>
-            <TouchableOpacity 
-              onPress={showNotificationModal}
-              style={{
-                backgroundColor: '#f3f4f6',
-                borderRadius: 24,
-                padding: 12,
-                position: 'relative',
-              }}
-            >
-              <Ionicons name="notifications-outline" size={24} color="#6b7280" />
-              <Animated.View style={{
-                position: 'absolute',
-                top: -2,
-                right: -2,
-                width: 16,
-                height: 16,
-                backgroundColor: '#ef4444',
-                borderRadius: 8,
-                alignItems: 'center',
-                justifyContent: 'center',
-                transform: [{ scale: notificationBadgeAnim }]
-              }}>
-                <Text style={{ color: 'white', fontSize: 10, fontWeight: '600' }}>3</Text>
-              </Animated.View>
-            </TouchableOpacity>
-          </View>
+          
         </View>
 
         {/* Search Bar with Animation */}
@@ -642,21 +555,10 @@ const TravelAppHome = () => {
         </Animated.View>
 
         {/* Quick Actions with Staggered Animation */}
-        <View style={{ paddingHorizontal: 16, marginTop: 32 }}>
-          <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#1f2937', marginBottom: 16 }}>
-            Quick Actions
-          </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-            {quickActions.map((action, index) => (
-              <View key={action.id} style={{ width: (width - 48) / 2 }}>
-                {renderQuickAction({ item: action, index })}
-              </View>
-            ))}
-          </View>
-        </View>
+        
 
         {/* Categories with Animation */}
-        <View style={{ marginTop: 32 }}>
+        {/* <View style={{ marginTop: 32 }}>
           <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
             <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#1f2937' }}>
               Explore by Category
@@ -670,7 +572,7 @@ const TravelAppHome = () => {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: 16 }}
           />
-        </View>
+        </View> */}
 
         {/* Trending Destinations with Animation */}
         <View style={{ paddingHorizontal: 16, marginTop: 32 }}>
@@ -730,117 +632,7 @@ const TravelAppHome = () => {
       </ScrollView>
 
       {/* Enhanced Notifications Modal */}
-      <Modal
-        visible={showNotifications}
-        transparent
-        animationType="none"
-        onRequestClose={hideNotificationModal}
-      >
-        <Animated.View style={{ 
-          flex: 1, 
-          backgroundColor: 'rgba(0,0,0,0.5)', 
-          justifyContent: 'center', 
-          alignItems: 'center',
-          opacity: fadeAnim,
-        }}>
-          <Animated.View style={{
-            width: width * 0.9,
-            maxHeight: '80%',
-            backgroundColor: 'white',
-            borderRadius: 16,
-            overflow: 'hidden',
-            transform: [{ translateY: slideAnim }]
-          }}>
-            {/* Header */}
-            <View style={{
-              backgroundColor: '#008080',
-              paddingHorizontal: 24,
-              paddingVertical: 16,
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Ionicons name="notifications" size={20} color="white" />
-                <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold', marginLeft: 8 }}>
-                  Notifications
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={hideNotificationModal}
-                style={{ padding: 4 }}
-              >
-                <Ionicons name="close" size={24} color="white" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Notifications List */}
-            <ScrollView style={{ maxHeight: 400 }}>
-              {notifications.map((notification, index) => (
-                <TouchableOpacity
-                  key={notification.id}
-                  style={{
-                    flexDirection: 'row',
-                    padding: 16,
-                    borderBottomWidth: index < notifications.length - 1 ? 1 : 0,
-                    borderBottomColor: '#f3f4f6',
-                  }}
-                >
-                  <View style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    backgroundColor: `${notification.color}20`,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginRight: 12,
-                  }}>
-                    <Text style={{ fontSize: 16 }}>{notification.icon}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#1f2937', marginBottom: 4 }}>
-                      {notification.title}
-                    </Text>
-                    <Text style={{ fontSize: 14, color: '#6b7280', lineHeight: 20, marginBottom: 4 }}>
-                      {notification.message}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: '#008080', fontWeight: '500' }}>
-                      {notification.time}
-                    </Text>
-                  </View>
-                  <View style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: '#008080',
-                    marginTop: 8,
-                  }} />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            {/* Footer */}
-            <View style={{
-              paddingHorizontal: 16,
-              paddingVertical: 12,
-              backgroundColor: '#f9fafb',
-              borderTopWidth: 1,
-              borderTopColor: '#f3f4f6',
-            }}>
-              <TouchableOpacity>
-                <Text style={{
-                  textAlign: 'center',
-                  color: '#008080',
-                  fontSize: 14,
-                  fontWeight: '600',
-                }}>
-                  View All Notifications
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
-        </Animated.View>
-      </Modal>
+     
     </View>
   );
 };

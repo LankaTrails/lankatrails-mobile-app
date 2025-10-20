@@ -16,6 +16,7 @@ import {
   ToastAndroid,
   TouchableOpacity,
   View,
+  RefreshControl,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -58,21 +59,23 @@ interface PlaceDetails {
 // Service type for AddToTripButton compatibility
 import { Service } from "@/types/serviceTypes";
 
-const GOOGLE_PLACES_API_KEY = "AIzaSyAFJ8_eIjeXNhtS5TeuDWwswREqxO4FsGU";
+const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || "AIzaSyAFJ8_eIjeXNhtS5TeuDWwswREqxO4FsGU";
 
 const PublicPlaceDetails = () => {
   const { placeId } = useLocalSearchParams<{ placeId: string }>();
   const [placeDetails, setPlaceDetails] = useState<PlaceDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isFavourite, setIsFavourite] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
 
   // Convert place to Service for AddToTripButton
-  const convertToService = (place: PlaceDetails): Service => ({
-    serviceId: parseInt(place.place_id, 10) || 0,
+  const convertToService = useCallback((place: PlaceDetails): Service => ({
+    serviceId: parseInt(place.place_id.replace(/\D/g, ''), 10) || Math.floor(Math.random() * 10000),
     serviceName: place.name,
-    category: "ACTIVITY" as const, // Default category for places
+    category: "ACTIVITY" as const,
     locations: [
       {
         locationId: null,
@@ -91,12 +94,21 @@ const PublicPlaceDetails = () => {
       place.photos && place.photos.length > 0
         ? getPhotoUrl(place.photos[0].photo_reference, 800)
         : "",
-  });
+    provider: null,
+  }), []);
 
-  const fetchPlaceDetails = useCallback(async () => {
+  const fetchPlaceDetails = useCallback(async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       setError(null);
+
+      if (!placeId) {
+        throw new Error("No place ID provided");
+      }
 
       const response = await axios.get(
         "https://maps.googleapis.com/maps/api/place/details/json",
@@ -107,83 +119,113 @@ const PublicPlaceDetails = () => {
               "name,formatted_address,rating,user_ratings_total,formatted_phone_number,website,opening_hours,photos,geometry,types,price_level,reviews",
             key: GOOGLE_PLACES_API_KEY,
           },
+          timeout: 10000, // 10 second timeout
         }
       );
 
       if (response.data.status === "OK") {
         setPlaceDetails(response.data.result);
+      } else if (response.data.status === "NOT_FOUND") {
+        setError("Place not found");
+      } else if (response.data.status === "REQUEST_DENIED") {
+        setError("Invalid API key or request denied");
       } else {
-        setError("Failed to fetch place details");
+        setError(`Failed to fetch place details: ${response.data.status}`);
       }
     } catch (err) {
       console.error("Error fetching place details:", err);
-      setError("Network error. Please check your connection.");
+      if (axios.isAxiosError(err)) {
+        if (err.code === 'ECONNABORTED') {
+          setError("Request timeout. Please check your connection.");
+        } else if (err.response?.status === 403) {
+          setError("API quota exceeded or invalid key");
+        } else {
+          setError("Network error. Please check your connection.");
+        }
+      } else {
+        setError("An unexpected error occurred");
+      }
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [placeId]);
 
   useEffect(() => {
     if (placeId) {
       fetchPlaceDetails();
+    } else {
+      setError("No place ID provided");
+      setLoading(false);
     }
   }, [placeId, fetchPlaceDetails]);
 
-  const getPhotoUrl = (photoReference: string, maxWidth: number = 400) => {
+  const getPhotoUrl = useCallback((photoReference: string, maxWidth: number = 400) => {
     return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxWidth}&photo_reference=${photoReference}&key=${GOOGLE_PLACES_API_KEY}`;
-  };
+  }, []);
 
-  const handleFavourite = () => {
+  const handleFavourite = useCallback(() => {
     setIsFavourite((prev) => {
       const newState = !prev;
+      const message = newState ? "Added to favourites" : "Removed from favourites";
+      
       if (Platform.OS === "android") {
-        ToastAndroid.show(
-          newState ? "Added to favourites" : "Removed from favourites",
-          ToastAndroid.SHORT
-        );
+        ToastAndroid.show(message, ToastAndroid.SHORT);
       } else {
-        Alert.alert(
-          newState ? "Added to favourites" : "Removed from favourites"
-        );
+        Alert.alert("Favourites", message);
       }
       return newState;
     });
-  };
+  }, []);
 
-  const handleShare = () => {
-    const message = `Check out ${placeDetails?.name}!`;
+  const handleShare = useCallback(() => {
+    if (!placeDetails) return;
+    
+    const message = `Check out ${placeDetails.name} at ${placeDetails.formatted_address}`;
     if (Platform.OS === "android") {
-      ToastAndroid.show(`Sharing ${placeDetails?.name}`, ToastAndroid.SHORT);
+      ToastAndroid.show(`Sharing ${placeDetails.name}`, ToastAndroid.SHORT);
     } else {
       Alert.alert("Share", message);
     }
-  };
+  }, [placeDetails]);
 
-  const openWebsite = () => {
+  const openWebsite = useCallback(() => {
     if (placeDetails?.website) {
-      Linking.openURL(placeDetails.website);
+      Linking.openURL(placeDetails.website).catch(() => {
+        Alert.alert("Error", "Could not open website");
+      });
     }
-  };
+  }, [placeDetails?.website]);
 
-  const callPlace = () => {
+  const callPlace = useCallback(() => {
     if (placeDetails?.formatted_phone_number) {
-      const phoneNumber = placeDetails.formatted_phone_number.replace(
-        /\s/g,
-        ""
-      );
-      Linking.openURL(`tel:${phoneNumber}`);
+      const phoneNumber = placeDetails.formatted_phone_number.replace(/\s/g, "");
+      Linking.openURL(`tel:${phoneNumber}`).catch(() => {
+        Alert.alert("Error", "Could not make phone call");
+      });
     }
-  };
+  }, [placeDetails?.formatted_phone_number]);
 
-  const openInMaps = () => {
+  const openInMaps = useCallback(() => {
     if (placeDetails) {
       const { lat, lng } = placeDetails.geometry.location;
-      const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-      Linking.openURL(url);
+      const url = Platform.OS === 'ios' 
+        ? `maps://?q=${lat},${lng}` 
+        : `geo:${lat},${lng}?q=${lat},${lng}(${encodeURIComponent(placeDetails.name)})`;
+      
+      Linking.openURL(url).catch(() => {
+        // Fallback to Google Maps web
+        const webUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+        Linking.openURL(webUrl);
+      });
     }
-  };
+  }, [placeDetails]);
 
-  const renderStars = (rating: number) => {
+  const onRefresh = useCallback(() => {
+    fetchPlaceDetails(true);
+  }, [fetchPlaceDetails]);
+
+  const renderStars = useCallback((rating: number) => {
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 !== 0;
     const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
@@ -199,12 +241,12 @@ const PublicPlaceDetails = () => {
         ))}
       </View>
     );
-  };
+  }, []);
 
-  const getPriceLevel = (level?: number) => {
+  const getPriceLevel = useCallback((level?: number) => {
     if (!level) return "";
     return "$".repeat(level);
-  };
+  }, []);
 
   // Loading state
   if (loading) {
@@ -244,9 +286,15 @@ const PublicPlaceDetails = () => {
           </Text>
           <TouchableOpacity
             className="mt-6 bg-primary px-6 py-3 rounded-lg"
+            onPress={() => fetchPlaceDetails()}
+          >
+            <Text className="text-white font-semibold">Try Again</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            className="mt-3 px-6 py-3"
             onPress={() => router.back()}
           >
-            <Text className="text-white font-semibold">Go Back</Text>
+            <Text className="text-gray-600 font-semibold">Go Back</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -262,18 +310,34 @@ const PublicPlaceDetails = () => {
         showFavorite={true}
         isFavorite={isFavourite}
         onFavoritePress={handleFavourite}
+        onShare={handleShare}
       />
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        className="flex-1" 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         {/* Main Photo */}
         {placeDetails.photos && placeDetails.photos.length > 0 && (
-          <Image
-            source={{
-              uri: getPhotoUrl(placeDetails.photos[0].photo_reference, 800),
-            }}
-            className="w-full h-64"
-            resizeMode="cover"
-          />
+          <View className="relative">
+            <Image
+              source={{
+                uri: getPhotoUrl(placeDetails.photos[0].photo_reference, 800),
+              }}
+              className="w-full h-64"
+              resizeMode="cover"
+              onLoadStart={() => setImageLoading(true)}
+              onLoadEnd={() => setImageLoading(false)}
+            />
+            {imageLoading && (
+              <View className="absolute inset-0 justify-center items-center bg-gray-200">
+                <ActivityIndicator size="large" color="#008080" />
+              </View>
+            )}
+          </View>
         )}
 
         <View className="p-4">
@@ -476,5 +540,23 @@ const PublicPlaceDetails = () => {
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: 'white',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+});
 
 export default PublicPlaceDetails;
