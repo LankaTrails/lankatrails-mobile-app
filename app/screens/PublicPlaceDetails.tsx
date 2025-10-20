@@ -343,7 +343,7 @@ const PublicPlaceDetails = () => {
         <View className="p-4">
           {/* Place Header */}
           <View className="mb-6">
-            <Text className="text-2xl font-bold text-gray-900 mb-2">
+            <Text className="text-xl font-bold text-gray-300 mb-2">
               {placeDetails.name}
             </Text>
             <Text className="text-gray-600 mb-4">
@@ -534,7 +534,7 @@ const PublicPlaceDetails = () => {
       </ScrollView>
 
       {/* Add to Trip Button */}
-      <View className="p-4 bg-white border-t border-gray-100">
+      <View className="p-4 bg-white border-t border-gray-100 ">
         <AddToTripButton service={convertToService(placeDetails)} />
       </View>
     </SafeAreaView>
