@@ -3,7 +3,7 @@ import { addProfilePicture, updateUserProfile } from "@/services/userService";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { Stack, router } from "expo-router";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Image,
@@ -30,6 +30,35 @@ export default function Profile() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+
+  // Helper function to construct full image URL (same as profile page)
+  const getImageUrl = useCallback((url: string | null) => {
+    if (!url) return null;
+    
+    // Clean the URL and construct properly
+    const cleanUrl = url.startsWith('/') ? url.substring(1) : url;
+    // Remove /api from base URL for static files since they're served directly from /uploads/**
+    const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://172.20.10.4:8080/api';
+    const staticBaseUrl = baseUrl.replace('/api', '');
+    const fullUrl = `${staticBaseUrl}/${cleanUrl}`;
+    
+    console.log('===== EDIT PROFILE IMAGE DEBUG =====');
+    console.log('Backend URL:', url);
+    console.log('Static Base URL (without /api):', staticBaseUrl);
+    console.log('Constructed full URL:', fullUrl);
+    console.log('====================================');
+    
+    return fullUrl;
+  }, []);
+
+  // Update profile image URL when user data changes
+  useEffect(() => {
+    if (user?.profilePicUrl) {
+      const newImageUrl = getImageUrl(user.profilePicUrl);
+      setProfileImageUrl(newImageUrl);
+    }
+  }, [user, getImageUrl]);
 
   const resetChanges = () => {
     setTempValues({ ...fieldValues });
@@ -131,6 +160,7 @@ export default function Profile() {
       Alert.alert("Error", "Failed to pick image");
     }
   };
+  
   const iconName = {
     FName: "person-outline",
     LName: "person-outline",
@@ -197,11 +227,23 @@ export default function Profile() {
                   source={
                     imageUri
                       ? { uri: imageUri }
-                      : user?.profilePicUrl
-                      ? { uri: user.profilePicUrl }
+                      : profileImageUrl
+                      ? { uri: profileImageUrl }
                       : require("../../assets/images/profile.png")
                   }
                   style={styles.image}
+                  key={profileImageUrl || imageUri || 'default'}
+                  onLoadStart={() => {
+                    console.log('Edit Profile - Image load started:', profileImageUrl || imageUri);
+                  }}
+                  onError={(error) => {
+                    console.log('Edit Profile - Image load error:', error.nativeEvent);
+                    console.log('Edit Profile - Failed URL:', profileImageUrl || imageUri);
+                  }}
+                  onLoad={() => {
+                    console.log('Edit Profile - Image loaded successfully:', profileImageUrl || imageUri);
+                  }}
+                  resizeMode="cover"
                 />
                 {isUploadingImage && (
                   <View style={styles.uploadingOverlay}>
@@ -338,6 +380,8 @@ const styles = StyleSheet.create({
     borderRadius: 55,
     borderWidth: 3,
     borderColor: "#008080",
+    backgroundColor: "#f3f4f6", // Light gray background for loading state
+    overflow: 'hidden', // Ensure image is clipped to circle
   },
   uploadingOverlay: {
     position: "absolute",

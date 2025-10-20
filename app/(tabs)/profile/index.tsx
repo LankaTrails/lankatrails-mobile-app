@@ -3,7 +3,7 @@ import { changePassword } from "@/services/userService";
 import { useFocusEffect } from "@react-navigation/native";
 import { BlurView } from "expo-blur";
 import { router } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Animated,
@@ -16,23 +16,6 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import EditPopup from "../../../components/EditPopup";
-
-// Helper function to construct full image URL
-const getImageUrl = (profilePicUrl: string | undefined) => {
-  if (!profilePicUrl) return null;
-
-  // If the URL already includes the protocol, return as is
-  if (
-    profilePicUrl.startsWith("http://") ||
-    profilePicUrl.startsWith("https://")
-  ) {
-    return profilePicUrl;
-  }
-
-  // Use the same base URL as the API
-  const baseUrl = "http://localhost:8080";
-  return `${baseUrl}${profilePicUrl}`;
-};
 
 export default function Profile() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -49,6 +32,33 @@ export default function Profile() {
     Phone: user?.phone ? user.phone : "+94 712 345 678",
   });
 
+  // Memoize the profile image URL to prevent re-calculation and flickering
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const previousProfilePicUrl = useRef<string | undefined>(undefined);
+  const [imageLoading, setImageLoading] = useState(false);
+
+  // Helper function to construct full image URL
+  const getImageUrl = useCallback((url: string | null) => {
+    if (!url) return null;
+    
+    // Clean the URL and construct properly
+    const cleanUrl = url.startsWith('/') ? url.substring(1) : url;
+    // Remove /api from base URL for static files since they're served directly from /uploads/**
+    const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://172.20.10.4:8080/api';
+    const staticBaseUrl = baseUrl.replace('/api', '');
+    const fullUrl = `${staticBaseUrl}/${cleanUrl}`;
+    
+    // Debug logging
+    console.log('===== PROFILE IMAGE DEBUG =====');
+    console.log('Backend URL:', url);
+    console.log('Base URL (EXPO_PUBLIC_API_URL):', baseUrl);
+    console.log('Static Base URL (without /api):', staticBaseUrl);
+    console.log('Constructed full URL:', fullUrl);
+    console.log('===============================');
+    
+    return fullUrl;
+  }, []);
+
   // Refresh user data when the screen is focused
   useFocusEffect(
     React.useCallback(() => {
@@ -64,7 +74,15 @@ export default function Profile() {
       Email: user?.email ? user.email : "your@email.com",
       Phone: user?.phone ? user.phone : "+94 712 345 678",
     });
-  }, [user]);
+    
+    // Update profile image URL only when the actual URL from user changes
+    if (user?.profilePicUrl !== previousProfilePicUrl.current) {
+      previousProfilePicUrl.current = user?.profilePicUrl;
+      const newImageUrl = getImageUrl(user?.profilePicUrl);
+      setProfileImageUrl(newImageUrl);
+    }
+  }, [user, getImageUrl]);
+
   const [tempValues, setTempValues] = useState({ ...fieldValues });
   const [imageUri, setImageUri] = useState<string | null>(null);
 
@@ -88,7 +106,7 @@ export default function Profile() {
     } else {
       blurOpacity.setValue(0);
     }
-  }, [modalVisible, passwordModalVisible]);
+  }, [modalVisible, passwordModalVisible, blurOpacity]);
 
   const handleSave = () => {
     setFieldValues(tempValues);
@@ -270,13 +288,28 @@ export default function Profile() {
           <TouchableOpacity>
             <Image
               source={
-                getImageUrl(user?.profilePicUrl)
-                  ? { uri: getImageUrl(user?.profilePicUrl) }
+                profileImageUrl
+                  ? { uri: profileImageUrl }
                   : imageUri
                   ? { uri: imageUri }
                   : require("../../../assets/images/profile.png")
               }
               style={styles.profileImage}
+              key={profileImageUrl || 'default'} // Force re-render when URL changes
+              onLoadStart={() => {
+                console.log('Image load started:', profileImageUrl);
+                setImageLoading(true);
+              }}
+              onError={(error) => {
+                console.log('Image load error:', error.nativeEvent);
+                console.log('Failed URL:', profileImageUrl);
+                setImageLoading(false);
+              }}
+              onLoad={() => {
+                console.log('Image loaded successfully:', profileImageUrl);
+                setImageLoading(false);
+              }}
+              resizeMode="cover"
             />
           </TouchableOpacity>
           <View>
@@ -441,6 +474,8 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     borderWidth: 2,
     borderColor: "#008080",
+    backgroundColor: "#f3f4f6", // Light gray background for loading state
+    overflow: 'hidden', // Ensure image is clipped to circle
   },
 
   greetingText: {
