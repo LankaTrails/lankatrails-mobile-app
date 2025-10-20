@@ -10,8 +10,9 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
+import { MaterialIcons } from '@expo/vector-icons';
 import { theme } from "../../../theme";
-import { getAllBookings } from "@/services/bookingService";
+import { getAllBookings, cancelBooking } from "@/services/bookingService";
 import type { BookingItem, BookingStatus } from "@/types/bookingTypes";
 import { usePaymentGateway } from "@/components/PaymentGateway";
 
@@ -28,7 +29,6 @@ interface BookingUIData extends BookingItem {
   displayDuration: string;
   displayLocation: string;
   displayProviderName: string;
-  weather: "sunny" | "cloudy" | "rainy"; // Keep hardcoded for now
 }
 
 const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
@@ -108,8 +108,10 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
 
   // Transform BookingItem to BookingUIData with computed display properties
   const transformBookingToUI = (booking: BookingItem): BookingUIData => {
-    const startDate = new Date(booking.startTime);
-    const endDate = new Date(booking.endTime);
+    const startDate = booking.startTime
+      ? new Date(booking.startTime)
+      : new Date();
+    const endDate = booking.endTime ? new Date(booking.endTime) : new Date();
 
     return {
       ...booking, // Spread all BookingItem properties
@@ -130,10 +132,7 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
       }),
       displayLocation: booking.service?.locations?.[0]?.city || "Location",
       displayProviderName:
-        booking.service?.provider?.businessName || "Service Provider",
-      weather: (["sunny", "cloudy", "rainy"] as const)[
-        Math.floor(Math.random() * 3)
-      ], // Random weather for variety
+        booking.service?.provider?.businessName || "Service Provider"
     };
   };
 
@@ -201,18 +200,6 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
     }
   };
 
-  const getWeatherIcon = (weather: "sunny" | "cloudy" | "rainy") => {
-    switch (weather) {
-      case "sunny":
-        return "☀️";
-      case "cloudy":
-        return "☁️";
-      case "rainy":
-        return "🌧️";
-      default:
-        return "☀️";
-    }
-  };
 
   // Handle payment processing with Payment Gateway
   const handlePayment = async (tripItemId: number) => {
@@ -333,23 +320,45 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
     // You can implement navigation to a service details screen here
   };
 
-  const handleRemoveService = (serviceId: number) => {
+  const handleRemoveService = async (serviceId: number) => {
+    const service = bookingServices.find((s) => s.tripItemId === serviceId);
+    if (!service) return;
+
+    const actionText = service.status === "CONFIRMED" ? "cancel this booking" : "remove this service from your trip";
+    const warningText = service.status === "CONFIRMED" 
+      ? "This will cancel your confirmed booking. You may be subject to cancellation fees."
+      : "This will remove the service from your trip.";
+
     Alert.alert(
-      "Remove Service",
-      "Are you sure you want to remove this service from your trip?",
+      service.status === "CONFIRMED" ? "Cancel Booking" : "Remove Service",
+      `Are you sure you want to ${actionText}?\n\n${warningText}`,
       [
         {
           text: "Cancel",
           style: "cancel",
         },
         {
-          text: "Remove",
+          text: service.status === "CONFIRMED" ? "Cancel Booking" : "Remove",
           style: "destructive",
-          onPress: () => {
-            setBookingServices((prev) =>
-              prev.filter((service) => service.tripItemId !== serviceId)
-            );
-            console.log("Removing service:", serviceId);
+          onPress: async () => {
+            try {
+              // Use cancelBooking API for both confirmed and unconfirmed bookings
+              const response = await cancelBooking(serviceId);
+              if (response.success) {
+                setBookingServices((prev) =>
+                  prev.filter((s) => s.tripItemId !== serviceId)
+                );
+                const successMessage = service.status === "CONFIRMED" 
+                  ? "Booking cancelled successfully" 
+                  : "Service removed successfully";
+                Alert.alert("Success", successMessage);
+              } else {
+                Alert.alert("Error", response.message || "Failed to process request");
+              }
+            } catch (error: any) {
+              Alert.alert("Error", error.message || "Failed to process request");
+              console.error("Error processing service removal/cancellation:", error);
+            }
           },
         },
       ]
@@ -363,20 +372,12 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
     );
   };
 
-  const handleServiceClick = (service: BookingUIData) => {
-    setSelectedService(service);
-    setViewMode("details");
-  };
-
   const handleBackToOverview = () => {
     setViewMode("overview");
     setSelectedService(null);
   };
 
   // Calculate counts for UI
-  const bookedCount = bookingServices.filter(
-    (s) => s.status === "CONFIRMED"
-  ).length;
   const availableCount = bookingServices.filter(
     (s) => s.status !== "CONFIRMED" && s.status !== "NOT_AVAILABLE"
   ).length;
@@ -406,8 +407,7 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
                     setError(null);
                     const response = await getAllBookings(Number(tripId));
                     if (response.success && response.data) {
-                      const transformedBookings =
-                        response.data.map(transformBookingToUI);
+                      const transformedBookings = response.data.map(transformBookingToUI);
                       setBookingServices(transformedBookings);
                     } else {
                       setError(response.message || "Failed to load bookings");
@@ -432,7 +432,7 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
       return (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
-            📅 No bookings found for this trip
+            No bookings found for this trip
           </Text>
           <Text style={styles.emptySubtext}>
             Add services to your trip to see bookings here
@@ -477,12 +477,15 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
                       {service.service?.serviceName || "Service"}
                     </Text>
                     <Text style={styles.serviceDateTime}>
-                      {service.displayDate} • {service.displayTime}
+                      {service.displayDate || "Date"} •{" "}
+                      {service.displayTime || "Time"}
                     </Text>
-                    <Text style={styles.serviceLocation}>
-                      📍 {service.displayLocation}{" "}
-                      {getWeatherIcon(service.weather)}
-                    </Text>
+                    <View style={styles.serviceLocationContainer}>
+                      <MaterialIcons name="location-on" size={16} color={theme.colors.primary} style={styles.serviceLocationIcon} />
+                      <Text style={styles.serviceLocation}>
+                        {service.displayLocation || "Unknown Location"}
+                      </Text>
+                    </View>
                   </View>
                   <View style={styles.serviceStatus}>
                     {/* Status-based button in top right */}
@@ -528,7 +531,7 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
                 <View style={styles.serviceDetailRow}>
                   <Text style={styles.serviceDetailLabel}>Provider:</Text>
                   <Text style={styles.serviceDetailValue}>
-                    {service.displayProviderName}
+                    {service.displayProviderName || "Unknown Provider"}
                   </Text>
                 </View>
                 <View style={styles.serviceDetailRow}>
@@ -536,14 +539,15 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
                     Adults/Children:
                   </Text>
                   <Text style={styles.serviceDetailValue}>
-                    {service.numberOfAdults}/{service.numberOfChildren}
+                    {service.numberOfAdults || 0}/
+                    {service.numberOfChildren || 0}
                   </Text>
                 </View>
                 {service.status === "CONFIRMED" && (
                   <View style={styles.serviceDetailRow}>
                     <Text style={styles.serviceDetailLabel}>Reference:</Text>
                     <Text style={styles.serviceDetailValue}>
-                      BK-{service.tripItemId}
+                      BK-{service.tripItemId || "N/A"}
                     </Text>
                   </View>
                 )}
@@ -551,7 +555,7 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
                   <View style={styles.serviceDetailRow}>
                     <Text style={styles.serviceDetailLabel}>Total Price:</Text>
                     <Text style={styles.serviceDetailValue}>
-                      LKR {service.totalPrice}
+                      LKR {service.totalPrice || 0}
                     </Text>
                   </View>
                 )}
@@ -559,7 +563,7 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
                   <View style={styles.serviceDetailRow}>
                     <Text style={styles.serviceDetailLabel}>Paid:</Text>
                     <Text style={styles.serviceDetailValue}>
-                      LKR {service.paidAmount}
+                      LKR {service.paidAmount || 0}
                     </Text>
                   </View>
                 )}
@@ -567,7 +571,7 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
                   <View style={styles.serviceDetailRow}>
                     <Text style={styles.serviceDetailLabel}>Due:</Text>
                     <Text style={styles.serviceDetailValue}>
-                      LKR {service.dueAmount}
+                      LKR {service.dueAmount || 0}
                     </Text>
                   </View>
                 )}
@@ -579,7 +583,7 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
                     LKR {service.totalPrice || 0}
                   </Text>
                   <Text style={styles.serviceDuration}>
-                    {service.displayDuration}
+                    {service.displayDuration || "Duration"}
                   </Text>
                 </View>
                 <View style={styles.serviceActions}>
@@ -611,7 +615,7 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
                     <Text
                       style={[styles.optionButtonText, styles.removeButtonText]}
                     >
-                      Remove
+                      {service.status === "CONFIRMED" ? "Cancel Booking" : "Remove"}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -791,6 +795,17 @@ const styles = StyleSheet.create({
   serviceLocation: {
     fontSize: 14,
     color: "#6B7280",
+  },
+  serviceLocationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  serviceLocationIcon: {
+    marginRight: 6,
+  },
+    serviceDetailText: {
+    fontSize: 14,
+    color: '#6B7280',
   },
   serviceStatus: {
     alignItems: "center",

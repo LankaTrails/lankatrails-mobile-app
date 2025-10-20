@@ -1,14 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
+import { useFocusEffect } from '@react-navigation/native';
 import EmptyState from "../../../components/EmptyState";
 import NewTripButton from "../../../components/FAB";
 import FilterButton from "../../../components/FilterButton";
@@ -24,17 +25,55 @@ export default function TripsScreen() {
   const [showTripCreationFlow, setShowTripCreationFlow] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const filters = ["All", "Upcoming", "Completed"];
 
-  // Load trips when component mounts
-  useEffect(() => {
-    loadTrips();
+  // Helper functions
+  const calculateDurationFromDates = useCallback((startDate: string, endDate: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return `${diffDays} Day${diffDays > 1 ? "s" : ""}`;
   }, []);
 
-  const loadTrips = async () => {
+  const mapTripStatus = useCallback((status: string) => {
+    switch (status) {
+      case "PLANNING":
+        return "Upcoming";
+      case "IN_PROGRESS":
+        return "Ongoing";
+      case "COMPLETED":
+        return "Completed";
+      case "CANCELLED":
+        return "Cancelled";
+      case "ARCHIVED":
+        return "Archived";
+      default:
+        return "Upcoming";
+    }
+  }, []);
+
+  const convertTripToCardFormat = useCallback((trip: Trip) => {
+    return {
+      id: trip.tripId.toString(),
+      title: trip.tripName,
+      details: `${trip.locations?.length || 0} location${
+        (trip.locations?.length || 0) > 1 ? "s" : ""
+      } | ${trip.numberOfAdults + trip.numberOfChildren} traveler${
+        trip.numberOfAdults + trip.numberOfChildren > 1 ? "s" : ""
+      }`,
+      budget: `Rs. ${(trip.totalBudgetLimit || 0).toLocaleString()}`, // Use budget limit instead of spent budget
+      duration: calculateDurationFromDates(trip.startDate, trip.endDate),
+      status: mapTripStatus(trip.status || "PLANNING"),
+    };
+  }, [calculateDurationFromDates, mapTripStatus]);
+
+  const loadTrips = useCallback(async () => {
     try {
       setIsLoading(true);
+      setError(null);
       const response = await getMyTrips();
 
       if (response.success && response.data) {
@@ -44,43 +83,45 @@ export default function TripsScreen() {
         console.log(`Loaded ${convertedTrips.length} trips from API`);
       } else {
         console.error("Failed to load trips:", response.message);
-        // Show empty state instead of dummy data on API failure
         setTrips([]);
-        Alert.alert("Error", response.message || "Failed to load your trips.");
+
+        // Check if it's just "no trips found" which is normal, not an error
+        const message = response.message || "";
+        const isNoTripsFound = message.toLowerCase().includes("no trips found");
+
+        if (!isNoTripsFound) {
+          setError(message || "Failed to load your trips.");
+        }
+        // If it's just "no trips found", don't set error - show empty state instead
       }
     } catch (error) {
       console.error("Error loading trips:", error);
-      // Show empty state instead of dummy data on network error
       setTrips([]);
-      Alert.alert(
-        "Connection Error",
-        "Failed to load your trips. Please check your internet connection and pull down to refresh.",
-        [{ text: "OK", style: "default" }]
+      setError(
+        "Failed to load your trips. Please check your internet connection and try again."
       );
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [convertTripToCardFormat]);
+
+  // Load trips on component mount
+  useEffect(() => {
+    loadTrips();
+  }, [loadTrips]);
+
+  // Refresh trips when screen gains focus (for instant updates after editing)
+  useFocusEffect(
+    useCallback(() => {
+      loadTrips();
+    }, [loadTrips])
+  );
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
+    setError(null); // Clear any existing errors
     await loadTrips();
     setIsRefreshing(false);
-  };
-
-  const convertTripToCardFormat = (trip: Trip) => {
-    return {
-      id: trip.tripId.toString(),
-      title: trip.tripName,
-      details: `${trip.locations.length} location${
-        trip.locations.length > 1 ? "s" : ""
-      } | ${trip.numberOfAdults + trip.numberOfChildren} traveler${
-        trip.numberOfAdults + trip.numberOfChildren > 1 ? "s" : ""
-      }`,
-      budget: `Rs. ${trip.totalBudget.toLocaleString()}`,
-      duration: calculateDurationFromDates(trip.startDate, trip.endDate),
-      status: mapTripStatus(trip.status || "PLANNING"),
-    };
   };
 
   const filteredTrips =
@@ -104,31 +145,6 @@ export default function TripsScreen() {
     setTimeout(() => {
       loadTrips();
     }, 1000);
-  };
-
-  const calculateDurationFromDates = (startDate: string, endDate: string) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return `${diffDays} Day${diffDays > 1 ? "s" : ""}`;
-  };
-
-  const mapTripStatus = (status: string) => {
-    switch (status) {
-      case "PLANNING":
-        return "Upcoming";
-      case "IN_PROGRESS":
-        return "Ongoing";
-      case "COMPLETED":
-        return "Completed";
-      case "CANCELLED":
-        return "Cancelled";
-      case "ARCHIVED":
-        return "Archived";
-      default:
-        return "Upcoming";
-    }
   };
 
   const handleTripCreationClose = () => {
@@ -171,11 +187,43 @@ export default function TripsScreen() {
 
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#008080" />
-            <Text style={styles.loadingText}>Loading your trips...</Text>
+            <View style={styles.loadingContent}>
+              <ActivityIndicator size="large" color="#008080" />
+              <Text style={styles.loadingText}>Loading your trips...</Text>
+              <Text style={styles.loadingSubtext}>
+                Please wait while we fetch your travel plans
+              </Text>
+            </View>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <View style={styles.errorContent}>
+              <View style={styles.errorIconContainer}>
+                <Text style={styles.errorIcon}>⚠️</Text>
+              </View>
+              <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
+              <Text style={styles.errorSubtitle}>{error}</Text>
+              <View style={styles.errorActions}>
+                <TouchableOpacity
+                  style={styles.retryButton}
+                  onPress={loadTrips}
+                >
+                  <Text style={styles.retryButtonText}>Try Again</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.createTripButton}
+                  onPress={handleNewTripPress}
+                >
+                  <Text style={styles.createTripButtonText}>Create Trip</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         ) : filteredTrips.length === 0 ? (
-          <EmptyState selectedFilter={selectedFilter} />
+          <EmptyState
+            selectedFilter={selectedFilter}
+            onCreateTrip={handleNewTripPress}
+          />
         ) : (
           <FlatList
             data={filteredTrips}
@@ -223,10 +271,84 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 60,
   },
+  loadingContent: {
+    alignItems: "center",
+    paddingHorizontal: 32,
+  },
   loadingText: {
     marginTop: 16,
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1f2937",
+    textAlign: "center",
+  },
+  loadingSubtext: {
+    marginTop: 8,
+    fontSize: 14,
+    color: "#6B7280",
+    textAlign: "center",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 60,
+  },
+  errorContent: {
+    alignItems: "center",
+    paddingHorizontal: 32,
+    maxWidth: 320,
+  },
+  errorIconContainer: {
+    marginBottom: 16,
+  },
+  errorIcon: {
+    fontSize: 48,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1f2937",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  errorSubtitle: {
     fontSize: 16,
     color: "#6B7280",
     textAlign: "center",
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  errorActions: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  retryButton: {
+    backgroundColor: "#008080",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 100,
+    alignItems: "center",
+  },
+  retryButtonText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  createTripButton: {
+    backgroundColor: "transparent",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#008080",
+    minWidth: 100,
+    alignItems: "center",
+  },
+  createTripButtonText: {
+    color: "#008080",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

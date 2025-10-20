@@ -1,6 +1,6 @@
 import * as Clipboard from "expo-clipboard";
 import * as Linking from "expo-linking";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
   Alert,
@@ -21,6 +21,7 @@ import SummaryCard from "../../../../components/SummaryCard";
 import TripDetailsModal, {
   TripDetails as TripDetailsType,
 } from "../../../../components/TripDetailsModal";
+import TripSharingModal from "../../../../components/TripSharingModal";
 import BookingsView from "./BookingsView";
 import ScheduleView from "./ScheduleView";
 
@@ -48,14 +49,18 @@ import {
   generateTripInvitation,
   getTripById,
   getTripItemsByTripId,
+  updateTrip,
+  deleteTrip,
 } from "@/services/tripService";
-import { TripInvitationRequest } from "@/types/triptypes";
+import { TripInvitationRequest, tripRequest } from "@/types/triptypes";
 
 const TripDetails = () => {
   const tripID = useLocalSearchParams().id as string;
+  const router = useRouter();
   const [viewMode, setViewMode] = useState<"schedule" | "bookings">("schedule");
   const [showEditModal, setShowEditModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showSharingModal, setShowSharingModal] = useState(false);
   const [currentInvitationLink, setCurrentInvitationLink] =
     useState<string>("");
   const [currentInvitationRole, setCurrentInvitationRole] =
@@ -132,19 +137,26 @@ const TripDetails = () => {
 
         const tripRes = await getTripById(Number(tripID));
         if (tripRes.success && tripRes.data) {
+          console.log('Trip data received:', JSON.stringify(tripRes.data, null, 2));
           setTrip(tripRes.data);
 
-          // Update tripDetails state with real data
-          setTripDetails({
-            budget: tripRes.data.totalBudget?.toString() || "0",
-            startDate: new Date(tripRes.data.startDate),
-            endDate: new Date(tripRes.data.endDate),
+          // Update tripDetails state with real data (keep as fallback)
+          const updatedTripDetails = {
+            budget: tripRes.data.totalBudgetLimit?.toString() || "0", // Use budget limit
+            startDate: tripRes.data.startDate ? new Date(tripRes.data.startDate) : new Date(),
+            endDate: tripRes.data.endDate ? new Date(tripRes.data.endDate) : new Date(),
             currency: "LKR", // You can make this dynamic if currency is in the API
-            distance: tripRes.data.totalDistance?.toString() + "km" || "0km",
+            distance: tripRes.data.totalDistance ? tripRes.data.totalDistance.toString() + "km" : "0km",
             title: tripRes.data.tripName || "Trip",
             numberOfAdults: tripRes.data.numberOfAdults || 1,
             numberOfChildren: tripRes.data.numberOfChildren || 0,
+          };
+          console.log('Setting tripDetails as fallback:', {
+            ...updatedTripDetails,
+            startDate: updatedTripDetails.startDate.toISOString(),
+            endDate: updatedTripDetails.endDate.toISOString(),
           });
+          setTripDetails(updatedTripDetails);
 
           // Fetch trip items and group by day
           const itemsRes = await getTripItemsByTripId(Number(tripID));
@@ -195,6 +207,7 @@ const TripDetails = () => {
           setError("Trip not found");
         }
       } catch (err) {
+        console.error('Error fetching trip:', err);
         setError("Failed to load trip");
       } finally {
         setLoading(false);
@@ -230,164 +243,19 @@ const TripDetails = () => {
         return;
       }
 
-      // First, ask user what type of invitation they want to create
-      Alert.alert(
-        "Invitation Type",
-        "What type of invitation do you want to create?\n\n• Individual: Single-use invitation for one person\n• Group: Reusable invitation link for multiple people",
-        [
-          {
-            text: "Individual Invitation",
-            onPress: () => selectRole(false),
-          },
-          {
-            text: "Group Invitation",
-            onPress: () => selectRole(true),
-          },
-          {
-            text: "Cancel",
-            style: "cancel",
-          },
-        ]
-      );
+      setShowSharingModal(true);
     } catch (error: any) {
       console.error("Failed to show invitation type selection:", error);
       Alert.alert("Error", "Failed to initiate invitation process");
     }
   };
 
-  const selectRole = (isGroupInvitation: boolean) => {
-    // Second, ask user what role they want to assign to the invitee(s)
-    const invitationType = isGroupInvitation ? "group" : "individual";
-    Alert.alert(
-      "Invitation Role",
-      `What role should the invited ${
-        isGroupInvitation ? "people" : "person"
-      } have?\n\n• Member: Can view and join trip\n• Editor: Can modify trip details\n• Admin: Full trip management access`,
-      [
-        {
-          text: "Member (View Only)",
-          onPress: () => generateInvitation("MEMBER", isGroupInvitation),
-        },
-        {
-          text: "Editor (Can Modify)",
-          onPress: () => generateInvitation("EDITOR", isGroupInvitation),
-        },
-        {
-          text: "Admin (Full Access)",
-          onPress: () => generateInvitation("ADMIN", isGroupInvitation),
-        },
-        {
-          text: "Back",
-          onPress: () => handleShare(), // Go back to invitation type selection
-        },
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-      ]
-    );
-  };
-  const generateInvitation = async (
-    role: "MEMBER" | "EDITOR" | "ADMIN",
-    isGroupInvitation: boolean
-  ) => {
-    try {
-      setLoading(true);
-
-      // Prepare invitation data
-      const invitationData: TripInvitationRequest = {
-        tripId: Number(tripID),
-        role: role,
-        isGroupInvitation: isGroupInvitation,
-      };
-
-      const response = await generateTripInvitation(
-        Number(tripID),
-        invitationData
-      );
-
-      if (response.success && response.data) {
-        const invitationToken = response.data;
-        // const invitationLink = `https://lankatrails.app/invite/${invitationToken}`;
-        // const invitationLink = `lankatrailsmobileapp://invite/${invitationToken}`;
-        const invitationLink = `${prefix}invite/${invitationToken}`;
-
-        // Show options to user
-        const invitationType = isGroupInvitation ? "group" : "individual";
-        Alert.alert(
-          "Share Trip Invitation",
-          `Share this ${invitationType} ${role.toLowerCase()} invitation for "${
-            trip?.tripName || tripDetails.title
-          }":`,
-          [
-            {
-              text: "Show QR Code",
-              onPress: () => {
-                setCurrentInvitationLink(invitationLink);
-                setCurrentInvitationRole(role);
-                setCurrentInvitationType(invitationType);
-                setShowQRModal(true);
-              },
-            },
-            {
-              text: "Copy Link",
-              onPress: async () => {
-                try {
-                  await Clipboard.setStringAsync(invitationLink);
-                  Alert.alert(
-                    "Success",
-                    "Invitation link copied to clipboard!"
-                  );
-                } catch (error) {
-                  console.error("Error copying to clipboard:", error);
-                  Alert.alert("Error", "Failed to copy invitation link");
-                }
-              },
-            },
-            {
-              text: "Share",
-              onPress: async () => {
-                try {
-                  const inviteMessage = isGroupInvitation
-                    ? `You're invited to join our trip "${
-                        trip?.tripName || tripDetails.title
-                      }" with ${role.toLowerCase()} access! This group invitation can be used by multiple people. Click this link to join: ${invitationLink}`
-                    : `You're invited to join our trip "${
-                        trip?.tripName || tripDetails.title
-                      }" with ${role.toLowerCase()} access! Click this link to join: ${invitationLink}`;
-
-                  await Share.share({
-                    message: inviteMessage,
-                    title: `Join ${trip?.tripName || tripDetails.title}`,
-                  });
-                } catch (error) {
-                  console.error("Error sharing:", error);
-                  Alert.alert("Error", "Failed to share invitation link");
-                }
-              },
-            },
-            {
-              text: "Cancel",
-              style: "cancel",
-            },
-          ]
-        );
-      } else {
-        throw new Error(response.message || "Failed to generate invitation");
-      }
-    } catch (error: any) {
-      console.error("Failed to generate trip invitation:", error);
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Failed to generate invitation link";
-      Alert.alert("Error", errorMessage);
-    } finally {
-      setLoading(false);
+  const handleDelete = async () => {
+    if (!trip?.tripId) {
+      Alert.alert("Error", "Trip not found");
+      return;
     }
-  };
 
-  const handleDelete = () => {
     Alert.alert(
       "Delete Trip",
       `Are you sure you want to delete "${
@@ -401,19 +269,94 @@ const TripDetails = () => {
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => {
-            // Implement delete functionality
-            console.log("Deleting trip:", trip?.tripName || tripDetails.title);
-            // You would call your delete API here
+          onPress: async () => {
+            try {
+              console.log("Deleting trip:", trip.tripId);
+              const response = await deleteTrip(trip.tripId);
+              
+              if (response.success) {
+                Alert.alert(
+                  "Success", 
+                  "Trip deleted successfully",
+                  [
+                    {
+                      text: "OK",
+                      onPress: () => {
+                        // Navigate back to trips list
+                        router.back();
+                      }
+                    }
+                  ]
+                );
+              } else {
+                Alert.alert("Error", response.message || "Failed to delete trip");
+              }
+            } catch (error: any) {
+              console.error("Error deleting trip:", error);
+              Alert.alert("Error", "Failed to delete trip. Please try again.");
+            }
           },
         },
       ]
     );
   };
   const handleEditModalClose = () => setShowEditModal(false);
-  const handleEditModalConfirm = (updatedDetails: TripDetailsType) => {
-    setTripDetails(updatedDetails);
-    setShowEditModal(false);
+  const handleEditModalConfirm = async (updatedDetails: TripDetailsType) => {
+    if (!trip || !tripID) return;
+
+    try {
+      setLoading(true);
+      
+      // Prepare the trip data for API call
+      const tripUpdateData: tripRequest = {
+        tripName: updatedDetails.title || trip.tripName,
+        startDate: updatedDetails.startDate.toISOString().split('T')[0], // Convert to YYYY-MM-DD format
+        endDate: updatedDetails.endDate.toISOString().split('T')[0], // Convert to YYYY-MM-DD format
+        startLocation: trip.startLocation, // Keep existing start location
+        locations: trip.locations || [], // Keep existing locations
+        numberOfAdults: updatedDetails.numberOfAdults,
+        numberOfChildren: updatedDetails.numberOfChildren,
+        totalBudgetLimit: Number(updatedDetails.budget) || 0,
+        // Keep existing budget breakdown values (use 0 as defaults since these might not exist in current Trip interface)
+        totalBudget: trip.totalBudget || 0,
+        totalDistance: trip.totalDistance || 0,
+        accommodationLimit: (trip as any).accommodationLimit || 0,
+        foodLimit: (trip as any).foodLimit || 0,
+        transportLimit: (trip as any).transportLimit || 0,
+        activityLimit: (trip as any).activityLimit || 0,
+        shoppingLimit: (trip as any).shoppingLimit || 0,
+        miscellaneousLimit: (trip as any).miscellaneousLimit || 0,
+        tripStatus: trip.status || 'PLANNING',
+        tags: trip.tags || [],
+      };
+
+      console.log('Updating trip with data:', tripUpdateData);
+      
+      // Call the API to update the trip
+      const response = await updateTrip(Number(tripID), tripUpdateData);
+      
+      if (response.success && response.data) {
+        // Update local state with the response from the API
+        setTrip(response.data);
+        
+        // Update tripDetails for fallback
+        setTripDetails({
+          ...updatedDetails,
+          title: response.data.tripName,
+        });
+        
+        console.log('Trip updated successfully:', response.data);
+        Alert.alert("Success", "Trip updated successfully!");
+      } else {
+        Alert.alert("Error", response.message || "Failed to update trip");
+      }
+    } catch (error: any) {
+      console.error('Error updating trip:', error);
+      Alert.alert("Error", "Failed to update trip. Please try again.");
+    } finally {
+      setLoading(false);
+      setShowEditModal(false);
+    }
   };
 
   const renderCurrentView = () => {
@@ -472,25 +415,34 @@ const TripDetails = () => {
           showsVerticalScrollIndicator={false}
         >
           <SummaryCard
-            tripDetails={{
-              ...tripDetails,
-              ...(trip && {
-                title: trip.tripName || tripDetails.title,
-                startDate: trip.startDate
-                  ? new Date(trip.startDate)
-                  : tripDetails.startDate,
-                endDate: trip.endDate
-                  ? new Date(trip.endDate)
-                  : tripDetails.endDate,
-                budget: trip.budget ? String(trip.budget) : tripDetails.budget,
-                currency: trip.currency || tripDetails.currency,
-                distance: trip.distance || tripDetails.distance,
-                numberOfAdults:
-                  trip.numberOfAdults ?? tripDetails.numberOfAdults,
-                numberOfChildren:
-                  trip.numberOfChildren ?? tripDetails.numberOfChildren,
-              }),
-            }}
+            tripDetails={(() => {
+              // Use trip data directly if available, otherwise fall back to tripDetails
+              if (trip) {
+                const finalTripDetails = {
+                  title: trip.tripName || "Trip",
+                  startDate: new Date(trip.startDate),
+                  endDate: new Date(trip.endDate),
+                  budget: trip.totalBudgetLimit?.toString() || "0", // Use budget limit for display
+                  currency: "LKR",
+                  distance: trip.totalDistance ? trip.totalDistance.toString() + "km" : "0km",
+                  numberOfAdults: trip.numberOfAdults || 1,
+                  numberOfChildren: trip.numberOfChildren || 0,
+                };
+                console.log('Final trip details passed to SummaryCard (from trip):', {
+                  ...finalTripDetails,
+                  startDate: finalTripDetails.startDate.toISOString(),
+                  endDate: finalTripDetails.endDate.toISOString(),
+                });
+                return finalTripDetails;
+              } else {
+                console.log('Final trip details passed to SummaryCard (from tripDetails):', {
+                  ...tripDetails,
+                  startDate: tripDetails.startDate.toISOString(),
+                  endDate: tripDetails.endDate.toISOString(),
+                });
+                return tripDetails;
+              }
+            })()}
           />
 
           <TabNavigation />
@@ -511,7 +463,16 @@ const TripDetails = () => {
         visible={showEditModal}
         onClose={handleEditModalClose}
         onConfirm={handleEditModalConfirm}
-        initialDetails={tripDetails}
+        initialDetails={trip ? {
+          title: trip.tripName || "Trip",
+          budget: trip.totalBudgetLimit?.toString() || "0", // Use budget limit for editing
+          startDate: new Date(trip.startDate),
+          endDate: new Date(trip.endDate),
+          currency: "LKR",
+          distance: trip.totalDistance ? trip.totalDistance.toString() + "km" : "0km",
+          numberOfAdults: trip.numberOfAdults || 1,
+          numberOfChildren: trip.numberOfChildren || 0,
+        } : tripDetails}
         isEditing={true}
       />
 
@@ -522,6 +483,13 @@ const TripDetails = () => {
         tripName={trip?.tripName || tripDetails.title}
         role={currentInvitationRole}
         invitationType={currentInvitationType}
+      />
+
+      <TripSharingModal
+        visible={showSharingModal}
+        onClose={() => setShowSharingModal(false)}
+        tripId={Number(tripID)}
+        tripName={trip?.tripName || tripDetails.title}
       />
     </>
   );
@@ -569,7 +537,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 14,
-    paddingTop: 90, // Add padding to account for fixed header
+    paddingTop: 60, // Add padding to account for fixed header
   },
   tabContainer: {
     flexDirection: "row",
@@ -578,7 +546,7 @@ const styles = StyleSheet.create({
   viewContainer: {
     flex: 1,
     minHeight: 400,
-    marginBottom: 80, // Add margin to prevent content from being hidden behind FAB
+    marginBottom: 150, // Add margin to prevent content from being hidden behind FAB
   },
   fabContainer: {
     position: "absolute",

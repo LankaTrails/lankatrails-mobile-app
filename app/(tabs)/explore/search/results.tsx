@@ -295,7 +295,7 @@ const convertServiceToCardItem = (
     typeof service.serviceId === "number"
       ? service.serviceId
       : Number(service.serviceId),
-  title: service.serviceName,
+  title: service.serviceName || "Unnamed Service",
   subtitle:
     service.locations?.[0]?.city || service.locations?.[0]?.formattedAddress,
   rating: service.averageRating || 0, // Use actual average rating
@@ -347,6 +347,12 @@ const GalleApp: React.FC = () => {
   const [services, setServices] = useState<ServiceSearchResponse[]>([]);
   const [servicesLoading, setServicesLoading] = useState(false);
   const [searchLocation, setSearchLocation] = useState("Galle");
+
+  // Refs for stable values and preventing race conditions
+  const isMountedRef = useRef(true);
+  const lastServiceCallRef = useRef<string>("");
+  const lastPlaceCallRef = useRef<string>("");
+  const debounceTimerRef = useRef<number | null>(null);
 
   // Animation values
   const fadeInValue = useAnimatedValue(0);
@@ -410,8 +416,14 @@ const GalleApp: React.FC = () => {
       }).start();
     }, 600);
 
-    return () => clearTimeout(timer);
-  }, [params]);
+    return () => {
+      clearTimeout(timer);
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      isMountedRef.current = false;
+    };
+  }, [params.location]); // Only depend on location to prevent unnecessary re-runs
 
   useEffect(() => {
     if (!loading) {
@@ -432,6 +444,17 @@ const GalleApp: React.FC = () => {
 
   // Fetch functions
   const fetchServices = useCallback(async () => {
+    // Create a unique call identifier to prevent race conditions
+    const callId = `${coordinates?.lat}-${coordinates?.lng}-${searchLocation}-${selectedTab}-${selectedSubType}-${isNearbySearch}`;
+
+    // Prevent duplicate calls
+    if (servicesLoading || lastServiceCallRef.current === callId) {
+      console.log("🔄 Services call skipped - duplicate or already loading");
+      return;
+    }
+
+    lastServiceCallRef.current = callId;
+
     try {
       setServicesLoading(true);
 
@@ -503,6 +526,12 @@ const GalleApp: React.FC = () => {
         searchRequest
       );
 
+      // Check if component is still mounted before updating state
+      if (!isMountedRef.current) {
+        console.log("🚫 Component unmounted, skipping state update");
+        return;
+      }
+
       if (response.success && response.data) {
         const searchData = response.data;
         console.log("Search response received:", {
@@ -532,7 +561,13 @@ const GalleApp: React.FC = () => {
       setProviders([]);
       setServices([]);
     } finally {
-      setServicesLoading(false);
+      if (isMountedRef.current) {
+        setServicesLoading(false);
+      }
+      // Reset call identifier on completion
+      if (lastServiceCallRef.current === callId) {
+        lastServiceCallRef.current = "";
+      }
     }
   }, [
     coordinates,
@@ -543,6 +578,17 @@ const GalleApp: React.FC = () => {
   ]);
 
   const fetchPlaces = useCallback(async () => {
+    // Create a unique call identifier to prevent race conditions
+    const callId = `${coordinates?.lat}-${coordinates?.lng}-${searchLocation}`;
+
+    // Prevent duplicate calls
+    if (placesLoading || lastPlaceCallRef.current === callId) {
+      console.log("🔄 Places call skipped - duplicate or already loading");
+      return;
+    }
+
+    lastPlaceCallRef.current = callId;
+
     try {
       setPlacesLoading(true);
 
@@ -575,22 +621,59 @@ const GalleApp: React.FC = () => {
         `Fetching places for coordinates: ${lat}, ${lng} (${searchLocation})`
       );
       const groups = await fetchGroupedPlaces(lat, lng);
+
+      // Check if component is still mounted before updating state
+      if (!isMountedRef.current) {
+        console.log("🚫 Component unmounted, skipping places state update");
+        return;
+      }
+
       setGroupedPlaces(groups);
     } catch (error) {
       console.error("Fetch places error:", error);
-      setGroupedPlaces([]);
+      if (isMountedRef.current) {
+        setGroupedPlaces([]);
+      }
     } finally {
-      setPlacesLoading(false);
+      if (isMountedRef.current) {
+        setPlacesLoading(false);
+      }
+      // Reset call identifier on completion
+      if (lastPlaceCallRef.current === callId) {
+        lastPlaceCallRef.current = "";
+      }
     }
   }, [coordinates, searchLocation]);
 
   useEffect(() => {
-    fetchPlaces();
-  }, [fetchPlaces]);
+    // Skip if still in initial loading state
+    if (loading) return;
+
+    // Clear any existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Debounce the fetchPlaces call
+    debounceTimerRef.current = setTimeout(() => {
+      fetchPlaces();
+    }, 300);
+  }, [fetchPlaces, loading]);
 
   useEffect(() => {
-    fetchServices();
-  }, [fetchServices]);
+    // Skip if still in initial loading state
+    if (loading) return;
+
+    // Clear any existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Debounce the fetchServices call
+    debounceTimerRef.current = setTimeout(() => {
+      fetchServices();
+    }, 300);
+  }, [fetchServices, loading]);
 
   // Event handlers
   const handleTabChange = useCallback((newTab: string) => {
@@ -898,9 +981,6 @@ const GalleApp: React.FC = () => {
                     mainImageUrl: item.displayImage,
                     category: item.displayCategory,
                     prices: [], // Add empty prices array for compatibility
-                    averageRating: item.isProvider
-                      ? 0
-                      : (item as any).averageRating || 0, // Add actual rating for services
                     provider: null, // Add required provider field
                   }))}
                   maxItems={6}
@@ -959,9 +1039,6 @@ const GalleApp: React.FC = () => {
             mainImageUrl: item.displayImage,
             category: item.displayCategory,
             prices: [], // Add empty prices array for compatibility
-            averageRating: item.isProvider
-              ? 0
-              : (item as any).averageRating || 0, // Add actual rating for services
             provider: null, // Add required provider field
           }))}
           onItemPress={(itemId) => {

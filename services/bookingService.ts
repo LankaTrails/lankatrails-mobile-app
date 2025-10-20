@@ -29,3 +29,12 @@ export const getAllBookings = async ( tripId : number): Promise<ApiResponse<Book
         throw error;
     }
 };
+
+export const cancelBooking = async (tripItemId: number): Promise<ApiResponse<string>> => {
+    try {
+        const response = await api.delete<ApiResponse<string>>(`/tourist/booking/${tripItemId}/cancel`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};

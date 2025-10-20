@@ -83,6 +83,12 @@ export interface TripItem {
     noOfUnits: number;
     numberOfAdults: number;
     numberOfChildren: number;
+    booking_config_id?: number;
+    bookingConfigId?: number;
+    bookingType?: string;
+    duration?: string;
+    description?: string;
+    price?: number;
 }
 
 export interface TripInvitationRequest {
