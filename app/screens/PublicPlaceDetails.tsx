@@ -245,8 +245,8 @@ const PublicPlaceDetails = () => {
 
   const getPriceLevel = useCallback((level?: number) => {
     if (!level) return "";
-    return "$".repeat(level);
-  }, []);
+    return "Rs.".repeat(level);
+  };
 
   // Loading state
   if (loading) {

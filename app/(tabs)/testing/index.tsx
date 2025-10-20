@@ -250,7 +250,7 @@
 //             <View className="flex-row items-center">
 //               <Ionicons name="cash" size={24} color="#008080" />
 //               <Text className="ml-2 text-gray-700">
-//                 Price Level: {"$".repeat(placeDetail.priceLevel)}
+//                 Price Level: {"Rs.".repeat(placeDetail.priceLevel)}
 //               </Text>
 //             </View>
 //           )}
@@ -274,36 +274,36 @@
 //                 {placeDetail.types?.join(", ").replace(/_/g, " ") || "Public Place"}
 //               </Text>
 //             </View>
-            
+
 //             {/* Features Grid */}
 //             <View className="mt-3">
 //               <Text className="font-semibold text-gray-700 mb-2">Features:</Text>
 //               <View className="flex-row flex-wrap">
-//                 {placeDetail.openingHours && 
+//                 {placeDetail.openingHours &&
 //                   renderFeature(
 //                     <Clock size={16} color="#008080" />,
 //                     "Open Now",
 //                     placeDetail.openingHours.openNow ? "Yes" : "No"
 //                   )
 //                 }
-                
-//                 {placeDetail.currentOpeningHours && 
+
+//                 {placeDetail.currentOpeningHours &&
 //                   renderFeature(
 //                     <Clock size={16} color="#008080" />,
 //                     "Hours",
 //                     "See schedule"
 //                   )
 //                 }
-                
-//                 {placeDetail.utcOffsetMinutes !== undefined && 
+
+//                 {placeDetail.utcOffsetMinutes !== undefined &&
 //                   renderFeature(
 //                     <Clock size={16} color="#008080" />,
 //                     "Timezone",
 //                     `UTC${placeDetail.utcOffsetMinutes >= 0 ? '+' : ''}${placeDetail.utcOffsetMinutes/60}`
 //                   )
 //                 }
-                
-//                 {placeDetail.popularity && 
+
+//                 {placeDetail.popularity &&
 //                   renderFeature(
 //                     <Users size={16} color="#008080" />,
 //                     "Popularity",
@@ -328,7 +328,7 @@
 //                   <Text className="text-gray-600 font-medium">{day.split(": ")[1]}</Text>
 //                 </View>
 //               ))}
-              
+
 //               {placeDetail.currentOpeningHours.periods && (
 //                 <View className="mt-3">
 //                   <Text className="font-semibold text-gray-700 mb-2">Current Week:</Text>
@@ -417,13 +417,13 @@
 //             <Text className="text-2xl font-semibold text-gray-500 mb-4">
 //               Reviews
 //             </Text>
-            
+
 //             {placeDetail.reviews.slice(0, 3).map((review, index) => (
 //               <View key={index} className="bg-white rounded-lg p-4 mb-3 shadow-sm">
 //                 <View className="flex-row items-center mb-2">
 //                   {review.profilePhotoUrl ? (
-//                     <Image 
-//                       source={{ uri: review.profilePhotoUrl }} 
+//                     <Image
+//                       source={{ uri: review.profilePhotoUrl }}
 //                       className="w-10 h-10 rounded-full mr-3"
 //                     />
 //                   ) : (
@@ -446,15 +446,15 @@
 //                     </View>
 //                   </View>
 //                 </View>
-                
+
 //                 <Text className="text-gray-700 mt-2">
 //                   {review.text}
 //                 </Text>
 //               </View>
 //             ))}
-            
+
 //             {placeDetail.reviews.length > 3 && (
-//               <TouchableOpacity 
+//               <TouchableOpacity
 //                 className="bg-primary py-3 rounded-lg items-center mt-2"
 //                 onPress={() => {
 //                   // Navigate to full reviews page

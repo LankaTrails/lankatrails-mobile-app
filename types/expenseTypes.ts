@@ -21,6 +21,7 @@ export interface ExpenseDTO {
   shares?: ExpenseShare[];
   expenseDateTime?: string;
   createdByParticipant?: TripParticipant;
+  isThroughApp: boolean;
   totalExpenseAmount: number;
 }
 
@@ -46,6 +47,7 @@ export interface ExpenseResponseDTO {
   expenseDateTime?: string;
   createdByParticipant?: TripParticipant;
   shares?: ExpenseShare[];
+  isThroughApp: boolean;
 }
 
 // Utility types for UI components

@@ -63,7 +63,7 @@ export default function TripDetailsModal({
   const [endDate, setEndDate] = useState(
     initialDetails?.endDate || new Date(Date.now() + 24 * 60 * 60 * 1000)
   );
-  const [currency, setCurrency] = useState(initialDetails?.currency || "USD");
+  const [currency, setCurrency] = useState(initialDetails?.currency || "LKR");
   const [title, setTitle] = useState(initialDetails?.title || tripTitle || "");
   const [showCurrencySelector, setShowCurrencySelector] = useState(false);
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
@@ -115,14 +115,15 @@ export default function TripDetailsModal({
       setNumberOfAdults(initialDetails.numberOfAdults || 1);
       setNumberOfChildren(initialDetails.numberOfChildren || 0);
       setStartDate(initialDetails.startDate || new Date());
-      setEndDate(initialDetails.endDate || new Date(Date.now() + 24 * 60 * 60 * 1000));
+      setEndDate(
+        initialDetails.endDate || new Date(Date.now() + 24 * 60 * 60 * 1000)
+      );
       setCurrency(initialDetails.currency || "LKR");
       setTitle(initialDetails.title || "");
     }
   }, [initialDetails, visible]);
 
   const currencies = [
-    { code: "USD", symbol: "$", name: "US Dollar" },
     { code: "LKR", symbol: "Rs.", name: "Sri Lankan Rupee" },
     { code: "EUR", symbol: "€", name: "Euro" },
     { code: "GBP", symbol: "£", name: "British Pound" },

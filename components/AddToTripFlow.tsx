@@ -2844,7 +2844,7 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
             <View key={index} style={styles.pricingRow}>
               <Text style={styles.pricingLabel}>{item.label}</Text>
               <Text style={styles.pricingAmount}>
-                ${item.amount.toFixed(2)}
+                LKR {item.amount.toFixed(2)}
               </Text>
             </View>
           ))}
@@ -2854,7 +2854,7 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
           <View style={styles.pricingRow}>
             <Text style={styles.pricingTotalLabel}>Total Amount</Text>
             <Text style={styles.pricingTotalAmount}>
-              ${pricing.totalPrice.toFixed(2)}
+              LKR {pricing.totalPrice.toFixed(2)}
             </Text>
           </View>
 
@@ -2869,7 +2869,7 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
                       : "Advance Payment"}
                   </Text>
                   <Text style={styles.depositAmount}>
-                    ${pricing.depositAmount.toFixed(2)}
+                    LKR {pricing.depositAmount.toFixed(2)}
                   </Text>
                 </View>
                 <Text style={styles.depositNote}>
@@ -2949,7 +2949,7 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
             <View style={styles.confirmationRow}>
               <Text style={styles.confirmationLabel}>Total Price:</Text>
               <Text style={styles.confirmationPriceValue}>
-                ${calculatePricing()?.totalPrice.toFixed(2)}
+                LKR {calculatePricing()?.totalPrice.toFixed(2)}
               </Text>
             </View>
             {calculatePricing()?.depositAmount &&
@@ -2961,7 +2961,7 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
                       : "Advance Payment:"}
                   </Text>
                   <Text style={styles.confirmationDepositValue}>
-                    ${calculatePricing()?.depositAmount.toFixed(2)}
+                    LKR {calculatePricing()?.depositAmount.toFixed(2)}
                   </Text>
                 </View>
               )}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,11 +11,11 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import InputField from './InputField';
-import { theme } from '../app/theme';
-import { BudgetCategorys } from '@/types/budgetTypes';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import InputField from "./InputField";
+import { theme } from "../app/theme";
+import { BudgetCategorys } from "@/types/budgetTypes";
 
 interface BudgetCategory {
   id: string;
@@ -70,25 +70,30 @@ export default function AddExpenseModal({
   onSubmit,
   initialData,
 }: AddExpenseModalProps) {
-  const [expenseName, setExpenseName] = useState('');
-  const [selectedCategoryId, setSelectedCategoryId] = useState('');
-  const [selectedPayerId, setSelectedPayerId] = useState<number | undefined>(undefined);
-  const [collaboratorShares, setCollaboratorShares] = useState<CollaboratorShare[]>([]);
+  const [expenseName, setExpenseName] = useState("");
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [selectedPayerId, setSelectedPayerId] = useState<number | undefined>(
+    undefined
+  );
+  const [collaboratorShares, setCollaboratorShares] = useState<
+    CollaboratorShare[]
+  >([]);
   const [showPayerDropdown, setShowPayerDropdown] = useState(false);
-  const [showCollaboratorDropdown, setShowCollaboratorDropdown] = useState(false);
+  const [showCollaboratorDropdown, setShowCollaboratorDropdown] =
+    useState(false);
 
   // Get all available categories (both with and without budget limits) plus "Other"
   const availableCategories = [
     ...budgetCategories, // Include all categories regardless of budget allocation
     {
-      id: 'OTHER',
-      name: 'Other',
+      id: "OTHER",
+      name: "Other",
       allocated: 0,
       spent: 0,
-      color: '#6B7280',
-      icon: '💼',
-      budgetCategory: BudgetCategorys.MISCELLANEOUS
-    }
+      color: "#6B7280",
+      icon: "💼",
+      budgetCategory: BudgetCategorys.MISCELLANEOUS,
+    },
   ];
 
   // Calculate total amount from all shares
@@ -102,15 +107,21 @@ export default function AddExpenseModal({
   // Reset form or populate with initial data when modal opens
   useEffect(() => {
     if (visible) {
+      console.log(
+        "[AddExpenseModal] Modal opened with initialData:",
+        initialData
+      );
       if (initialData) {
         // Populate form with initial data for editing
-        setExpenseName(initialData.name || '');
-        setSelectedCategoryId(initialData.categoryId || '');
+        console.log("[AddExpenseModal] Populating form with initial data");
+        setExpenseName(initialData.name || "");
+        setSelectedCategoryId(initialData.categoryId || "");
         setCollaboratorShares(initialData.collaboratorShares || []);
       } else {
         // Reset form for new expense
-        setExpenseName('');
-        setSelectedCategoryId('');
+        console.log("[AddExpenseModal] Resetting form for new expense");
+        setExpenseName("");
+        setSelectedCategoryId("");
         setSelectedPayerId(undefined);
         setCollaboratorShares([]);
       }
@@ -120,48 +131,60 @@ export default function AddExpenseModal({
   }, [visible, initialData]);
 
   const addCollaboratorShare = (participantId: number) => {
-    if (!collaboratorShares.some(share => share.participantId === participantId)) {
-      setCollaboratorShares([...collaboratorShares, { participantId, amount: '' }]);
+    if (
+      !collaboratorShares.some((share) => share.participantId === participantId)
+    ) {
+      setCollaboratorShares([
+        ...collaboratorShares,
+        { participantId, amount: "" },
+      ]);
     }
     setShowCollaboratorDropdown(false);
   };
 
   const updateCollaboratorAmount = (participantId: number, amount: string) => {
-    setCollaboratorShares(prev =>
-      prev.map(share =>
+    setCollaboratorShares((prev) =>
+      prev.map((share) =>
         share.participantId === participantId ? { ...share, amount } : share
       )
     );
   };
 
   const removeCollaboratorShare = (participantId: number) => {
-    setCollaboratorShares(prev =>
-      prev.filter(share => share.participantId !== participantId)
+    setCollaboratorShares((prev) =>
+      prev.filter((share) => share.participantId !== participantId)
     );
   };
 
   const getCollaboratorName = (participantId: number) => {
-    const participant = tripParticipants.find(p => p.participantId === participantId);
-    return participant ? `${participant.firstName} ${participant.lastName}` : 'Unknown';
+    const participant = tripParticipants.find(
+      (p) => p.participantId === participantId
+    );
+    return participant
+      ? `${participant.firstName} ${participant.lastName}`
+      : "Unknown";
   };
 
   const validateAndSubmit = () => {
     // Validate required fields
     if (!expenseName.trim()) {
-      Alert.alert('Error', 'Please enter an expense name');
+      Alert.alert("Error", "Please enter an expense name");
       return;
     }
 
     if (!selectedCategoryId) {
-      Alert.alert('Error', 'Please select a category');
+      Alert.alert("Error", "Please select a category");
       return;
     }
 
     // Calculate total amount from shares
     const totalAmount = calculateTotalAmount();
-    
+
     if (totalAmount <= 0) {
-      Alert.alert('Error', 'Please add at least one expense share with a valid amount');
+      Alert.alert(
+        "Error",
+        "Please add at least one expense share with a valid amount"
+      );
       return;
     }
 
@@ -172,7 +195,12 @@ export default function AddExpenseModal({
       if (share.amount.trim()) {
         const shareAmount = parseFloat(share.amount);
         if (isNaN(shareAmount) || shareAmount <= 0) {
-          Alert.alert('Error', `Please enter a valid amount for ${getCollaboratorName(share.participantId)}`);
+          Alert.alert(
+            "Error",
+            `Please enter a valid amount for ${getCollaboratorName(
+              share.participantId
+            )}`
+          );
           return;
         }
         validShares.push({ ...share, amount: shareAmount.toString() });
@@ -180,7 +208,10 @@ export default function AddExpenseModal({
     }
 
     if (validShares.length === 0) {
-      Alert.alert('Error', 'Please add at least one person with an expense amount');
+      Alert.alert(
+        "Error",
+        "Please add at least one person with an expense amount"
+      );
       return;
     }
 
@@ -196,7 +227,7 @@ export default function AddExpenseModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide">
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={styles.overlay}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
@@ -216,9 +247,11 @@ export default function AddExpenseModal({
         </TouchableWithoutFeedback>
 
         <View style={styles.modal}>
-          <Text style={styles.modalTitle}>Add Expense</Text>
-          
-          <ScrollView 
+          <Text style={styles.modalTitle}>
+            {initialData ? "Edit Expense" : "Add Expense"}
+          </Text>
+
+          <ScrollView
             showsVerticalScrollIndicator={false}
             scrollEnabled={!showPayerDropdown && !showCollaboratorDropdown}
             keyboardShouldPersistTaps="handled"
@@ -236,8 +269,8 @@ export default function AddExpenseModal({
             <View style={styles.dropdownContainer}>
               <Text style={styles.dropdownLabel}>Category</Text>
               <View style={styles.categoriesContainer}>
-                <ScrollView 
-                  horizontal 
+                <ScrollView
+                  horizontal
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.categoriesScrollContainer}
                 >
@@ -246,15 +279,19 @@ export default function AddExpenseModal({
                       key={category.id}
                       style={[
                         styles.categoryChip,
-                        selectedCategoryId === category.id && styles.selectedCategoryChip
+                        selectedCategoryId === category.id &&
+                          styles.selectedCategoryChip,
                       ]}
                       onPress={() => setSelectedCategoryId(category.id)}
                     >
-                      <Text style={styles.categoryChipIcon}>{category.icon}</Text>
+                      <Text style={styles.categoryChipIcon}>
+                        {category.icon}
+                      </Text>
                       <Text
                         style={[
                           styles.categoryChipText,
-                          selectedCategoryId === category.id && styles.selectedCategoryChipText
+                          selectedCategoryId === category.id &&
+                            styles.selectedCategoryChipText,
                         ]}
                       >
                         {category.name}
@@ -269,8 +306,8 @@ export default function AddExpenseModal({
             <View style={styles.dropdownContainer}>
               {showPayerDropdown && (
                 <View style={[styles.dropdownList, { zIndex: 3500 }]}>
-                  <ScrollView 
-                    style={styles.dropdownScroll} 
+                  <ScrollView
+                    style={styles.dropdownScroll}
                     nestedScrollEnabled={true}
                     showsVerticalScrollIndicator={true}
                     bounces={false}
@@ -280,13 +317,23 @@ export default function AddExpenseModal({
                     {tripParticipants.map((participant) => (
                       <TouchableOpacity
                         key={participant.participantId}
-                        style={[styles.dropdownItem, selectedPayerId === participant.participantId && styles.selectedDropdownItem]}
+                        style={[
+                          styles.dropdownItem,
+                          selectedPayerId === participant.participantId &&
+                            styles.selectedDropdownItem,
+                        ]}
                         onPress={() => {
                           setSelectedPayerId(participant.participantId);
                           setShowPayerDropdown(false);
                         }}
                       >
-                        <Text style={[styles.dropdownItemText, selectedPayerId === participant.participantId && styles.selectedDropdownText]}>
+                        <Text
+                          style={[
+                            styles.dropdownItemText,
+                            selectedPayerId === participant.participantId &&
+                              styles.selectedDropdownText,
+                          ]}
+                        >
                           {participant.firstName} {participant.lastName}
                         </Text>
                         <Text style={styles.roleText}>{participant.role}</Text>
@@ -300,7 +347,9 @@ export default function AddExpenseModal({
             {/* Expense Sharing Section */}
             <View style={styles.collaboratorsSection}>
               <View style={styles.collaboratorsHeader}>
-                <Text style={styles.dropdownLabel}>Who spent money on this expense?</Text>
+                <Text style={styles.dropdownLabel}>
+                  Who spent money on this expense?
+                </Text>
                 <TouchableOpacity
                   style={styles.addCollaboratorButton}
                   onPress={() => {
@@ -308,48 +357,66 @@ export default function AddExpenseModal({
                     setShowCollaboratorDropdown(!showCollaboratorDropdown);
                   }}
                 >
-                  <Ionicons name="add-circle" size={24} color={theme.colors.primary} />
+                  <Ionicons
+                    name="add-circle"
+                    size={24}
+                    color={theme.colors.primary}
+                  />
                 </TouchableOpacity>
               </View>
 
               {showCollaboratorDropdown && (
                 <View style={[styles.dropdownList, { zIndex: 3000 }]}>
-                  <ScrollView 
-                    style={styles.dropdownScroll} 
+                  <ScrollView
+                    style={styles.dropdownScroll}
                     nestedScrollEnabled={true}
                     showsVerticalScrollIndicator={true}
                     bounces={false}
                     scrollEventThrottle={16}
                     keyboardShouldPersistTaps="handled"
                   >
-                    {tripParticipants.filter(p => 
-                      !collaboratorShares.some(share => share.participantId === p.participantId)
-                    ).map((participant) => (
-                      <TouchableOpacity
-                        key={participant.participantId}
-                        style={styles.dropdownItem}
-                        onPress={() => addCollaboratorShare(participant.participantId)}
-                      >
-                        <Text style={styles.dropdownItemText}>
-                          {participant.firstName} {participant.lastName}
-                        </Text>
-                        <Text style={styles.roleText}>{participant.role}</Text>
-                      </TouchableOpacity>
-                    ))}
+                    {tripParticipants
+                      .filter(
+                        (p) =>
+                          !collaboratorShares.some(
+                            (share) => share.participantId === p.participantId
+                          )
+                      )
+                      .map((participant) => (
+                        <TouchableOpacity
+                          key={participant.participantId}
+                          style={styles.dropdownItem}
+                          onPress={() =>
+                            addCollaboratorShare(participant.participantId)
+                          }
+                        >
+                          <Text style={styles.dropdownItemText}>
+                            {participant.firstName} {participant.lastName}
+                          </Text>
+                          <Text style={styles.roleText}>
+                            {participant.role}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
                   </ScrollView>
                 </View>
               )}
 
               {/* Expense Shares */}
               {collaboratorShares.map((share) => (
-                <View key={share.participantId} style={styles.collaboratorShare}>
+                <View
+                  key={share.participantId}
+                  style={styles.collaboratorShare}
+                >
                   <View style={styles.collaboratorInfo}>
                     <Text style={styles.collaboratorName}>
                       {getCollaboratorName(share.participantId)}
                     </Text>
                     <TouchableOpacity
                       style={styles.removeCollaboratorButton}
-                      onPress={() => removeCollaboratorShare(share.participantId)}
+                      onPress={() =>
+                        removeCollaboratorShare(share.participantId)
+                      }
                     >
                       <Ionicons name="close-circle" size={20} color="#EF4444" />
                     </TouchableOpacity>
@@ -357,7 +424,9 @@ export default function AddExpenseModal({
                   <InputField
                     label={`Amount (${currencyType})`}
                     value={share.amount}
-                    onChange={(value) => updateCollaboratorAmount(share.participantId, value)}
+                    onChange={(value) =>
+                      updateCollaboratorAmount(share.participantId, value)
+                    }
                     placeholder="0.00"
                     keyboardType="numeric"
                     icon="cash-outline"
@@ -389,8 +458,13 @@ export default function AddExpenseModal({
             <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.saveButton} onPress={validateAndSubmit}>
-              <Text style={styles.saveButtonText}>Add Expense</Text>
+            <TouchableOpacity
+              style={styles.saveButton}
+              onPress={validateAndSubmit}
+            >
+              <Text style={styles.saveButtonText}>
+                {initialData ? "Update Expense" : "Add Expense"}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -412,7 +486,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
     padding: 20,
-    maxHeight: '90%',
+    maxHeight: "90%",
     minHeight: 650,
   },
   modalTitle: {
@@ -425,29 +499,29 @@ const styles = StyleSheet.create({
   dropdownContainer: {
     marginBottom: 16,
     zIndex: 1000,
-    position: 'relative',
+    position: "relative",
   },
   dropdownLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: "600",
+    color: "#374151",
     marginBottom: 8,
   },
   dropdownButton: {
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: "#D1D5DB",
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   dropdownContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 16,
   },
   selectedItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   categoryIcon: {
     fontSize: 18,
@@ -455,28 +529,28 @@ const styles = StyleSheet.create({
   },
   selectedText: {
     fontSize: 16,
-    color: '#111827',
-    fontWeight: '500',
+    color: "#111827",
+    fontWeight: "500",
   },
   placeholderText: {
     fontSize: 16,
-    color: '#9CA3AF',
+    color: "#9CA3AF",
   },
   dropdownList: {
-    position: 'absolute',
-    top: '100%',
+    position: "absolute",
+    top: "100%",
     left: 0,
     right: 0,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: "#D1D5DB",
     borderTopWidth: 0,
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
     maxHeight: 250, // Increased from 200 to accommodate all categories
     zIndex: 2000,
     elevation: 10,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -488,129 +562,129 @@ const styles = StyleSheet.create({
   dropdownItem: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    borderBottomColor: "#F3F4F6",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   selectedDropdownItem: {
-    backgroundColor: '#F0F9FF',
+    backgroundColor: "#F0F9FF",
   },
   dropdownItemText: {
     fontSize: 16,
-    color: '#111827',
+    color: "#111827",
     flex: 1,
   },
   selectedDropdownText: {
-    color: '#0EA5E9',
-    fontWeight: '600',
+    color: "#0EA5E9",
+    fontWeight: "600",
   },
   budgetText: {
     fontSize: 12,
-    color: '#6B7280',
-    fontStyle: 'italic',
+    color: "#6B7280",
+    fontStyle: "italic",
   },
   roleText: {
     fontSize: 12,
-    color: '#6B7280',
-    fontStyle: 'italic',
+    color: "#6B7280",
+    fontStyle: "italic",
   },
   collaboratorsSection: {
     marginTop: 8,
   },
   collaboratorsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 12,
   },
   addCollaboratorButton: {
     padding: 4,
   },
   collaboratorShare: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: "#F9FAFB",
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: "#E5E7EB",
   },
   collaboratorInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 12,
   },
   collaboratorName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: "600",
+    color: "#111827",
   },
   removeCollaboratorButton: {
     padding: 4,
   },
   noCollaboratorsText: {
     fontSize: 14,
-    color: '#6B7280',
-    fontStyle: 'italic',
-    textAlign: 'center',
+    color: "#6B7280",
+    fontStyle: "italic",
+    textAlign: "center",
     padding: 16,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: "#F9FAFB",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: "#E5E7EB",
   },
   totalCalculationContainer: {
-    backgroundColor: '#F0F9FF',
+    backgroundColor: "#F0F9FF",
     borderRadius: 12,
     padding: 16,
     marginTop: 12,
     borderWidth: 1,
-    borderColor: '#0EA5E9',
+    borderColor: "#0EA5E9",
   },
   totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   totalLabel: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0EA5E9',
+    fontWeight: "600",
+    color: "#0EA5E9",
   },
   totalAmount: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0EA5E9',
+    fontWeight: "bold",
+    color: "#0EA5E9",
   },
   buttonContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginTop: 20,
     gap: 12,
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#F3F4F6",
     paddingVertical: 16,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
   cancelButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#6B7280',
+    fontWeight: "600",
+    color: "#6B7280",
   },
   saveButton: {
     flex: 1,
     backgroundColor: theme.colors.primary,
     paddingVertical: 16,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
   saveButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   // Category chip styles
   categoriesContainer: {
@@ -620,14 +694,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   categoryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: "#F9FAFB",
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: "#E5E7EB",
     marginRight: 8,
     minWidth: 80,
   },
@@ -641,10 +715,10 @@ const styles = StyleSheet.create({
   },
   categoryChipText: {
     fontSize: 14,
-    color: '#374151',
-    fontWeight: '500',
+    color: "#374151",
+    fontWeight: "500",
   },
   selectedCategoryChipText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
 });
