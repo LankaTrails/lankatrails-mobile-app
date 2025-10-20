@@ -203,7 +203,7 @@ const PublicPlaceDetails = () => {
 
   const getPriceLevel = (level?: number) => {
     if (!level) return "";
-    return "$".repeat(level);
+    return "Rs.".repeat(level);
   };
 
   // Loading state
