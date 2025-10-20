@@ -310,16 +310,6 @@ export default function Profile() {
             </View>
             <Icon name="chevron-forward" size={20} color="#008080" />
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => router.push("/screens/CancelRequests"as any)}
-          >
-            <View style={styles.actionButtonContent}>
-              <Icon name="close-circle" size={20} color="#008080" />
-              <Text style={styles.actionButtonText}>Cancel Requests</Text>
-            </View>
-            <Icon name="chevron-forward" size={20} color="#008080" />
-          </TouchableOpacity>
        <TouchableOpacity
         style={styles.actionButton}
         onPress={() => router.push("/screens/ReportsAndIssues" as any)}

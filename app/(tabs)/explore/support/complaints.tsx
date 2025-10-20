@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import React, { useState } from "react";
@@ -14,16 +14,18 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { submitGeneralComplaint } from "@/services/complaintService";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-function complaints() {
+function Complaints() {
   const [complaintHeading, setComplaintHeading] = useState("");
   const [userComplaint, setUserComplaint] = useState("");
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const MAX_IMAGE_SIZE_MB = 5;
 
-  const handleComplaintSubmit = () => {
+  const handleComplaintSubmit = async () => {
     if (complaintHeading.trim() === "" || userComplaint.trim() === "") {
       Alert.alert(
         "Incomplete Information",
@@ -33,35 +35,62 @@ function complaints() {
       return;
     }
 
-    if (Platform.OS === "android") {
-      ToastAndroid.show(
-        "Complaint submitted successfully! We'll review it shortly.",
-        ToastAndroid.LONG
-      );
-    } else {
+    setIsSubmitting(true);
+
+    try {
+      // Now we can include images - they will be uploaded by the service
+      const complaintData = {
+        title: complaintHeading.trim(),
+        description: userComplaint.trim(),
+        images: selectedImages // Pass the actual image URIs
+      };
+
+      console.log('Submitting complaint:', complaintData);
+      const response = await submitGeneralComplaint(complaintData);
+
+      if (response.success) {
+        // Reset form
+        setComplaintHeading("");
+        setUserComplaint("");
+        setSelectedImages([]);
+
+        if (Platform.OS === "android") {
+          ToastAndroid.show(
+            "Complaint submitted successfully! We'll review it shortly.",
+            ToastAndroid.LONG
+          );
+          setTimeout(() => {
+            router.back();
+          }, 2000);
+        } else {
+          Alert.alert(
+            "Complaint Submitted",
+            "Thank you for your feedback! We'll review your complaint and get back to you soon.",
+            [
+              {
+                text: "OK",
+                onPress: () => router.back(),
+                style: "default",
+              },
+            ]
+          );
+        }
+      } else {
+        Alert.alert(
+          "Submission Failed",
+          response.message || "Failed to submit complaint. Please try again.",
+          [{ text: "OK", style: "default" }]
+        );
+      }
+    } catch (error: any) {
+      console.error('Error submitting complaint:', error);
       Alert.alert(
-        "Complaint Submitted",
-        "Thank you for your feedback! We'll review your complaint and get back to you soon.",
-        [
-          {
-            text: "OK",
-            onPress: () => router.back(),
-            style: "default",
-          },
-        ]
+        "Submission Error",
+        "An error occurred while submitting your complaint. Please check your internet connection and try again.",
+        [{ text: "OK", style: "default" }]
       );
-    }
-
-    // Reset form
-    setComplaintHeading("");
-    setUserComplaint("");
-    setSelectedImages([]);
-
-    // Navigate back after a short delay on Android
-    if (Platform.OS === "android") {
-      setTimeout(() => {
-        router.back();
-      }, 2000);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -157,7 +186,7 @@ function complaints() {
             </Text>
           </View>
           <Text className="text-sm text-gray-600 leading-5">
-            Help us improve by reporting any issues you've encountered. Your
+            Help us improve by reporting any issues you&apos;ve encountered. Your
             feedback is valuable to us.
           </Text>
         </View>
@@ -312,9 +341,12 @@ function complaints() {
         <View className="mx-4 mt-2">
           <TouchableOpacity
             onPress={handleComplaintSubmit}
-            className="bg-primary py-4 rounded-xl items-center shadow-sm"
+            disabled={isSubmitting}
+            className={`py-4 rounded-xl items-center shadow-sm ${
+              isSubmitting ? "bg-gray-400" : "bg-primary"
+            }`}
             style={{
-              shadowColor: "#008080",
+              shadowColor: isSubmitting ? "#9CA3AF" : "#008080",
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.2,
               shadowRadius: 4,
@@ -322,7 +354,11 @@ function complaints() {
             }}
           >
             <Text className="text-white text-lg font-semibold">
-              Submit Complaint
+              {isSubmitting 
+                ? selectedImages.length > 0 
+                  ? "Uploading images..." 
+                  : "Submitting..." 
+                : "Submit Complaint"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -331,4 +367,4 @@ function complaints() {
   );
 }
 
-export default complaints;
+export default Complaints;
