@@ -39,8 +39,10 @@ const convertPlaceToCardItem = (place: Place): CardItem => ({
       ? Number(place.rating)
       : 0,
   image: place.photos?.[0]
-    ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${GOOGLE_PLACES_API_KEY}`
-    : "",
+    ? place.photos[0].photo_reference.startsWith('http') 
+      ? place.photos[0].photo_reference // Direct URL
+      : `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${GOOGLE_PLACES_API_KEY}` // Google API
+    : "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop", // Fallback image
 });
 
 export const PlaceGrid: React.FC<PlaceGridProps> = ({
