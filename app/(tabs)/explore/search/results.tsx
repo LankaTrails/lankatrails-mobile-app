@@ -58,6 +58,129 @@ const GOOGLE_PLACES_API_KEY = "AIzaSyA47Q-I515EK0DU4pvk5jgUcatYcdnf8cY";
 const CARD_WIDTH = (width - 48) / 2;
 const DEFAULT_COORDINATES = { lat: 6.0329, lng: 80.2168 }; // Galle coordinates
 
+// Sample places data for testing (using real place images from Unsplash)
+const SAMPLE_PLACES_DATA: PlaceGroup[] = [
+  {
+    group: "Temples & Religious Sites",
+    places: [
+      {
+        place_id: "ChIJ1234567890",
+        name: "Temple of the Sacred Tooth Relic",
+        vicinity: "Kandy",
+        rating: 4.5,
+        photos: [{
+          photo_reference: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop"
+        }]
+      },
+      {
+        place_id: "ChIJ0987654321",
+        name: "Gangaramaya Temple",
+        vicinity: "Colombo",
+        rating: 4.3,
+        photos: [{
+          photo_reference: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=400&h=300&fit=crop"
+        }]
+      },
+      {
+        place_id: "ChIJ5555555555",
+        name: "Ruwanwelisaya Stupa",
+        vicinity: "Anuradhapura",
+        rating: 4.6,
+        photos: [{
+          photo_reference: "https://images.unsplash.com/photo-1540979388789-6cee28a1cdc9?w=400&h=300&fit=crop"
+        }]
+      }
+    ]
+  },
+  {
+    group: "Historical Sites",
+    places: [
+      {
+        place_id: "ChIJ1111111111",
+        name: "Sigiriya Rock Fortress",
+        vicinity: "Dambulla",
+        rating: 4.7,
+        photos: [{
+          photo_reference: "https://images.unsplash.com/photo-1566552881560-0be862a7c445?w=400&h=300&fit=crop"
+        }]
+      },
+      {
+        place_id: "ChIJ2222222222",
+        name: "Galle Dutch Fort",
+        vicinity: "Galle",
+        rating: 4.4,
+        photos: [{
+          photo_reference: "https://images.unsplash.com/photo-1571115764595-644a1f56a55c?w=400&h=300&fit=crop"
+        }]
+      },
+      {
+        place_id: "ChIJ6666666666",
+        name: "Polonnaruwa Ancient City",
+        vicinity: "Polonnaruwa",
+        rating: 4.5,
+        photos: [{
+          photo_reference: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop"
+        }]
+      }
+    ]
+  },
+  {
+    group: "Beaches",
+    places: [
+      {
+        place_id: "ChIJ3333333333",
+        name: "Unawatuna Beach",
+        vicinity: "Galle",
+        rating: 4.2,
+        photos: [{
+          photo_reference: "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400&h=300&fit=crop"
+        }]
+      },
+      {
+        place_id: "ChIJ4444444444",
+        name: "Mirissa Beach",
+        vicinity: "Mirissa",
+        rating: 4.6,
+        photos: [{
+          photo_reference: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400&h=300&fit=crop"
+        }]
+      },
+      {
+        place_id: "ChIJ7777777777",
+        name: "Bentota Beach",
+        vicinity: "Bentota",
+        rating: 4.3,
+        photos: [{
+          photo_reference: "https://images.unsplash.com/photo-1540979388789-6cee28a1cdc9?w=400&h=300&fit=crop"
+        }]
+      }
+    ]
+  },
+  {
+    group: "Waterfalls & Nature",
+    places: [
+      {
+        place_id: "ChIJ8888888888",
+        name: "Sekumpul Waterfall",
+        vicinity: "Ella",
+        rating: 4.8,
+        photos: [{
+          photo_reference: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop"
+        }]
+      },
+      {
+        place_id: "ChIJ9999999999",
+        name: "Horton Plains National Park",
+        vicinity: "Nuwara Eliya",
+        rating: 4.4,
+        photos: [{
+          photo_reference: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop"
+        }]
+      }
+    ]
+  }
+];
+
 // Types
 type Place = {
   place_id: string;
@@ -591,36 +714,58 @@ const GalleApp: React.FC = () => {
 
     try {
       setPlacesLoading(true);
+      console.log("🏛️ Starting to fetch places...");
 
       let lat, lng;
 
       if (coordinates) {
         lat = coordinates.lat;
         lng = coordinates.lng;
+        console.log("📍 Using provided coordinates:", { lat, lng });
       } else {
         try {
+          console.log("🔍 Geocoding location:", searchLocation);
           const geocodedLocation = await geocodeLocation(searchLocation);
           if (geocodedLocation) {
             lat = geocodedLocation.lat;
             lng = geocodedLocation.lng;
+            console.log("✅ Geocoded successfully:", { lat, lng });
           } else {
+            console.warn("⚠️ Geocoding failed, using default coordinates");
             lat = DEFAULT_COORDINATES.lat;
             lng = DEFAULT_COORDINATES.lng;
           }
         } catch (geocodeError) {
-          console.error(
-            "Geocoding failed, using default coordinates:",
-            geocodeError
-          );
+          console.error("❌ Geocoding error:", geocodeError);
           lat = DEFAULT_COORDINATES.lat;
           lng = DEFAULT_COORDINATES.lng;
         }
       }
 
       console.log(
-        `Fetching places for coordinates: ${lat}, ${lng} (${searchLocation})`
+        `🔍 Fetching places for coordinates: ${lat}, ${lng} (${searchLocation})`
       );
-      const groups = await fetchGroupedPlaces(lat, lng);
+      
+      let groups: PlaceGroup[] = [];
+      
+      try {
+        groups = await fetchGroupedPlaces(lat, lng);
+        console.log("📊 Fetched place groups from API:", groups.length);
+        
+        // Check if API returned an error (like REQUEST_DENIED)
+        if (groups.length === 0) {
+          console.log("📝 API returned empty or error, using sample data");
+          groups = SAMPLE_PLACES_DATA;
+        }
+      } catch (apiError) {
+        console.warn("⚠️ API fetch failed, using sample data:", apiError);
+        groups = SAMPLE_PLACES_DATA;
+      }
+      
+      // Log details about each group
+      groups.forEach(group => {
+        console.log(`📍 ${group.group}: ${group.places.length} places`);
+      });
 
       // Check if component is still mounted before updating state
       if (!isMountedRef.current) {
@@ -629,8 +774,9 @@ const GalleApp: React.FC = () => {
       }
 
       setGroupedPlaces(groups);
+      console.log("✅ Places state updated successfully");
     } catch (error) {
-      console.error("Fetch places error:", error);
+      console.error("❌ Fetch places error:", error);
       if (isMountedRef.current) {
         setGroupedPlaces([]);
       }
@@ -844,11 +990,11 @@ const GalleApp: React.FC = () => {
   );
 
   const handlePlacePress = useCallback((placeId: string) => {
+    console.log("🎯 Navigating to place details:", placeId);
     router.push({
-      pathname: "/explore/places/[placeId]" as any,
+      pathname: "/(tabs)/explore/search/results" as any,
       params: {
-        placeId,
-        type: "public_place",
+        placeId: placeId,
       },
     });
   }, []);
@@ -865,6 +1011,8 @@ const GalleApp: React.FC = () => {
   );
 
   const renderPublicPlacesContent = () => {
+    console.log("🏛️ Rendering public places - loading:", placesLoading, "groups:", groupedPlaces.length);
+    
     if (placesLoading) {
       return <PlacesLoadingState />;
     }
@@ -874,6 +1022,8 @@ const GalleApp: React.FC = () => {
       ({ places }) => places.length > 0
     );
 
+    console.log("📊 Groups with places:", groupsWithPlaces.length);
+
     if (groupsWithPlaces.length === 0) {
       return (
         <View className="px-4 py-12">
@@ -881,8 +1031,17 @@ const GalleApp: React.FC = () => {
             No public places found for "{searchLocation}"
           </Text>
           <Text className="text-center text-gray-400 text-base mt-2">
-            Try searching for a different location
+            Try searching for a different location or check your internet connection
           </Text>
+          <TouchableOpacity
+            className="mt-4 bg-primary px-6 py-3 rounded-lg self-center"
+            onPress={() => {
+              console.log("🔄 Retry button pressed");
+              fetchPlaces();
+            }}
+          >
+            <Text className="text-white font-semibold">Try Again</Text>
+          </TouchableOpacity>
         </View>
       );
     }

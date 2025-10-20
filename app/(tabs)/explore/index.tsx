@@ -634,7 +634,7 @@ const LocationSearchScreen = () => {
               </View>
               <View className="flex-row items-center">
                 {/* <Text className="text-gray-500 text-lg" numberOfLines={1}>
-                  📍
+                  
                 </Text> */}
               </View>
             </TouchableOpacity>
