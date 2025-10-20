@@ -1120,7 +1120,7 @@ const GalleApp: React.FC = () => {
               <View key={category} className="mb-6">
                 <AnimatedCard delay={200 + index * 100}>
                   <View className="flex-row items-center justify-between mb-4">
-                    <Text className="text-lg font-bold text-gray-700">
+                    <Text className="text-xl font-bold text-gray-700">
                       {displayName}
                     </Text>
                     <View className="flex-row items-center">
@@ -1185,7 +1185,7 @@ const GalleApp: React.FC = () => {
     if (filteredItems.length === 0) {
       return (
         <View className="px-4 py-12">
-          <Text className="text-center text-gray-500 text-lg font-medium">
+          <Text className="text-center text-gray-500 text-xl font-medium">
             No {selectedTab} services found for "{searchLocation}"
           </Text>
           <Text className="text-center text-gray-400 text-base mt-2">
@@ -1329,7 +1329,7 @@ const GalleApp: React.FC = () => {
                         <View key={group} className="mb-6">
                           <AnimatedCard delay={300 + index * 100}>
                             <View className="flex-row items-center justify-between mb-4">
-                              <Text className="text-lg font-bold text-gray-700">
+                              <Text className="text-xl font-bold text-gray-700">
                                 {group}
                               </Text>
                               <View className="bg-gray-100 px-3 py-1 rounded-full">
