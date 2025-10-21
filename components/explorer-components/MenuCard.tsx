@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, Image, TouchableOpacity } from 'react-native';
-import { Star } from 'lucide-react-native';
+import React from "react";
+import { View, Text, Image, TouchableOpacity } from "react-native";
+import { Star } from "lucide-react-native";
 
 export type MenuItem = {
   id: number;
@@ -23,13 +23,16 @@ const MenuCard = ({ item, onPress }: MenuCardProps) => {
       activeOpacity={0.8}
       className="bg-white rounded-xl shadow-sm mb-4 overflow-hidden"
     >
-      <Image 
+      <Image
         source={item.image}
         className="w-full h-32 bg-gray-200"
         resizeMode="cover"
       />
       <View className="p-4">
-        <Text className="text-lg font-semibold text-gray-800 mb-1" numberOfLines={1}>
+        <Text
+          className="text-lg font-semibold text-gray-800 mb-1"
+          numberOfLines={1}
+        >
           {item.name}
         </Text>
         <Text className="text-sm text-gray-600 mb-2" numberOfLines={2}>
@@ -39,12 +42,10 @@ const MenuCard = ({ item, onPress }: MenuCardProps) => {
           <View className="flex-row items-center">
             <Star size={16} color="#f59e0b" fill="#f59e0b" />
             <Text className="text-sm text-gray-600 ml-1 font-medium">
-              {item.rating}
+              {item.rating.toFixed(1)}
             </Text>
           </View>
-          <Text className="text-lg font-bold text-teal-600">
-            {item.price}
-          </Text>
+          <Text className="text-lg font-bold text-teal-600">{item.price}</Text>
         </View>
       </View>
     </TouchableOpacity>

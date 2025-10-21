@@ -1,5 +1,8 @@
 import AddToTripButton from "@/components/AddToTripButtonNew";
-import { getPlaceDetails, getPlacePhotoUrl } from "@/services/googlePlacesService";
+import {
+  getPlaceDetails,
+  getPlacePhotoUrl,
+} from "@/services/googlePlacesService";
 import UnifiedSearchService from "@/services/unifiedSearchService";
 import { ServiceCategory } from "@/types/commonTypes";
 import { Service, ServiceSearchResponse } from "@/types/serviceTypes";
@@ -68,72 +71,84 @@ interface PlaceDetailsData {
 
 const PlaceDetailScreen = () => {
   const { placeId } = useLocalSearchParams<{ placeId: string }>();
-  const [placeDetails, setPlaceDetails] = useState<PlaceDetailsData | null>(null);
+  const [placeDetails, setPlaceDetails] = useState<PlaceDetailsData | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isFavourite, setIsFavourite] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
-  const [nearbyServices, setNearbyServices] = useState<ServiceSearchResponse[]>([]);
+  const [nearbyServices, setNearbyServices] = useState<ServiceSearchResponse[]>(
+    []
+  );
   const [servicesLoading, setServicesLoading] = useState(false);
 
   // Convert place to Service for AddToTripButton
-  const convertToService = useCallback((place: PlaceDetailsData): Service => ({
-    serviceId: parseInt(place.place_id.replace(/\D/g, ''), 10) || Math.floor(Math.random() * 10000),
-    serviceName: place.name,
-    category: "ACTIVITY" as const,
-    locations: [
-      {
-        locationId: null,
-        formattedAddress: place.formatted_address,
-        city: place.vicinity || "",
-        district: "",
-        province: "",
-        country: "Sri Lanka",
-        postalCode: "",
-        latitude: place.geometry.location.lat,
-        longitude: place.geometry.location.lng,
-      },
-    ],
-    prices: [],
-    mainImageUrl:
-      place.photos && place.photos.length > 0
-        ? getPlacePhotoUrl(place.photos[0].photo_reference, 800)
-        : "",
-    provider: null,
-  }), []);
+  const convertToService = useCallback(
+    (place: PlaceDetailsData): Service => ({
+      serviceId:
+        parseInt(place.place_id.replace(/\D/g, ""), 10) ||
+        Math.floor(Math.random() * 10000),
+      serviceName: place.name,
+      category: "ACTIVITY" as const,
+      locations: [
+        {
+          locationId: null,
+          formattedAddress: place.formatted_address,
+          city: place.vicinity || "",
+          district: "",
+          province: "",
+          country: "Sri Lanka",
+          postalCode: "",
+          latitude: place.geometry.location.lat,
+          longitude: place.geometry.location.lng,
+        },
+      ],
+      prices: [],
+      mainImageUrl:
+        place.photos && place.photos.length > 0
+          ? getPlacePhotoUrl(place.photos[0].photo_reference, 800)
+          : "",
+      provider: null,
+    }),
+    []
+  );
 
-  const fetchPlaceDetails = useCallback(async (isRefresh = false) => {
-    try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      setError(null);
+  const fetchPlaceDetails = useCallback(
+    async (isRefresh = false) => {
+      try {
+        if (isRefresh) {
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
+        setError(null);
 
-      if (!placeId) {
-        throw new Error("No place ID provided");
-      }
+        if (!placeId) {
+          throw new Error("No place ID provided");
+        }
 
-      console.log(`🔍 Fetching details for place: ${placeId}`);
-      const details = await getPlaceDetails(placeId);
-      
-      if (details) {
-        setPlaceDetails(details);
-        console.log(`✅ Place details loaded: ${details.name}`);
-      } else {
-        setError("Place not found");
+        console.log(`🔍 Fetching details for place: ${placeId}`);
+        const details = await getPlaceDetails(placeId);
+
+        if (details) {
+          setPlaceDetails(details);
+          console.log(`✅ Place details loaded: ${details.name}`);
+        } else {
+          setError("Place not found");
+        }
+      } catch (err) {
+        console.error("Error fetching place details:", err);
+        setError("Failed to load place details. Please try again.");
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-    } catch (err) {
-      console.error("Error fetching place details:", err);
-      setError("Failed to load place details. Please try again.");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [placeId]);
+    },
+    [placeId]
+  );
 
   const fetchNearbyServices = useCallback(async () => {
     if (!placeDetails) return;
@@ -141,7 +156,7 @@ const PlaceDetailScreen = () => {
     try {
       setServicesLoading(true);
       console.log(`🔍 Fetching services near ${placeDetails.name}`);
-      
+
       const result = await UnifiedSearchService.searchNearPlace(
         placeDetails.place_id,
         5000 // 5km radius
@@ -178,8 +193,10 @@ const PlaceDetailScreen = () => {
   const handleFavourite = useCallback(() => {
     setIsFavourite((prev) => {
       const newState = !prev;
-      const message = newState ? "Added to favourites" : "Removed from favourites";
-      
+      const message = newState
+        ? "Added to favourites"
+        : "Removed from favourites";
+
       if (Platform.OS === "android") {
         ToastAndroid.show(message, ToastAndroid.SHORT);
       } else {
@@ -191,7 +208,7 @@ const PlaceDetailScreen = () => {
 
   const handleShare = useCallback(() => {
     if (!placeDetails) return;
-    
+
     const message = `Check out ${placeDetails.name} at ${placeDetails.formatted_address}`;
     if (Platform.OS === "android") {
       ToastAndroid.show(`Sharing ${placeDetails.name}`, ToastAndroid.SHORT);
@@ -224,7 +241,7 @@ const PlaceDetailScreen = () => {
         ios: `maps:?q=${lat},${lng}`,
         android: `geo:${lat},${lng}?q=${lat},${lng}(${placeDetails.name})`,
       });
-      
+
       if (url) {
         Linking.openURL(url).catch(() => {
           Alert.alert("Error", "Could not open maps");
@@ -264,7 +281,11 @@ const PlaceDetailScreen = () => {
     }
 
     return (
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="h-64">
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        className="h-64"
+      >
         {placeDetails.photos.map((photo, index) => (
           <View key={index} className="mr-2">
             <Image
@@ -291,7 +312,9 @@ const PlaceDetailScreen = () => {
     return (
       <View className="flex-row items-center">
         <Star size={20} color="#FFD700" fill="#FFD700" />
-        <Text className="text-lg font-semibold ml-2">{placeDetails.rating}</Text>
+        <Text className="text-lg font-semibold ml-2">
+          {placeDetails.rating.toFixed(1)}
+        </Text>
         {placeDetails.user_ratings_total && (
           <Text className="text-gray-500 ml-2">
             ({placeDetails.user_ratings_total} reviews)
@@ -309,13 +332,21 @@ const PlaceDetailScreen = () => {
         <View className="flex-row items-center mb-2">
           <Clock size={20} color="#008080" />
           <Text className="text-lg font-semibold ml-2">Opening Hours</Text>
-          <View className={`ml-auto px-2 py-1 rounded-full ${
-            placeDetails.opening_hours.open_now ? 'bg-green-100' : 'bg-red-100'
-          }`}>
-            <Text className={`text-sm font-medium ${
-              placeDetails.opening_hours.open_now ? 'text-green-800' : 'text-red-800'
-            }`}>
-              {placeDetails.opening_hours.open_now ? 'Open Now' : 'Closed'}
+          <View
+            className={`ml-auto px-2 py-1 rounded-full ${
+              placeDetails.opening_hours.open_now
+                ? "bg-green-100"
+                : "bg-red-100"
+            }`}
+          >
+            <Text
+              className={`text-sm font-medium ${
+                placeDetails.opening_hours.open_now
+                  ? "text-green-800"
+                  : "text-red-800"
+              }`}
+            >
+              {placeDetails.opening_hours.open_now ? "Open Now" : "Closed"}
             </Text>
           </View>
         </View>
@@ -372,7 +403,9 @@ const PlaceDetailScreen = () => {
         <View className="mt-6 p-4 bg-gray-50 rounded-lg">
           <Text className="text-lg font-semibold mb-3">Nearby Services</Text>
           <ActivityIndicator size="large" color="#008080" />
-          <Text className="text-gray-500 text-center mt-2">Finding nearby services...</Text>
+          <Text className="text-gray-500 text-center mt-2">
+            Finding nearby services...
+          </Text>
         </View>
       );
     }
@@ -381,7 +414,9 @@ const PlaceDetailScreen = () => {
       return (
         <View className="mt-6 p-4 bg-gray-50 rounded-lg">
           <Text className="text-lg font-semibold mb-3">Nearby Services</Text>
-          <Text className="text-gray-500 text-center">No services found nearby</Text>
+          <Text className="text-gray-500 text-center">
+            No services found nearby
+          </Text>
         </View>
       );
     }
@@ -397,13 +432,14 @@ const PlaceDetailScreen = () => {
               onPress={() => {
                 // Navigate to service detail
                 router.push({
-                  pathname: `/(tabs)/explore/services/${service.category.toLowerCase()}/[id]` as any,
-                  params: { id: service.serviceId.toString() }
+                  pathname:
+                    `/(tabs)/explore/services/${service.category.toLowerCase()}/[id]` as any,
+                  params: { id: service.serviceId.toString() },
                 });
               }}
             >
               {service.mainImageUrl && (
-                <Image 
+                <Image
                   source={{ uri: service.mainImageUrl }}
                   className="w-full h-32 rounded-t-lg"
                 />
@@ -413,12 +449,14 @@ const PlaceDetailScreen = () => {
                   {service.serviceName}
                 </Text>
                 <Text className="text-gray-500 text-sm mt-1">
-                  {service.category.replace('_', ' ')}
+                  {service.category.replace("_", " ")}
                 </Text>
                 {service.averageRating > 0 && (
                   <View className="flex-row items-center mt-2">
                     <Star size={14} color="#FFD700" fill="#FFD700" />
-                    <Text className="text-sm ml-1">{service.averageRating}</Text>
+                    <Text className="text-sm ml-1">
+                      {service.averageRating.toFixed(1)}
+                    </Text>
                   </View>
                 )}
               </View>
@@ -436,8 +474,8 @@ const PlaceDetailScreen = () => {
                   location: placeDetails?.name,
                   lat: placeDetails?.geometry.location.lat.toString(),
                   lng: placeDetails?.geometry.location.lng.toString(),
-                  selectedTab: "All"
-                }
+                  selectedTab: "All",
+                },
               });
             }}
           >
@@ -506,7 +544,10 @@ const PlaceDetailScreen = () => {
             <ArrowLeftIcon size={34} color="#008080" />
           </TouchableOpacity>
 
-          <Text className="text-primary text-3xl font-bold mx-2 flex-1 text-center" numberOfLines={1}>
+          <Text
+            className="text-primary text-3xl font-bold mx-2 flex-1 text-center"
+            numberOfLines={1}
+          >
             {placeDetails.name}
           </Text>
 
@@ -517,31 +558,32 @@ const PlaceDetailScreen = () => {
             >
               <Ionicons name="share-outline" size={24} color="#008080" />
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               onPress={handleFavourite}
               className="p-2 bg-white rounded-full shadow-sm"
             >
-              <Ionicons 
-                name={isFavourite ? "heart" : "heart-outline"} 
-                size={24} 
-                color={isFavourite ? "#EF4444" : "#008080"} 
+              <Ionicons
+                name={isFavourite ? "heart" : "heart-outline"}
+                size={24}
+                color={isFavourite ? "#EF4444" : "#008080"}
               />
             </TouchableOpacity>
           </View>
         </View>
       </View>
 
-      <ScrollView 
+      <ScrollView
         className="flex-1"
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => fetchPlaceDetails(true)} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => fetchPlaceDetails(true)}
+          />
         }
       >
         {/* Photo Gallery */}
-        <View className="px-4 py-4">
-          {renderPhotoGallery()}
-        </View>
+        <View className="px-4 py-4">{renderPhotoGallery()}</View>
 
         {/* Place Information */}
         <View className="px-4 pb-4">
@@ -562,9 +604,12 @@ const PlaceDetailScreen = () => {
           {placeDetails.types && placeDetails.types.length > 0 && (
             <View className="flex-row flex-wrap mt-3">
               {placeDetails.types.slice(0, 4).map((type, index) => (
-                <View key={index} className="bg-gray-100 px-3 py-1 rounded-full mr-2 mb-2">
+                <View
+                  key={index}
+                  className="bg-gray-100 px-3 py-1 rounded-full mr-2 mb-2"
+                >
                   <Text className="text-gray-700 text-sm capitalize">
-                    {type.replace(/_/g, ' ')}
+                    {type.replace(/_/g, " ")}
                   </Text>
                 </View>
               ))}
@@ -581,13 +626,13 @@ const PlaceDetailScreen = () => {
               className="flex-row items-center justify-between p-3 bg-gray-50 rounded-lg"
             >
               <Text className="text-lg font-semibold">Location</Text>
-              <Ionicons 
-                name={showMap ? "chevron-up" : "chevron-down"} 
-                size={24} 
-                color="#008080" 
+              <Ionicons
+                name={showMap ? "chevron-up" : "chevron-down"}
+                size={24}
+                color="#008080"
               />
             </TouchableOpacity>
-            
+
             {showMap && (
               <View className="mt-3 h-48 rounded-lg overflow-hidden">
                 <MapView

@@ -63,7 +63,7 @@ const Card: React.FC<CardProps> = ({ item, onPress, width = 160 }) => {
             <View className="flex-row items-center">
               <Ionicons name="star" size={16} color="#FFC107" />
               <Text className="text-sm text-gray-600 ml-1">
-                {cardData.rating}
+                {cardData.rating.toFixed(1)}
               </Text>
             </View>
           )}

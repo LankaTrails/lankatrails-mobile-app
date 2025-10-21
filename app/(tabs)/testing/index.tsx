@@ -241,7 +241,7 @@
 //             <View className="flex-row items-center mb-3">
 //               <Ionicons name="star" size={24} color="#FBB03B" />
 //               <Text className="ml-2 text-gray-700">
-//                 {placeDetail.rating} ({placeDetail.userRatingsTotal || 0} reviews)
+//                 {placeDetail.rating.toFixed(1)} ({placeDetail.userRatingsTotal || 0} reviews)
 //               </Text>
 //             </View>
 //           )}
@@ -438,7 +438,7 @@
 //                     <View className="flex-row items-center">
 //                       <Star size={14} color="#FBB03B" fill="#FBB03B" />
 //                       <Text className="ml-1 text-gray-600 text-sm">
-//                         {review.rating}
+//                         {review.rating.toFixed(1)}
 //                       </Text>
 //                       <Text className="ml-2 text-gray-400 text-sm">
 //                         {review.relativeTimeDescription}

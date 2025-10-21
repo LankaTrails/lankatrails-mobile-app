@@ -59,7 +59,9 @@ interface PlaceDetails {
 // Service type for AddToTripButton compatibility
 import { Service } from "@/types/serviceTypes";
 
-const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || "AIzaSyAFJ8_eIjeXNhtS5TeuDWwswREqxO4FsGU";
+const GOOGLE_PLACES_API_KEY =
+  process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY ||
+  "AIzaSyAFJ8_eIjeXNhtS5TeuDWwswREqxO4FsGU";
 
 const PublicPlaceDetails = () => {
   const { placeId } = useLocalSearchParams<{ placeId: string }>();
@@ -72,84 +74,92 @@ const PublicPlaceDetails = () => {
   const [imageLoading, setImageLoading] = useState(true);
 
   // Convert place to Service for AddToTripButton
-  const convertToService = useCallback((place: PlaceDetails): Service => ({
-    serviceId: parseInt(place.place_id.replace(/\D/g, ''), 10) || Math.floor(Math.random() * 10000),
-    serviceName: place.name,
-    category: "ACTIVITY" as const,
-    locations: [
-      {
-        locationId: null,
-        formattedAddress: place.formatted_address,
-        city: "",
-        district: "",
-        province: "",
-        country: "",
-        postalCode: "",
-        latitude: place.geometry.location.lat,
-        longitude: place.geometry.location.lng,
-      },
-    ],
-    prices: [],
-    mainImageUrl:
-      place.photos && place.photos.length > 0
-        ? getPhotoUrl(place.photos[0].photo_reference, 800)
-        : "",
-    provider: null,
-  }), []);
-
-  const fetchPlaceDetails = useCallback(async (isRefresh = false) => {
-    try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      setError(null);
-
-      if (!placeId) {
-        throw new Error("No place ID provided");
-      }
-
-      const response = await axios.get(
-        "https://maps.googleapis.com/maps/api/place/details/json",
+  const convertToService = useCallback(
+    (place: PlaceDetails): Service => ({
+      serviceId:
+        parseInt(place.place_id.replace(/\D/g, ""), 10) ||
+        Math.floor(Math.random() * 10000),
+      serviceName: place.name,
+      category: "ACTIVITY" as const,
+      locations: [
         {
-          params: {
-            place_id: placeId,
-            fields:
-              "name,formatted_address,rating,user_ratings_total,formatted_phone_number,website,opening_hours,photos,geometry,types,price_level,reviews",
-            key: GOOGLE_PLACES_API_KEY,
-          },
-          timeout: 10000, // 10 second timeout
-        }
-      );
+          locationId: null,
+          formattedAddress: place.formatted_address,
+          city: "",
+          district: "",
+          province: "",
+          country: "",
+          postalCode: "",
+          latitude: place.geometry.location.lat,
+          longitude: place.geometry.location.lng,
+        },
+      ],
+      prices: [],
+      mainImageUrl:
+        place.photos && place.photos.length > 0
+          ? getPhotoUrl(place.photos[0].photo_reference, 800)
+          : "",
+      provider: null,
+    }),
+    []
+  );
 
-      if (response.data.status === "OK") {
-        setPlaceDetails(response.data.result);
-      } else if (response.data.status === "NOT_FOUND") {
-        setError("Place not found");
-      } else if (response.data.status === "REQUEST_DENIED") {
-        setError("Invalid API key or request denied");
-      } else {
-        setError(`Failed to fetch place details: ${response.data.status}`);
-      }
-    } catch (err) {
-      console.error("Error fetching place details:", err);
-      if (axios.isAxiosError(err)) {
-        if (err.code === 'ECONNABORTED') {
-          setError("Request timeout. Please check your connection.");
-        } else if (err.response?.status === 403) {
-          setError("API quota exceeded or invalid key");
+  const fetchPlaceDetails = useCallback(
+    async (isRefresh = false) => {
+      try {
+        if (isRefresh) {
+          setRefreshing(true);
         } else {
-          setError("Network error. Please check your connection.");
+          setLoading(true);
         }
-      } else {
-        setError("An unexpected error occurred");
+        setError(null);
+
+        if (!placeId) {
+          throw new Error("No place ID provided");
+        }
+
+        const response = await axios.get(
+          "https://maps.googleapis.com/maps/api/place/details/json",
+          {
+            params: {
+              place_id: placeId,
+              fields:
+                "name,formatted_address,rating,user_ratings_total,formatted_phone_number,website,opening_hours,photos,geometry,types,price_level,reviews",
+              key: GOOGLE_PLACES_API_KEY,
+            },
+            timeout: 10000, // 10 second timeout
+          }
+        );
+
+        if (response.data.status === "OK") {
+          setPlaceDetails(response.data.result);
+        } else if (response.data.status === "NOT_FOUND") {
+          setError("Place not found");
+        } else if (response.data.status === "REQUEST_DENIED") {
+          setError("Invalid API key or request denied");
+        } else {
+          setError(`Failed to fetch place details: ${response.data.status}`);
+        }
+      } catch (err) {
+        console.error("Error fetching place details:", err);
+        if (axios.isAxiosError(err)) {
+          if (err.code === "ECONNABORTED") {
+            setError("Request timeout. Please check your connection.");
+          } else if (err.response?.status === 403) {
+            setError("API quota exceeded or invalid key");
+          } else {
+            setError("Network error. Please check your connection.");
+          }
+        } else {
+          setError("An unexpected error occurred");
+        }
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [placeId]);
+    },
+    [placeId]
+  );
 
   useEffect(() => {
     if (placeId) {
@@ -160,15 +170,20 @@ const PublicPlaceDetails = () => {
     }
   }, [placeId, fetchPlaceDetails]);
 
-  const getPhotoUrl = useCallback((photoReference: string, maxWidth: number = 400) => {
-    return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxWidth}&photo_reference=${photoReference}&key=${GOOGLE_PLACES_API_KEY}`;
-  }, []);
+  const getPhotoUrl = useCallback(
+    (photoReference: string, maxWidth: number = 400) => {
+      return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxWidth}&photo_reference=${photoReference}&key=${GOOGLE_PLACES_API_KEY}`;
+    },
+    []
+  );
 
   const handleFavourite = useCallback(() => {
     setIsFavourite((prev) => {
       const newState = !prev;
-      const message = newState ? "Added to favourites" : "Removed from favourites";
-      
+      const message = newState
+        ? "Added to favourites"
+        : "Removed from favourites";
+
       if (Platform.OS === "android") {
         ToastAndroid.show(message, ToastAndroid.SHORT);
       } else {
@@ -180,7 +195,7 @@ const PublicPlaceDetails = () => {
 
   const handleShare = useCallback(() => {
     if (!placeDetails) return;
-    
+
     const message = `Check out ${placeDetails.name} at ${placeDetails.formatted_address}`;
     if (Platform.OS === "android") {
       ToastAndroid.show(`Sharing ${placeDetails.name}`, ToastAndroid.SHORT);
@@ -199,7 +214,10 @@ const PublicPlaceDetails = () => {
 
   const callPlace = useCallback(() => {
     if (placeDetails?.formatted_phone_number) {
-      const phoneNumber = placeDetails.formatted_phone_number.replace(/\s/g, "");
+      const phoneNumber = placeDetails.formatted_phone_number.replace(
+        /\s/g,
+        ""
+      );
       Linking.openURL(`tel:${phoneNumber}`).catch(() => {
         Alert.alert("Error", "Could not make phone call");
       });
@@ -209,10 +227,13 @@ const PublicPlaceDetails = () => {
   const openInMaps = useCallback(() => {
     if (placeDetails) {
       const { lat, lng } = placeDetails.geometry.location;
-      const url = Platform.OS === 'ios' 
-        ? `maps://?q=${lat},${lng}` 
-        : `geo:${lat},${lng}?q=${lat},${lng}(${encodeURIComponent(placeDetails.name)})`;
-      
+      const url =
+        Platform.OS === "ios"
+          ? `maps://?q=${lat},${lng}`
+          : `geo:${lat},${lng}?q=${lat},${lng}(${encodeURIComponent(
+              placeDetails.name
+            )})`;
+
       Linking.openURL(url).catch(() => {
         // Fallback to Google Maps web
         const webUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
@@ -246,7 +267,7 @@ const PublicPlaceDetails = () => {
   const getPriceLevel = useCallback((level?: number) => {
     if (!level) return "";
     return "Rs.".repeat(level);
-  };
+  }, []);
 
   // Loading state
   if (loading) {
@@ -310,11 +331,10 @@ const PublicPlaceDetails = () => {
         showFavorite={true}
         isFavorite={isFavourite}
         onFavoritePress={handleFavourite}
-        onShare={handleShare}
       />
 
-      <ScrollView 
-        className="flex-1" 
+      <ScrollView
+        className="flex-1"
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -356,7 +376,7 @@ const PublicPlaceDetails = () => {
                 <View className="flex-row items-center">
                   {renderStars(placeDetails.rating)}
                   <Text className="ml-2 text-gray-600">
-                    {placeDetails.rating} (
+                    {placeDetails.rating.toFixed(1)} (
                     {placeDetails.user_ratings_total || 0} reviews)
                   </Text>
                 </View>
@@ -544,17 +564,17 @@ const PublicPlaceDetails = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: "white",
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 24,
   },
 });
