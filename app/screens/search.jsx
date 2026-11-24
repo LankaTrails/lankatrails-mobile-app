@@ -98,7 +98,7 @@ const TravelApp = () => {
         </Text>
         <View className="flex-row items-center">
           <Ionicons name="star" size={12} color="#FFD700" />
-          <Text className="text-xs text-gray-600 ml-1">{item.rating}</Text>
+          <Text className="text-xs text-gray-600 ml-1">{item.rating.toFixed(1)}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -135,20 +135,20 @@ const TravelApp = () => {
   return (
     <View className="flex-1 bg-white">
       {/* Status Bar */}
-      <StatusBar 
-        barStyle="dark-content" 
-        backgroundColor="transparent" 
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
         translucent={true}
       />
-      
+
       {/* Safe Area for Status Bar */}
-      <View 
-        style={{ 
+      <View
+        style={{
           height: insets.top,
           backgroundColor: '#ffffff'
-        }} 
+        }}
       />
-      
+
       {/* Header */}
       <View className="bg-white px-4 py-3 border-b border-gray-100">
         <View className="flex-row items-center justify-between mb-4">
@@ -160,7 +160,7 @@ const TravelApp = () => {
             <Ionicons name="notifications-outline" size={24} color="#374151" />
           </TouchableOpacity>
         </View>
-        
+
         {/* Search Bar */}
         <View className="flex-row items-center bg-gray-100 rounded-lg px-3 py-2">
           <Ionicons name="search" size={20} color="#9CA3AF" />
@@ -185,14 +185,12 @@ const TravelApp = () => {
             <TouchableOpacity
               key={tab}
               onPress={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-full mr-3 ${
-                activeTab === tab ? 'bg-primary' : 'bg-gray-100'
-              }`}
+              className={`px-4 py-2 rounded-full mr-3 ${activeTab === tab ? 'bg-primary' : 'bg-gray-100'
+                }`}
             >
               <Text
-                className={`font-medium ${
-                  activeTab === tab ? 'text-white' : 'text-gray-600'
-                }`}
+                className={`font-medium ${activeTab === tab ? 'text-white' : 'text-gray-600'
+                  }`}
               >
                 {tab}
               </Text>
@@ -216,7 +214,7 @@ const TravelApp = () => {
         )}
       </ScrollView>
 
-      
+
     </View>
   );
 };
