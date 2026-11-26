@@ -5,12 +5,12 @@ import {
   Alert,
   Dimensions,
   Modal,
-  SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import QRCode from "react-native-qrcode-svg";
 import { logger } from "@/utils/logger";
 

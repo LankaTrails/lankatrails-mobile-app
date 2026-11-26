@@ -1,7 +1,8 @@
 import * as Linking from "expo-linking";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useRef, useState } from "react";
-import { Alert, Animated, SafeAreaView, ScrollView, StyleSheet, Text, View, useAnimatedValue } from "react-native";
+import { Alert, Animated, ScrollView, StyleSheet, Text, View, useAnimatedValue } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import BackButton from "../../../../components/BackButton";
 import FilterButton from "../../../../components/FilterButton";
 import HeaderButton from "../../../../components/HeaderButton";

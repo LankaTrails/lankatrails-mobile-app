@@ -14,7 +14,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Animated,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   Text,
@@ -22,6 +21,7 @@ import {
   View,
   useAnimatedValue,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { MapPinIcon } from "react-native-heroicons/outline";
 import { logger } from "@/utils/logger";
 

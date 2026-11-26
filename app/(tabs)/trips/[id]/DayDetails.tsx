@@ -4,7 +4,6 @@ import React, { useRef, useState, useEffect, useMemo } from "react";
 import {
   Alert,
   Animated,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,6 +11,7 @@ import {
   View,
   useAnimatedValue,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import BackButton from '../../../../components/BackButton';
 import { theme } from '@/constants/theme';
