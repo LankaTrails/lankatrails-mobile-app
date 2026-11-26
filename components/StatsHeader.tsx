@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text } from "react-native";
-import { theme } from "../app/theme";
+import { theme } from "@/constants/theme";
 
 const StatsHeader = ({ trips }) => (
   <View style={styles.statsContainer}>

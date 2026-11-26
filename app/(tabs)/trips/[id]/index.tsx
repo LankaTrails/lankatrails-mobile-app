@@ -1,17 +1,7 @@
-import * as Clipboard from "expo-clipboard";
 import * as Linking from "expo-linking";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useRef, useState } from "react";
-import {
-  Alert,
-  Animated,
-  SafeAreaView,
-  ScrollView,
-  Share,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Alert, Animated, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import BackButton from "../../../../components/BackButton";
 import FilterButton from "../../../../components/FilterButton";
 import HeaderButton from "../../../../components/HeaderButton";
@@ -22,8 +12,11 @@ import TripDetailsModal, {
   TripDetails as TripDetailsType,
 } from "../../../../components/TripDetailsModal";
 import TripSharingModal from "../../../../components/TripSharingModal";
-import BookingsView from "./BookingsView";
-import ScheduleView from "./ScheduleView";
+import BookingsView from "@/components/trip/BookingsView";
+import ScheduleView from "@/components/trip/ScheduleView";
+import { getTripById, getTripItemsByTripId, updateTrip, deleteTrip } from "@/services/tripService";
+import { tripRequest } from "@/types/triptypes";
+import { logger } from "@/utils/logger";
 
 const prefix = Linking.createURL("/");
 
@@ -45,14 +38,6 @@ interface TripDay {
   weather: "sunny" | "cloudy" | "rainy";
 }
 
-import {
-  generateTripInvitation,
-  getTripById,
-  getTripItemsByTripId,
-  updateTrip,
-  deleteTrip,
-} from "@/services/tripService";
-import { TripInvitationRequest, tripRequest } from "@/types/triptypes";
 
 const TripDetails = () => {
   const tripID = useLocalSearchParams().id as string;
@@ -137,7 +122,6 @@ const TripDetails = () => {
 
         const tripRes = await getTripById(Number(tripID));
         if (tripRes.success && tripRes.data) {
-          console.log('Trip data received:', JSON.stringify(tripRes.data, null, 2));
           setTrip(tripRes.data);
 
           // Update tripDetails state with real data (keep as fallback)
@@ -151,11 +135,6 @@ const TripDetails = () => {
             numberOfAdults: tripRes.data.numberOfAdults || 1,
             numberOfChildren: tripRes.data.numberOfChildren || 0,
           };
-          console.log('Setting tripDetails as fallback:', {
-            ...updatedTripDetails,
-            startDate: updatedTripDetails.startDate.toISOString(),
-            endDate: updatedTripDetails.endDate.toISOString(),
-          });
           setTripDetails(updatedTripDetails);
 
           // Fetch trip items and group by day
@@ -207,7 +186,7 @@ const TripDetails = () => {
           setError("Trip not found");
         }
       } catch (err) {
-        console.error('Error fetching trip:', err);
+        logger.error('Error fetching trip:', err);
         setError("Failed to load trip");
       } finally {
         setLoading(false);
@@ -244,8 +223,8 @@ const TripDetails = () => {
       }
 
       setShowSharingModal(true);
-    } catch (error: any) {
-      console.error("Failed to show invitation type selection:", error);
+    } catch (error) {
+      logger.error("Failed to show invitation type selection:", error);
       Alert.alert("Error", "Failed to initiate invitation process");
     }
   };
@@ -271,7 +250,6 @@ const TripDetails = () => {
           style: "destructive",
           onPress: async () => {
             try {
-              console.log("Deleting trip:", trip.tripId);
               const response = await deleteTrip(trip.tripId);
               
               if (response.success) {
@@ -291,8 +269,8 @@ const TripDetails = () => {
               } else {
                 Alert.alert("Error", response.message || "Failed to delete trip");
               }
-            } catch (error: any) {
-              console.error("Error deleting trip:", error);
+            } catch (error) {
+              logger.error("Error deleting trip:", error);
               Alert.alert("Error", "Failed to delete trip. Please try again.");
             }
           },
@@ -330,7 +308,6 @@ const TripDetails = () => {
         tags: trip.tags || [],
       };
 
-      console.log('Updating trip with data:', tripUpdateData);
       
       // Call the API to update the trip
       const response = await updateTrip(Number(tripID), tripUpdateData);
@@ -345,13 +322,12 @@ const TripDetails = () => {
           title: response.data.tripName,
         });
         
-        console.log('Trip updated successfully:', response.data);
         Alert.alert("Success", "Trip updated successfully!");
       } else {
         Alert.alert("Error", response.message || "Failed to update trip");
       }
-    } catch (error: any) {
-      console.error('Error updating trip:', error);
+    } catch (error) {
+      logger.error('Error updating trip:', error);
       Alert.alert("Error", "Failed to update trip. Please try again.");
     } finally {
       setLoading(false);
@@ -428,18 +404,8 @@ const TripDetails = () => {
                   numberOfAdults: trip.numberOfAdults || 1,
                   numberOfChildren: trip.numberOfChildren || 0,
                 };
-                console.log('Final trip details passed to SummaryCard (from trip):', {
-                  ...finalTripDetails,
-                  startDate: finalTripDetails.startDate.toISOString(),
-                  endDate: finalTripDetails.endDate.toISOString(),
-                });
                 return finalTripDetails;
               } else {
-                console.log('Final trip details passed to SummaryCard (from tripDetails):', {
-                  ...tripDetails,
-                  startDate: tripDetails.startDate.toISOString(),
-                  endDate: tripDetails.endDate.toISOString(),
-                });
                 return tripDetails;
               }
             })()}

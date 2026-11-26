@@ -11,10 +11,11 @@ import {
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { MaterialIcons } from '@expo/vector-icons';
-import { theme } from "../../../theme";
+import { theme } from "@/constants/theme";
 import { getAllBookings, cancelBooking } from "@/services/bookingService";
 import type { BookingItem, BookingStatus } from "@/types/bookingTypes";
 import { usePaymentGateway } from "@/components/PaymentGateway";
+import { logger } from "@/utils/logger";
 
 interface TripBookingsProps {
   onBack?: () => void;
@@ -64,9 +65,6 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
               : s
           )
         );
-        console.log(
-          `Payment successful for service ${currentPaymentTripItemId}, booking ${bookingId}`
-        );
       }
       setProcessingPayment(false);
       setCurrentPaymentTripItemId(null); // Reset after success
@@ -81,7 +79,7 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
               : s
           )
         );
-        console.error(
+        logger.error(
           `Payment failed for service ${currentPaymentTripItemId}:`,
           error
         );
@@ -99,7 +97,6 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
               : s
           )
         );
-        console.log(`Payment canceled for service ${currentPaymentTripItemId}`);
       }
       setProcessingPayment(false);
       setCurrentPaymentTripItemId(null); // Reset after cancellation
@@ -152,7 +149,6 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
         const response = await getAllBookings(Number(tripId));
 
         if (response.success && response.data) {
-          console.log("Fetched bookings successfully:", response.data);
           const transformedBookings = response.data.map(transformBookingToUI);
           setBookingServices(transformedBookings);
         } else {
@@ -275,7 +271,7 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
                   await new Promise((resolve) => setTimeout(resolve, 1000));
                 }
               } catch (error) {
-                console.error(
+                logger.error(
                   `Failed to process payment for service ${service.tripItemId}:`,
                   error
                 );
@@ -316,7 +312,6 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
 
   const handleViewServiceDetails = (serviceId: number) => {
     // Navigate to service details screen or open modal
-    console.log("Viewing service details:", serviceId);
     // You can implement navigation to a service details screen here
   };
 
@@ -357,7 +352,7 @@ const BookingsView: React.FC<TripBookingsProps> = ({ onBack }) => {
               }
             } catch (error: any) {
               Alert.alert("Error", error.message || "Failed to process request");
-              console.error("Error processing service removal/cancellation:", error);
+              logger.error("Error processing service removal/cancellation:", error);
             }
           },
         },

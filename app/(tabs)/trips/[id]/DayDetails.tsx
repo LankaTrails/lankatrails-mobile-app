@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import BackButton from '../../../../components/BackButton';
-import { theme } from '../../../theme';
+import { theme } from '@/constants/theme';
 
 interface Service {
   id: string;

@@ -10,13 +10,6 @@ export default function SupportLayout() {
           title: "Complaints",
         }}
       />
-      <Stack.Screen
-        name="help"
-        options={{
-          headerShown: false,
-          title: "Help & Support",
-        }}
-      />
     </Stack>
   );
 }

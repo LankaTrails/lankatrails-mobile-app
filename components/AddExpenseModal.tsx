@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import InputField from "./InputField";
-import { theme } from "../app/theme";
+import { theme } from "@/constants/theme";
 import { BudgetCategorys } from "@/types/budgetTypes";
 
 interface BudgetCategory {

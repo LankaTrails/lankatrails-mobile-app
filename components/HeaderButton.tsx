@@ -8,7 +8,7 @@ import {
   View,
   Alert,
 } from "react-native";
-import { theme } from "../app/theme";
+import { theme } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 
 interface HeaderButtonProps {

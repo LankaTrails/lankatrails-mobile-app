@@ -18,7 +18,7 @@ import { BlurView } from "expo-blur";
 import { useLocalSearchParams } from "expo-router";
 import FAB from "../../../../components/FAB";
 import EditPopup from "../../../../components/EditPopup";
-import { theme } from "../../../theme";
+import { theme } from "@/constants/theme";
 import SelectPopup from "../../../../components/SelectPopup";
 import BackButton from "../../../../components/BackButton";
 import FilterButton from "../../../../components/FilterButton";

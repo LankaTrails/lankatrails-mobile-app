@@ -8,9 +8,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { theme } from "../../../theme";
+import { theme } from "@/constants/theme";
 
-// TripDay type for hardcoded and API data
+// One day of the trip, grouped from the trip's items
 type TripDay = {
   date: string;
   dayName: string;
@@ -31,99 +31,6 @@ type TripDay = {
     duration?: string;
     description?: string;
   }[];
-};
-// Hardcoded trip object for demo purposes
-const hardcodedTrip = {
-  tripId: 999,
-  tripName: "Sample Adventure",
-  days: [
-    {
-      date: "2025-07-22",
-      dayName: "Tuesday",
-      weather: "sunny",
-      services: [
-        {
-          id: "1",
-          name: "Sigiriya Rock Climb",
-          time: "08:00",
-          cost: 2500,
-          location: "Sigiriya",
-          weather: "sunny",
-          booking_config_id: 1,
-          duration: "2h",
-          description: "Climb the ancient rock fortress of Sigiriya.",
-        },
-        {
-          id: "2",
-          name: "Village Lunch",
-          time: "12:30",
-          cost: 1200,
-          location: "Habarana",
-          weather: "sunny",
-          booking_config_id: 2,
-          duration: "1h",
-          description: "Enjoy a traditional Sri Lankan lunch in a local village.",
-        },
-        {
-          id: "4",
-          name: "Beach Resort Stay",
-          time: "15:00",
-          cost: 15000,
-          location: "Bentota",
-          weather: "sunny",
-          booking_config_id: 5,
-          bookingType: "MULTI_DAY",
-          startDate: "2025-07-22",
-          endDate: "2025-07-25",
-          checkInTime: "15:00",
-          checkOutTime: "11:00",
-          duration: "3 days",
-          description: "Luxury beachfront accommodation with full amenities.",
-        },
-      ],
-    },
-    {
-      date: "2025-07-23",
-      dayName: "Wednesday",
-      weather: "cloudy",
-      services: [
-        {
-          id: "3",
-          name: "Safari at Minneriya",
-          time: "15:00",
-          cost: 3500,
-          location: "Minneriya",
-          weather: "cloudy",
-          booking_config_id: 3,
-          duration: "3h",
-          description: "Wildlife safari experience at Minneriya National Park.",
-        },
-      ],
-    },
-    {
-      date: "2025-07-25",
-      dayName: "Friday",
-      weather: "sunny",
-      services: [
-        {
-          id: "4-checkout",
-          name: "Beach Resort Stay",
-          time: "11:00",
-          cost: 0, // Checkout doesn't have additional cost
-          location: "Bentota",
-          weather: "sunny",
-          booking_config_id: 5,
-          bookingType: "MULTI_DAY",
-          startDate: "2025-07-22",
-          endDate: "2025-07-25",
-          checkInTime: "15:00",
-          checkOutTime: "11:00",
-          duration: "3 days",
-          description: "Luxury beachfront accommodation with full amenities.",
-        },
-      ],
-    },
-  ],
 };
 
 interface Service {
@@ -147,10 +54,7 @@ const ScheduleView = () => {
       setLoading(true);
       setError(null);
       try {
-        if (id === "hardcoded") {
-          setTrip(hardcodedTrip);
-          setTripDays(hardcodedTrip.days as TripDay[]);
-        } else {
+        {
           const tripRes = await getTripById(Number(id));
           if (tripRes.success && tripRes.data) {
             setTrip(tripRes.data);
@@ -222,9 +126,8 @@ const ScheduleView = () => {
             setError("Trip not found");
           }
         }
-      } catch (error) {
+      } catch {
         setError("Failed to load trip");
-        console.error("Trip loading error:", error);
       } finally {
         setLoading(false);
       }
@@ -234,8 +137,9 @@ const ScheduleView = () => {
 
   const handleDayClick = (day: TripDay) => {
     router.push({
-      pathname: './{id}/DayDetails',
+      pathname: "/(tabs)/trips/[id]/DayDetails",
       params: {
+        id,
         date: day.date,
         dayName: day.dayName,
         weather: day.weather,
@@ -250,29 +154,6 @@ const ScheduleView = () => {
 
   return (
     <ScrollView showsVerticalScrollIndicator={false} style={styles.container}>
-      {/* Hardcoded Trip Card Example */}
-      {id === "hardcoded" && (
-        <View
-          style={[styles.dayCard, { borderColor: "#008080", borderWidth: 2 }]}
-        >
-          <Text
-            style={{
-              fontWeight: "bold",
-              fontSize: 18,
-              color: "#008080",
-              marginBottom: 8,
-            }}
-          >
-            Sample Adventure (Hardcoded)
-          </Text>
-          <Text style={{ color: "#374151", marginBottom: 8 }}>
-            2 days, 3 activities
-          </Text>
-          <Text style={{ color: "#374151", marginBottom: 8 }}>
-            Total: LKR 7200
-          </Text>
-        </View>
-      )}
       {tripDays.map((day, index) => (
         <TouchableOpacity
           key={day.date}
@@ -304,17 +185,6 @@ const ScheduleView = () => {
               
               // Debug only for multi-day services
               if (isMultiDay) {
-                console.log(`Multi-day service ${service.id}:`, {
-                  serviceName: service.name,
-                  isCheckIn,
-                  isCheckOut,
-                  serviceStartDate: service.startDate,
-                  serviceEndDate: service.endDate,
-                  currentDayDate: day.date,
-                  booking_config_id: service.booking_config_id,
-                  startEqualsDay: service.startDate === day.date,
-                  endEqualsDay: service.endDate === day.date
-                });
               }
               
               return (
@@ -370,7 +240,7 @@ const ScheduleView = () => {
       {/* Add service */}
       <TouchableOpacity
         style={styles.addDayCard}
-        onPress={() => router.push("../../explore")}
+        onPress={() => router.push("/(tabs)/explore")}
         activeOpacity={0.8}
       >
         <View style={styles.addDayContent}>

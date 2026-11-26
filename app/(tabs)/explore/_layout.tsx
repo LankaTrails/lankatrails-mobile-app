@@ -27,12 +27,6 @@ export default function ExploreLayout() {
         }}
       />
       <Stack.Screen
-        name="categories"
-        options={{
-          title: "Categories",
-        }}
-      />
-      <Stack.Screen
         name="places"
         options={{
           title: "Places",
@@ -42,12 +36,6 @@ export default function ExploreLayout() {
         name="support"
         options={{
           title: "Support",
-        }}
-      />
-      <Stack.Screen
-        name="components"
-        options={{
-          title: "Components",
         }}
       />
     </Stack>

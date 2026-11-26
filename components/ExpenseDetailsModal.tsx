@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { theme } from "../app/theme";
+import { theme } from "@/constants/theme";
 import { ExpenseService } from "@/services/expenseService";
 import {
   TripParticipant as ExpenseParticipant,

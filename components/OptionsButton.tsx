@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import {
+  Alert,
   View,
   TouchableOpacity,
   StyleSheet,
@@ -112,34 +113,21 @@ const OptionsButton: React.FC<OptionsButtonProps> = ({ tripId, tripName }) => {
   };
 
   const handleOptionPress = (option: string) => {
-    console.log(`${option} pressed, tripId:`, tripId);
     toggleMenu();
-
-    // Add your navigation logic here with proper tripId
+    if (!tripId) {
+      Alert.alert("Trip not loaded", "Open a trip first, then try again.");
+      return;
+    }
     if (option === "Budget") {
-      router.push(`/(tabs)/trips/${tripId}/BudgetView` as any);
+      router.push({ pathname: "/(tabs)/trips/[id]/BudgetView", params: { id: String(tripId) } });
     } else if (option === "Map") {
-      if (tripId) {
-        router.push(`/(tabs)/trips/${tripId}/MapView` as any);
-      } else {
-        console.error("Trip ID is required for map navigation");
-      }
+      router.push({ pathname: "/(tabs)/trips/[id]/MapView", params: { id: String(tripId) } });
     } else if (option === "Chat") {
-      if (tripId) {
-        // Navigate to group chat for the trip
-        router.push({
-          pathname: "/screens/Chat" as any,
-          params: {
-            chatType: "group",
-            tripId: tripId,
-            tripName: tripName || `Trip ${tripId}`, // Use actual trip name if provided
-          },
-        });
-      } else {
-        console.error("Trip ID is required for group chat navigation");
-        // Could show an alert or navigate to a chat list instead
-        router.push("/screens/Chat" as any);
-      }
+      // Group chat for the trip; Chat.tsx needs the chat type and trip
+      router.push({
+        pathname: "/screens/Chat",
+        params: { chatType: "group", tripId: String(tripId), tripName: tripName || `Trip ${tripId}` },
+      });
     }
   };
 

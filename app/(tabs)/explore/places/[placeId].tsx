@@ -4,11 +4,11 @@ import {
   getPlacePhotoUrl,
 } from "@/services/googlePlacesService";
 import UnifiedSearchService from "@/services/unifiedSearchService";
-import { ServiceCategory } from "@/types/commonTypes";
 import { Service, ServiceSearchResponse } from "@/types/serviceTypes";
 import { Ionicons } from "@expo/vector-icons";
+import { navigateToServiceDetail } from "@/utils/navigationHelpers";
 import { router, useLocalSearchParams } from "expo-router";
-import { Star, MapPin, Phone, Globe, Clock, Users } from "lucide-react-native";
+import { Star, MapPin, Phone, Globe, Clock } from "lucide-react-native";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -26,6 +26,7 @@ import {
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import { ArrowLeftIcon } from "react-native-heroicons/outline";
+import { logger } from "@/utils/logger";
 
 const { width } = Dimensions.get("window");
 
@@ -130,17 +131,15 @@ const PlaceDetailScreen = () => {
           throw new Error("No place ID provided");
         }
 
-        console.log(`🔍 Fetching details for place: ${placeId}`);
         const details = await getPlaceDetails(placeId);
 
         if (details) {
           setPlaceDetails(details);
-          console.log(`✅ Place details loaded: ${details.name}`);
         } else {
           setError("Place not found");
         }
       } catch (err) {
-        console.error("Error fetching place details:", err);
+        logger.error("Error fetching place details:", err);
         setError("Failed to load place details. Please try again.");
       } finally {
         setLoading(false);
@@ -155,7 +154,6 @@ const PlaceDetailScreen = () => {
 
     try {
       setServicesLoading(true);
-      console.log(`🔍 Fetching services near ${placeDetails.name}`);
 
       const result = await UnifiedSearchService.searchNearPlace(
         placeDetails.place_id,
@@ -164,12 +162,10 @@ const PlaceDetailScreen = () => {
 
       if (result.services.length > 0) {
         setNearbyServices(result.services);
-        console.log(`✅ Found ${result.services.length} nearby services`);
       } else {
-        console.log("No nearby services found");
       }
     } catch (error) {
-      console.error("Error fetching nearby services:", error);
+      logger.error("Error fetching nearby services:", error);
     } finally {
       setServicesLoading(false);
     }
@@ -430,12 +426,7 @@ const PlaceDetailScreen = () => {
               key={service.serviceId}
               className="mr-4 bg-white rounded-lg shadow-sm border border-gray-200 w-60"
               onPress={() => {
-                // Navigate to service detail
-                router.push({
-                  pathname:
-                    `/(tabs)/explore/services/${service.category.toLowerCase()}/[id]` as any,
-                  params: { id: service.serviceId.toString() },
-                });
+                navigateToServiceDetail(service.serviceId, service.category);
               }}
             >
               {service.mainImageUrl && (
