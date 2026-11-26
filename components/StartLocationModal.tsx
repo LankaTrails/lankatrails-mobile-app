@@ -1,7 +1,7 @@
 import { Location } from "@/types/triptypes";
 import { Ionicons } from "@expo/vector-icons";
 import * as ExpoLocation from "expo-location";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -19,6 +19,7 @@ import {
   TouchableWithoutFeedback,
   View,
   Animated as RNAnimated,
+  useAnimatedValue,
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
 import LongButton from "./LongButton";
@@ -40,9 +41,9 @@ export default function StartLocationModal({
   onClose,
 }: StartLocationModalProps) {
   // Blur animation
-  const blurAnim = useRef(new RNAnimated.Value(0)).current;
+  const blurAnim = useAnimatedValue(0);
   // Modal animation
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useAnimatedValue(0);
 
   // Location states
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(

@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Animated,
   Dimensions,
@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
+  useAnimatedValue,
 } from "react-native";
 import { BookingType } from "../types/serviceTypes";
 import LongButton from "./LongButton";
@@ -65,7 +66,7 @@ export default function DatePickerModal({
   >("single");
 
   // Modal animation
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useAnimatedValue(0);
 
   useEffect(() => {
     if (visible) {

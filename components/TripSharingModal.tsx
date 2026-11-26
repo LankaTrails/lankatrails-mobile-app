@@ -1,6 +1,6 @@
 import * as Clipboard from "expo-clipboard";
 import * as Linking from "expo-linking";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Alert,
   Modal,
@@ -13,6 +13,7 @@ import {
   ScrollView,
   Share,
   Dimensions,
+  useAnimatedValue,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
@@ -51,8 +52,8 @@ const TripSharingModal: React.FC<TripSharingModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   // Animation references
-  const slideAnim = useRef(new Animated.Value(600)).current;
-  const blurOpacity = useRef(new Animated.Value(0)).current;
+  const slideAnim = useAnimatedValue(600);
+  const blurOpacity = useAnimatedValue(0);
 
   const resetModal = () => {
     setCurrentStep("type");

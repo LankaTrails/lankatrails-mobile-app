@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { View, Text, ScrollView, Image, TouchableOpacity, StatusBar, Dimensions, Animated, Platform, UIManager } from 'react-native';
+import React, { useState, useEffect } from "react";
+import { View, Text, ScrollView, Image, TouchableOpacity, StatusBar, Dimensions, Animated, Platform, UIManager, useAnimatedValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
@@ -18,11 +18,11 @@ const TravelApp = () => {
   const { user } = useAuth();
   
   // Animation values (kept for visual polish if desired)
-  const headerAnim = useRef(new Animated.Value(0)).current;
-  const heroImageAnim = useRef(new Animated.Value(0)).current;
-  const collageAnim = useRef(new Animated.Value(0)).current;
-  const summaryAnim = useRef(new Animated.Value(0)).current;
-  const placesInfoAnim = useRef(new Animated.Value(0)).current;
+  const headerAnim = useAnimatedValue(0);
+  const heroImageAnim = useAnimatedValue(0);
+  const collageAnim = useAnimatedValue(0);
+  const summaryAnim = useAnimatedValue(0);
+  const placesInfoAnim = useAnimatedValue(0);
 
   const heroImages = [
        "https://images.unsplash.com/photo-1550614795-00d4f7e5fed2?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1170",
@@ -74,7 +74,7 @@ const TravelApp = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#f9fafb' }}>
-      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <StatusBar barStyle="dark-content" />
       <View style={{ height: insets.top, backgroundColor: '#ffffff' }} />
 
       <Animated.View

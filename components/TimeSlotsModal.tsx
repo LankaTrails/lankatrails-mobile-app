@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
+  useAnimatedValue,
 } from "react-native";
 import { BookingType } from "../types/serviceTypes";
 import { TimeSlotsResponseDTO } from "../types/triptypes";
@@ -45,7 +46,7 @@ export default function TimeSlotsModal({
   const [customEndMinute, setCustomEndMinute] = useState(0);
 
   // Modal animation
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useAnimatedValue(0);
 
   useEffect(() => {
     if (visible) {

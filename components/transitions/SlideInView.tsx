@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, ViewStyle, StyleProp } from 'react-native';
+import React, { useEffect } from 'react';
+import { Animated, ViewStyle, StyleProp, useAnimatedValue } from 'react-native';
 
 interface Props {
   style?: StyleProp<ViewStyle>;
@@ -10,7 +10,7 @@ interface Props {
 }
 
 const SlideInView: React.FC<Props> = ({ style, children, direction = 'bottom', duration = 800, delay = 0 }) => {
-  const slideAnim = useRef(new Animated.Value(100)).current;
+  const slideAnim = useAnimatedValue(100);
 
   useEffect(() => {
     Animated.timing(slideAnim, {

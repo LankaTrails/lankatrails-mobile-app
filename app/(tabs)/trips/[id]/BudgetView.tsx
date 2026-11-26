@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useRef,
-  useEffect,
-  useCallback,
-  useMemo,
-} from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -13,6 +7,7 @@ import {
   StyleSheet,
   Alert,
   Animated,
+  useAnimatedValue,
 } from "react-native";
 import { BlurView } from "expo-blur";
 import { useLocalSearchParams } from "expo-router";
@@ -117,7 +112,7 @@ const BudgetView = () => {
   });
 
   // Animated blur overlay
-  const blurOpacity = useRef(new Animated.Value(0)).current;
+  const blurOpacity = useAnimatedValue(0);
 
   // Data states
   const [budgetCategories, setBudgetCategories] = useState<BudgetCategory[]>(
@@ -1245,7 +1240,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
   },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 1,
   },
   header: {

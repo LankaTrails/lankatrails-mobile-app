@@ -1,9 +1,8 @@
 import { useAuth } from "@/hooks/useAuth";
 import { changePassword } from "@/services/userService";
-import { useFocusEffect } from "@react-navigation/native";
 import { BlurView } from "expo-blur";
-import { router } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Animated,
@@ -14,6 +13,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  useAnimatedValue,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import EditPopup from "../../../components/EditPopup";
@@ -58,7 +58,7 @@ export default function Profile() {
     confirm: "",
   });
 
-  const blurOpacity = useRef(new Animated.Value(0)).current;
+  const blurOpacity = useAnimatedValue(0);
 
   useEffect(() => {
     const isAnyModalVisible = modalVisible || passwordModalVisible;
@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 1,
   },
 

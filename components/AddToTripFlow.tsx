@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Animated, Dimensions, FlatList, Modal, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Animated, Dimensions, FlatList, Modal, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View, useAnimatedValue } from "react-native";
 import {
   addToTrip,
   getMyTrips,
@@ -802,7 +802,7 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
   const [customDuration, setCustomDuration] = useState(1);
 
   // Animation
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useAnimatedValue(0);
   const screenHeight = Dimensions.get("window").height;
 
   // Helper to get current service detail (prop or fetched)

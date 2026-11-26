@@ -2,14 +2,15 @@ import { Stack, router, useLocalSearchParams } from 'expo-router';
 import weatherService, { WeatherData } from "@/services/weatherService";
 import React, { useRef, useState, useEffect, useMemo } from "react";
 import {
-    Alert,
-    Animated,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Animated,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  useAnimatedValue,
 } from "react-native";
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import BackButton from '../../../../components/BackButton';
@@ -95,8 +96,8 @@ const DayDetails = () => {
   }, [date, weather, services]); // Re-fetch if date, weather, or services change
 
   // Animation for header hide/show
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const headerTranslateY = useRef(new Animated.Value(0)).current;
+  const scrollY = useAnimatedValue(0);
+  const headerTranslateY = useAnimatedValue(0);
   const lastScrollY = useRef(0);
 
   // Header animation based on scroll direction

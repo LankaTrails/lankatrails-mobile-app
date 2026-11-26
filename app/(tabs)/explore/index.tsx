@@ -10,7 +10,7 @@ import {
 } from "@/utils/recentSearchStorage";
 import * as Location from "expo-location";
 import { useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Animated,
@@ -20,6 +20,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  useAnimatedValue,
 } from "react-native";
 import { MapPinIcon } from "react-native-heroicons/outline";
 import { logger } from "@/utils/logger";
@@ -57,9 +58,9 @@ interface RecentSearchItemProps {
 // Memoized Animation Components
 const PageTransition = React.memo<PageTransitionProps>(
   ({ children, animationType = "fadeIn", isVisible = true }) => {
-    const fadeAnim = useRef(new Animated.Value(0)).current;
-    const slideAnim = useRef(new Animated.Value(50)).current;
-    const scaleAnim = useRef(new Animated.Value(0.9)).current;
+    const fadeAnim = useAnimatedValue(0);
+    const slideAnim = useAnimatedValue(50);
+    const scaleAnim = useAnimatedValue(0.9);
 
     useEffect(() => {
       if (!isVisible) return;
@@ -149,8 +150,8 @@ const PageTransition = React.memo<PageTransitionProps>(
 
 const StaggeredListItem = React.memo<StaggeredListItemProps>(
   ({ children, delay = 0, index = 0 }) => {
-    const fadeAnim = useRef(new Animated.Value(0)).current;
-    const slideAnim = useRef(new Animated.Value(30)).current;
+    const fadeAnim = useAnimatedValue(0);
+    const slideAnim = useAnimatedValue(30);
 
     useEffect(() => {
       const animationDelay = delay + index * ANIMATION_CONFIG.STAGGER_DELAY;
@@ -187,7 +188,7 @@ const StaggeredListItem = React.memo<StaggeredListItemProps>(
 );
 
 const LoadingSkeleton = React.memo(() => {
-  const pulseAnim = useRef(new Animated.Value(0.3)).current;
+  const pulseAnim = useAnimatedValue(0.3);
 
   useEffect(() => {
     const createPulseAnimation = () => {
@@ -549,7 +550,7 @@ const LocationSearchScreen = () => {
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <StatusBar barStyle="dark-content" backgroundColor="white" />
+        <StatusBar barStyle="dark-content" />
         <LoadingSkeleton />
       </SafeAreaView>
     );
@@ -558,7 +559,7 @@ const LocationSearchScreen = () => {
   // Main render
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
+      <StatusBar barStyle="dark-content" />
 
       <PageTransition animationType="slideUp" isVisible={pageVisible}>
         {/* Header with Search */}

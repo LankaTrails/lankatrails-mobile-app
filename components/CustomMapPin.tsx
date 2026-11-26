@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from "react";
-import { Animated, View } from "react-native";
+import React, { useEffect } from "react";
+import { Animated, View, useAnimatedValue } from "react-native";
 import { Path, Svg } from "react-native-svg";
 
 interface CustomMapPinProps {
@@ -13,8 +13,8 @@ const CustomMapPin: React.FC<CustomMapPinProps> = ({
   color = "#ff6600",
   selected = false,
 }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const bounceAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useAnimatedValue(1);
+  const bounceAnim = useAnimatedValue(0);
 
   useEffect(() => {
     // Entry animation - bounce in

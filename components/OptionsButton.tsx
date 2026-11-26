@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import {
   Alert,
   View,
@@ -8,6 +8,7 @@ import {
   Dimensions,
   Modal,
   TouchableWithoutFeedback,
+  useAnimatedValue,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { router } from "expo-router";
@@ -21,15 +22,15 @@ interface OptionsButtonProps {
 
 const OptionsButton: React.FC<OptionsButtonProps> = ({ tripId, tripName }) => {
   const [isVisible, setIsVisible] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useAnimatedValue(0);
+  const scaleAnim = useAnimatedValue(0);
+  const rotateAnim = useAnimatedValue(0);
 
   // Individual animation values for staggered effect
-  const option1Anim = useRef(new Animated.Value(0)).current;
-  const option2Anim = useRef(new Animated.Value(0)).current;
-  const option3Anim = useRef(new Animated.Value(0)).current;
-  const option4Anim = useRef(new Animated.Value(0)).current;
+  const option1Anim = useAnimatedValue(0);
+  const option2Anim = useAnimatedValue(0);
+  const option3Anim = useAnimatedValue(0);
+  const option4Anim = useAnimatedValue(0);
 
   const toggleMenu = () => {
     if (isVisible) {

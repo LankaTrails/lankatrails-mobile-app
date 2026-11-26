@@ -1,8 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, Image, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "@react-navigation/native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { getMyTrips } from "@/services/tripService";
 import { searchServicesByLocation } from "@/services/serviceSearch";
 import { serviceDetailHref } from "@/utils/navigationHelpers";

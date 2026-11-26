@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated } from 'react-native';
+import React, { useEffect } from 'react';
+import { Animated, useAnimatedValue } from 'react-native';
 
 type PageTransitionProps = {
   children: React.ReactNode;
@@ -12,9 +12,9 @@ const PageTransition = ({
   animationType = 'fadeIn',
   isVisible = true,
 }: PageTransitionProps) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const fadeAnim = useAnimatedValue(0);
+  const slideAnim = useAnimatedValue(50);
+  const scaleAnim = useAnimatedValue(0.9);
 
   useEffect(() => {
     if (isVisible) {

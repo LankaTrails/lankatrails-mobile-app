@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Animated, Dimensions, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Animated, Dimensions, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, useAnimatedValue } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Location, TripTagType } from "../types/triptypes";
 import LongButton from "./LongButton";
@@ -34,7 +34,7 @@ export default function DestinationModal({
   const [selectedDestinations, setSelectedDestinations] = useState<Location[]>(
     []
   );
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useAnimatedValue(0);
   const screenHeight = Dimensions.get("window").height;
 
   // Filter and sort destinations based on selected vibes and search query

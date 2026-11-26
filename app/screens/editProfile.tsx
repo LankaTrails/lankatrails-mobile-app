@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 1,
   },
   editButton: {

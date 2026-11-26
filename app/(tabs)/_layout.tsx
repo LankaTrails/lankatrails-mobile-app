@@ -3,6 +3,8 @@ import { ActivityIndicator, View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/hooks/useAuth";
 
+const INACTIVE_TINT = "#9CA3AF";
+
 export default function TabsLayout() {
   const { isAuthenticated, initialized } = useAuth();
 
@@ -24,7 +26,7 @@ export default function TabsLayout() {
         tabBarShowLabel: false,
         // tabBarActiveBackgroundColor: "#008080", // Uncomment and set a color if needed
         tabBarActiveTintColor: "#ffffff",
-        tabBarInactiveTintColor: "#9CA3AF",
+        tabBarInactiveTintColor: INACTIVE_TINT,
 
         tabBarStyle: {
           backgroundColor: "#ffffff",
@@ -44,7 +46,7 @@ export default function TabsLayout() {
           shadowRadius: 2,
         },
         headerShown: false,
-        tabBarIcon: ({ focused, color, size }) => {
+        tabBarIcon: ({ focused }) => {
           const name = route.name.split("/")[0]; // Extract main tab name
 
           let iconName: keyof typeof Ionicons.glyphMap = "home";
@@ -64,7 +66,7 @@ export default function TabsLayout() {
               <Ionicons
                 name={iconName}
                 size={focused ? 24 : 22}
-                color={focused ? "#fff" : color}
+                color={focused ? "#fff" : INACTIVE_TINT}
               />
             </View>
           );

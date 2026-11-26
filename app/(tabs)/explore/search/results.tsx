@@ -24,6 +24,7 @@ import {
   ToastAndroid,
   TouchableOpacity,
   View,
+  useAnimatedValue,
 } from "react-native";
 import { ArrowLeftIcon } from "react-native-heroicons/outline";
 import { fetchGroupedPlaces, geocodeLocation } from "../../../../services/googlePlacesService";
@@ -305,10 +306,6 @@ const convertPlaceToCardItem = (place: Place): CardItem => ({
     : "",
 });
 
-// Custom hooks
-const useAnimatedValue = (initialValue = 0) => {
-  return useRef(new Animated.Value(initialValue)).current;
-};
 
 const useCoordinates = (params: any, searchLocation: string) => {
   return useMemo(() => {
@@ -1024,7 +1021,7 @@ const GalleApp: React.FC = () => {
 
   return (
     <View className="flex-1 bg-gray-50">
-      <StatusBar backgroundColor="#0D9488" />
+      <StatusBar />
 
       {/* Header */}
       <View className="bg-gray-50 pt-12 pb-4">

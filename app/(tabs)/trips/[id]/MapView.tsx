@@ -6,13 +6,12 @@ import MapView, {
   Region,
   Polyline,
 } from "react-native-maps";
-import { useLocalSearchParams, router, useFocusEffect } from "expo-router";
+import { useLocalSearchParams, router, useFocusEffect, useNavigation } from "expo-router";
 import { getTripById, getTripItemsByTripId } from "@/services/tripService";
 import { Trip, TripItem } from "@/types/triptypes";
 import { ServiceType } from "@/types/commonTypes";
 import TripMapMarker from "../../../../components/TripMapMarker";
 import Icon from "react-native-vector-icons/Ionicons";
-import { useNavigation } from "@react-navigation/native";
 import { getDirectionsWithApiInfo, logRouteDetails, DirectionsRoute, DirectionsWaypoint } from "@/services/googleDirectionsService";
 import { logger } from "@/utils/logger";
 

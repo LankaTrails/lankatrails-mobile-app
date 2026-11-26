@@ -1,7 +1,7 @@
 import * as Linking from "expo-linking";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useRef, useState } from "react";
-import { Alert, Animated, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Animated, SafeAreaView, ScrollView, StyleSheet, Text, View, useAnimatedValue } from "react-native";
 import BackButton from "../../../../components/BackButton";
 import FilterButton from "../../../../components/FilterButton";
 import HeaderButton from "../../../../components/HeaderButton";
@@ -58,8 +58,8 @@ const TripDetails = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Animation for header hide/show
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const headerTranslateY = useRef(new Animated.Value(0)).current;
+  const scrollY = useAnimatedValue(0);
+  const headerTranslateY = useAnimatedValue(0);
   const lastScrollY = useRef(0);
 
   // Header animation based on scroll direction

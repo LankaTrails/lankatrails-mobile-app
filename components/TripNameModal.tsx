@@ -12,6 +12,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  useAnimatedValue,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import LongButton from "./LongButton";
@@ -38,7 +39,7 @@ export default function TripNameModal({
   const [tripName, setTripName] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const hasSetInitialSelection = useRef(false);
-  const slideAnim = useRef(new Animated.Value(startFromIntermediate ? 0.3 : 0)).current;
+  const slideAnim = useAnimatedValue(startFromIntermediate ? 0.3 : 0);
   const screenHeight = Dimensions.get('window').height;
 
   useEffect(() => {

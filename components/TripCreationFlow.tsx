@@ -2,8 +2,8 @@ import { createTrip, fetchAllCities } from "@/services/tripService";
 import { Location, Trip, tripRequest, TripTagType } from "@/types/triptypes";
 import { ApiResponse } from "@/types/commonTypes";
 import { BlurView } from "expo-blur";
-import React, { useEffect, useRef, useState } from "react";
-import { Alert, Animated, StyleSheet, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Alert, Animated, StyleSheet, View, useAnimatedValue } from "react-native";
 import DestinationModal from "./DestinationModal";
 import PersonCountModal from "./PersonCountModal";
 import StartLocationModal from "./StartLocationModal";
@@ -59,7 +59,7 @@ export default function TripCreationFlow({
   ];
 
   // Animation
-  const blurOpacity = useRef(new Animated.Value(0)).current;
+  const blurOpacity = useAnimatedValue(0);
 
   useEffect(() => {
     if (visible) {

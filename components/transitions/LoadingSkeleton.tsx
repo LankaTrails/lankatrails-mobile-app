@@ -1,8 +1,8 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { Animated, View, useAnimatedValue } from 'react-native';
 
 const LoadingSkeleton = () => {
-  const pulseAnim = useRef(new Animated.Value(0.3)).current;
+  const pulseAnim = useAnimatedValue(0.3);
 
   useEffect(() => {
     const pulse = () => {

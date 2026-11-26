@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated } from 'react-native';
+import React, { useEffect } from 'react';
+import { Animated, useAnimatedValue } from 'react-native';
 
 type StaggeredListItemProps = {
   children: React.ReactNode;
@@ -12,8 +12,8 @@ const StaggeredListItem = ({
   delay = 0,
   index = 0,
 }: StaggeredListItemProps) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
+  const fadeAnim = useAnimatedValue(0);
+  const slideAnim = useAnimatedValue(30);
 
   useEffect(() => {
     const animationDelay = delay + index * 100;

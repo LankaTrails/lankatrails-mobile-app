@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { BlurView } from "expo-blur";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Animated,
@@ -14,6 +14,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  useAnimatedValue,
 } from "react-native";
 import InputField from "../../components/InputField";
 import LongButton from "../../components/LongButton";
@@ -24,9 +25,9 @@ const SignIn = () => {
 
   const { redirect } = useLocalSearchParams(); // Get redirect parameter
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-  const blurFadeAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useAnimatedValue(0);
+  const slideAnim = useAnimatedValue(50);
+  const blurFadeAnim = useAnimatedValue(0);
 
   const { signIn, isLoading, error, clearError, isAuthenticated } = useAuth();
 
@@ -81,8 +82,6 @@ const SignIn = () => {
     <View style={styles.container}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor="transparent"
-        translucent
       />
 
       <ImageBackground
@@ -131,7 +130,7 @@ const SignIn = () => {
             >
               <Animated.View
                 style={{
-                  ...StyleSheet.absoluteFillObject,
+                  ...StyleSheet.absoluteFill,
                   opacity: blurFadeAnim,
                 }}
               >
@@ -204,7 +203,7 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   gradientOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.05)",
   },
   keyboardAvoid: {

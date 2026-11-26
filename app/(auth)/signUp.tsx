@@ -5,7 +5,7 @@ import { signUp } from "@/services/userService";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import {
   Alert,
   Animated,
@@ -19,6 +19,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  useAnimatedValue,
 } from "react-native";
 import { logger } from "@/utils/logger";
 
@@ -52,9 +53,9 @@ const SignUp = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-  const blurFadeAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useAnimatedValue(0);
+  const slideAnim = useAnimatedValue(50);
+  const blurFadeAnim = useAnimatedValue(0);
 
   React.useEffect(() => {
     // Set default country if not already set
@@ -246,17 +247,10 @@ const SignUp = () => {
     }
   };
 
-  const ErrorMessage = ({ error }: { error: string }) => {
-    if (!error) return null;
-    return <Text style={styles.errorText}>{error}</Text>;
-  };
-
   return (
     <View style={styles.container}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor="transparent"
-        translucent
       />
       <ImageBackground
         source={require("../../assets/images/login.jpeg")}
@@ -278,7 +272,7 @@ const SignUp = () => {
             >
               <Animated.View
                 style={{
-                  ...StyleSheet.absoluteFillObject,
+                  ...StyleSheet.absoluteFill,
                   opacity: blurFadeAnim,
                 }}
               >
@@ -485,7 +479,7 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   gradientOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.05)",
   },
   keyboardAvoid: {
@@ -615,5 +609,11 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 });
+
+// Defined at module level so it is not re-created (and remounted) on every render
+const ErrorMessage = ({ error }: { error: string }) => {
+  if (!error) return null;
+  return <Text style={styles.errorText}>{error}</Text>;
+};
 
 export default SignUp;
