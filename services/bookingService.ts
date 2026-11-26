@@ -1,5 +1,5 @@
 import api from '@/api/axiosInstance';
-import type { ApiResponse, Location } from '@/types/commonTypes';
+import type { ApiResponse } from '@/types/commonTypes';
 import type { BookingItem, PaymentRequest } from '@/types/bookingTypes';
 
 

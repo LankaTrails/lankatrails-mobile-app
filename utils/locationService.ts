@@ -1,5 +1,6 @@
 import * as Location from 'expo-location';
 import { Alert } from 'react-native';
+import { logger } from "@/utils/logger";
 
 export interface LocationData {
     coords: {
@@ -41,7 +42,7 @@ export class LocationService {
             const { status } = await Location.requestForegroundPermissionsAsync();
             return status;
         } catch (error) {
-            console.error('Error requesting location permissions:', error);
+            logger.error('Error requesting location permissions:', error);
             throw error;
         }
     }
@@ -54,7 +55,7 @@ export class LocationService {
             const { status } = await Location.getForegroundPermissionsAsync();
             return status === 'granted';
         } catch (error) {
-            console.error('Error checking location permissions:', error);
+            logger.error('Error checking location permissions:', error);
             return false;
         }
     }
@@ -77,7 +78,7 @@ export class LocationService {
 
             return location;
         } catch (error) {
-            console.error('Error getting current location:', error);
+            logger.error('Error getting current location:', error);
             throw error;
         }
     }
@@ -94,7 +95,7 @@ export class LocationService {
 
             return result;
         } catch (error) {
-            console.error('Error reverse geocoding:', error);
+            logger.error('Error reverse geocoding:', error);
             throw error;
         }
     }
@@ -113,7 +114,7 @@ export class LocationService {
 
             return 'Unknown location';
         } catch (error) {
-            console.error('Error getting location name:', error);
+            logger.error('Error getting location name:', error);
             return 'Unknown location';
         }
     }

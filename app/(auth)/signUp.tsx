@@ -20,6 +20,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { logger } from "@/utils/logger";
 
 const { width, height } = Dimensions.get("window");
 
@@ -232,7 +233,7 @@ const SignUp = () => {
         ]
       );
     } catch (error: any) {
-      console.error("Sign Up Error:", error);
+      logger.error("Sign Up Error:", error);
 
       // Show specific error message from the service
       Alert.alert(

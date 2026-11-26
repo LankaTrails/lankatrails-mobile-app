@@ -1,6 +1,6 @@
 // components/transitions/ScrollReveal.tsx (optional)
 import React, { useRef, useEffect, useState } from 'react';
-import { Animated, View, ViewStyle, LayoutRectangle } from 'react-native';
+import { Animated, ViewStyle, LayoutRectangle } from 'react-native';
 
 interface Props {
   children: React.ReactNode;

@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { Star } from 'lucide-react-native';
-import { Ionicons } from '@expo/vector-icons';
 
 interface TransportProviderCardProps {
   id: number;

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { TouchableWithoutFeedback, Animated, StyleSheet, TouchableOpacity } from "react-native";
+import { Animated, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { theme } from "@/constants/theme";

@@ -193,11 +193,6 @@ export default function TripDetailsModal({
       title: title.trim(),
     };
 
-    console.log("TripDetailsModal - Confirming with person count:", {
-      numberOfAdults,
-      numberOfChildren,
-      tripDetails,
-    });
 
     onConfirm(tripDetails);
   };

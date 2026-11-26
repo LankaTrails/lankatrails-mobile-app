@@ -1,19 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  Dimensions,
-  FlatList,
-  Modal,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
-  ViewStyle,
-} from "react-native";
+import { ActivityIndicator, Alert, Animated, Dimensions, FlatList, Modal, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 import {
   addToTrip,
   getMyTrips,
@@ -27,14 +14,10 @@ import {
   TimeSlotsResponseDTO,
   TimeSlotsRequestDTO,
 } from "../types/triptypes";
-import {
-  Service,
-  ServiceDetail,
-  BookingType,
-  PriceType,
-} from "../types/serviceTypes";
+import { Service, ServiceDetail, BookingType } from "../types/serviceTypes";
 import LongButton from "./LongButton";
 import TripCreationFlow from "./TripCreationFlow";
+import { logger } from "@/utils/logger";
 
 interface AddToTripFlowProps {
   visible: boolean;
@@ -501,10 +484,6 @@ const TimeSelectionWidget: React.FC<{
   onCustomTimeChange,
   onFetchTimeSlots,
 }) => {
-  console.log("TimeSelectionWidget rendered with:");
-  console.log("- bookingType:", bookingType);
-  console.log("- selectedDate:", selectedDate);
-  console.log("- availableTimeSlots:", availableTimeSlots);
 
   useEffect(() => {
     if (bookingType === "TIME_SLOTS" && selectedDate && !availableTimeSlots) {
@@ -839,9 +818,6 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
 
     try {
       setIsLoadingServiceDetail(true);
-      console.log(
-        `🔍 Fetching service details for ${service.serviceId} (${service.category})`
-      );
 
       const response = await fetchServiceDetail(
         service.serviceId,
@@ -849,28 +825,19 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
       );
       if (response.success && response.data) {
         setFetchedServiceDetail(response.data);
-        console.log(
-          `✅ Service details fetched successfully for ${service.serviceName}`
-        );
       } else {
-        console.error(
+        logger.error(
           `❌ Failed to fetch service details: ${response.message}`
         );
       }
     } catch (error) {
-      console.error(`❌ Error fetching service details:`, error);
+      logger.error(`❌ Error fetching service details:`, error);
     } finally {
       setIsLoadingServiceDetail(false);
     }
   };
 
   useEffect(() => {
-    console.log(
-      "Main useEffect triggered - visible:",
-      visible,
-      "currentStep:",
-      currentStep
-    );
     if (visible) {
       Animated.timing(slideAnim, {
         toValue: 1,
@@ -885,7 +852,6 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
         fetchServiceDetails();
       }
     } else {
-      console.log("Modal closing - calling resetFlow");
       Animated.timing(slideAnim, {
         toValue: 0,
         duration: 300,
@@ -897,12 +863,6 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
 
   // Add debugging for currentStep changes
   useEffect(() => {
-    console.log("Current step changed to:", currentStep);
-    console.log(
-      "TravelersUnitsModal should be visible:",
-      currentStep === FlowStep.TRAVELERS_UNITS
-    );
-    console.log("TripCreationFlow should be visible:", showNewTripFlow);
   }, [currentStep, showNewTripFlow]);
 
   const resetFlow = () => {
@@ -931,7 +891,7 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
         setTrips([]);
       }
     } catch (error) {
-      console.error("Error loading trips:", error);
+      logger.error("Error loading trips:", error);
       setTrips([]);
       Alert.alert("Error", "Failed to load your trips");
     } finally {
@@ -940,14 +900,11 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
   };
 
   const handleTripSelected = (trip: Trip) => {
-    console.log("Trip selected:", trip.tripName);
-    console.log("Setting current step to TRAVELERS_UNITS");
     setSelectedTrip(trip);
     // Pre-fill with trip defaults
     setAdults(trip.numberOfAdults);
     setChildren(trip.numberOfChildren);
     setCurrentStep(FlowStep.TRAVELERS_UNITS);
-    console.log("Current step set to:", FlowStep.TRAVELERS_UNITS);
   };
 
   // Auto-suggest units when travelers change
@@ -966,9 +923,7 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
   }, [adults, children, currentStep]);
 
   const handleCreateNewTrip = () => {
-    console.log("Create new trip button pressed");
     setShowNewTripFlow(true);
-    console.log("showNewTripFlow set to:", true);
   };
 
   const handleNewTripCreated = (trip: Trip) => {
@@ -1177,7 +1132,7 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
         setAvailableTimeSlots(response.data);
       }
     } catch (error) {
-      console.error("Error fetching time slots:", error);
+      logger.error("Error fetching time slots:", error);
       Alert.alert("Error", "Failed to load available time slots");
     } finally {
       setIsLoading(false);
@@ -1203,18 +1158,8 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
       const bookingType = currentServiceDetail?.bookingConfig?.bookingType;
       const bookingConfig = currentServiceDetail?.bookingConfig;
 
-      console.log("🔍 Debug time calculation:");
-      console.log("🔍 bookingType:", bookingType);
-      console.log("🔍 selectedTimeSlot:", selectedTimeSlot);
-      console.log("🔍 selectedDates:", selectedDates);
-      console.log("🔍 checkInDate:", checkInDate);
-      console.log("🔍 checkOutDate:", checkOutDate);
-      console.log("🔍 customStartHour:", customStartHour);
-      console.log("🔍 customStartMinute:", customStartMinute);
-      console.log("🔍 customDuration:", customDuration);
 
       if (bookingType === "MULTI_DAY" && checkInDate && checkOutDate) {
-        console.log("🔍 Taking MULTI_DAY path");
         const checkInTime = bookingConfig?.defaultCheckInTime || "15:00";
         const checkOutTime = bookingConfig?.defaultCheckOutTime || "11:00";
 
@@ -1235,7 +1180,6 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
         selectedTimeSlot &&
         selectedDates.length > 0
       ) {
-        console.log("🔍 Taking TIME_SLOTS path");
 
         const selectedDate = new Date(selectedDates[0]);
         const year = selectedDate.getFullYear();
@@ -1255,7 +1199,6 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
         startTime = `${dateStr}T${startTimeFormatted}`;
         endTime = `${dateStr}T${endTimeFormatted}`;
       } else if (bookingType === "FLEXIBLE_HOURS" && selectedDates.length > 0) {
-        console.log("🔍 Taking FLEXIBLE_HOURS path");
 
         const selectedDate = new Date(selectedDates[0]);
         const year = selectedDate.getFullYear();
@@ -1281,7 +1224,6 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
         startTime = startDateTime.toISOString();
         endTime = endDateTime.toISOString();
       } else if (bookingType === "WHOLE_DAY" && selectedDates.length > 0) {
-        console.log("🔍 Taking WHOLE_DAY path");
 
         const selectedDate = new Date(selectedDates[0]);
         const year = selectedDate.getFullYear();
@@ -1339,7 +1281,6 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
         startTime = startDateTime.toISOString();
         endTime = endDateTime.toISOString();
       } else if (bookingType === "FIXED_TIME" && selectedDates.length > 0) {
-        console.log("🔍 Taking FIXED_TIME path");
 
         const selectedDate = new Date(selectedDates[0]);
         const dayName = [
@@ -1404,7 +1345,6 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
           endTime = endDateTime.toISOString();
         }
       } else if (bookingType === "EVENT_BASED" && selectedDates.length > 0) {
-        console.log("🔍 Taking EVENT_BASED path");
 
         const selectedDate = new Date(selectedDates[0]);
         const year = selectedDate.getFullYear();
@@ -1441,7 +1381,6 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
         startTime = startDateTime.toISOString();
         endTime = endDateTime.toISOString();
       } else if (selectedDates.length > 0) {
-        console.log("🔍 Taking default/fallback path");
 
         const selectedDate = new Date(selectedDates[0]);
         const year = selectedDate.getFullYear();
@@ -1476,13 +1415,8 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
         numberOfChildren: children,
       };
 
-      console.log(
-        "📋 TripItem being sent to API:",
-        JSON.stringify(tripItem, null, 2)
-      );
 
       const response = await addToTrip(selectedTrip.tripId, tripItem);
-      console.log("📦 API Response:", response);
 
       if (response.success) {
         onClose();
@@ -1494,11 +1428,11 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
       } else if (!response.success) {
         const errorMessage =
           response.message || "Failed to add service to trip";
-        console.error("API Error:", response);
+        logger.error("API Error:", response);
         Alert.alert("Error", errorMessage);
       }
     } catch (error) {
-      console.error("Error adding to trip:", error);
+      logger.error("Error adding to trip:", error);
 
       let errorMessage = "Failed to add service to trip. Please try again.";
 
@@ -2386,7 +2320,7 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
   const renderTripSelection = () => (
     <View style={styles.content}>
       <Text style={styles.subtitle}>
-        Add "{service.serviceName}" to one of your trips
+        Add “{service.serviceName}” to one of your trips
       </Text>
 
       {isLoading ? (
@@ -2470,12 +2404,6 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
     const bookingType =
       currentServiceDetail?.bookingConfig?.bookingType || "WHOLE_DAY";
 
-    console.log("Date selection - serviceDetail:", currentServiceDetail);
-    console.log(
-      "Date selection - bookingConfig:",
-      currentServiceDetail?.bookingConfig
-    );
-    console.log("Date selection - bookingType:", bookingType);
 
     return (
       <View style={styles.content}>
@@ -2562,10 +2490,6 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
     const bookingType =
       currentServiceDetail?.bookingConfig?.bookingType || "WHOLE_DAY";
 
-    console.log("Rendering time selection content");
-    console.log("Booking type:", bookingType);
-    console.log("Selected dates:", selectedDates);
-    console.log("Check-in date:", checkInDate);
 
     return (
       <View style={styles.content}>
@@ -2979,7 +2903,6 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
   );
 
   const renderCurrentStep = () => {
-    console.log("Rendering current step:", currentStep);
     switch (currentStep) {
       case FlowStep.TRIP_SELECTION:
         return renderTripSelection();
@@ -3035,7 +2958,6 @@ const AddToTripFlow: React.FC<AddToTripFlowProps> = ({
       <TripCreationFlow
         visible={showNewTripFlow}
         onClose={() => {
-          console.log("TripCreationFlow onClose called");
           setShowNewTripFlow(false);
         }}
         onTripCreated={handleNewTripCreated}

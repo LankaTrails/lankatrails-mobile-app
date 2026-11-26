@@ -69,7 +69,6 @@ export default function PersonCountModal({
   };
 
   const handleConfirm = () => {
-    console.log("PersonCountModal - Confirming with:", { adults, children });
     onConfirm(adults, children);
   };
 

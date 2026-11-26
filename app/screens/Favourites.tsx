@@ -15,6 +15,7 @@ import BackButton from "@/components/BackButton";
 import { getFavorites } from "@/services/favouriteService";
 import { FavoriteItem } from "@/types/triptypes";
 import { router } from "expo-router";
+import { logger } from "@/utils/logger";
 
 const { width } = Dimensions.get("window");
 
@@ -33,7 +34,7 @@ export default function FavouritesPage() {
         const favoritesData = await getFavorites();
         setFavourites(favoritesData);
       } catch (err) {
-        console.error("Error fetching favorites:", err);
+        logger.error("Error fetching favorites:", err);
         setError("Failed to load favorites");
       } finally {
         setLoading(false);
@@ -86,7 +87,6 @@ export default function FavouritesPage() {
   const handlePress = (item: any) => {
     if (item.category === "PLACE") {
       // Handle place navigation if needed
-      console.log("Navigate to place:", item.title);
     } else {
       // Navigate to service detail page based on category
       const categoryMap: { [key: string]: string } = {

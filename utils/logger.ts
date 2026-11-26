@@ -1,16 +1,17 @@
-const isProduction = process.env.NODE_ENV === 'production';
+/** Dev-only logging: silent in release builds, so nothing sensitive reaches device logs. */
+const enabled = typeof __DEV__ !== 'undefined' ? __DEV__ : process.env.NODE_ENV !== 'production';
 
 export const logger = {
-    info: (...args: any[]) => {
-        if (!isProduction) console.info('[INFO]', ...args);
+    debug: (...args: unknown[]) => {
+        if (enabled) console.debug('[DEBUG]', ...args);
     },
-    warn: (...args: any[]) => {
-        if (!isProduction) console.warn('[WARN]', ...args);
+    info: (...args: unknown[]) => {
+        if (enabled) console.info('[INFO]', ...args);
     },
-    error: (...args: any[]) => {
-        if (!isProduction) console.error('[ERROR]', ...args);
+    warn: (...args: unknown[]) => {
+        if (enabled) console.warn('[WARN]', ...args);
     },
-    debug: (...args: any[]) => {
-        if (!isProduction) console.debug('[DEBUG]', ...args);
+    error: (...args: unknown[]) => {
+        if (enabled) console.error('[ERROR]', ...args);
     },
 };

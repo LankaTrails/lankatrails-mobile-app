@@ -5,6 +5,7 @@ import {
     ApiResponse,
     TripBudgetCategoryDto
 } from '@/types/budgetTypes';
+import { logger } from "@/utils/logger";
 
 /**
  * Service class for handling budget-related API calls
@@ -18,16 +19,11 @@ export class BudgetService {
      */
     static async getTripBudgetDetails(tripId: number): Promise<ApiResponse<TripBudget>> {
         try {
-            console.info(`[BudgetService] Fetching budget details for trip: ${tripId}`);
-            console.info(`[BudgetService] Trip ID type:`, typeof tripId);
-            console.info(`[BudgetService] Trip ID value:`, tripId);
-            console.info(`[BudgetService] Making request to: /trips-budget/${tripId}`);
             const response = await api.get<ApiResponse<TripBudget>>(`/trips-budget/${tripId}`);
-            console.info(`[BudgetService] Response received:`, response.data);
             return response.data;
         } catch (error: any) {
-            console.error(`[BudgetService] Error fetching budget details for trip: ${tripId}`);
-            console.error(`[BudgetService] Error details:`, {
+            logger.error(`[BudgetService] Error fetching budget details for trip: ${tripId}`);
+            logger.error(`[BudgetService] Error details:`, {
                 message: error.message,
                 status: error.response?.status,
                 statusText: error.response?.statusText,
@@ -87,14 +83,13 @@ export class BudgetService {
      */
     static async addOrUpdateBudgetCategory(budgetData: TripBudgetCategoryDto): Promise<ApiResponse<TripBudgetCategoryDto>> {
         try {
-            console.info(`[BudgetService] Adding/updating budget category:`, budgetData);
             const response = await api.post<ApiResponse<TripBudgetCategoryDto>>(
                 '/trips-budget/category-limit',
                 budgetData
             );
             return response.data;
         } catch (error) {
-            console.error(`[BudgetService] Error adding/updating budget category:`, error);
+            logger.error(`[BudgetService] Error adding/updating budget category:`, error);
             throw error;
         }
     }
@@ -106,11 +101,10 @@ export class BudgetService {
      */
     static async getTripBudgetLimitsByTripId(tripId: number): Promise<ApiResponse<TripBudgetCategoryDto[]>> {
         try {
-            console.info(`[BudgetService] Fetching budget limits for trip: ${tripId}`);
             const response = await api.get<ApiResponse<TripBudgetCategoryDto[]>>(`/trips-budget/category-limit/${tripId}`);
             return response.data;
         } catch (error) {
-            console.error(`[BudgetService] Error fetching budget limits for trip: ${tripId}`, error);
+            logger.error(`[BudgetService] Error fetching budget limits for trip: ${tripId}`, error);
             throw error;
         }
     }
@@ -122,14 +116,13 @@ export class BudgetService {
      */
     static async updateTripTotalBudget(tripBudgetData: TripBudget): Promise<ApiResponse<TripBudget>> {
         try {
-            console.info(`[BudgetService] Updating total budget for trip:`, tripBudgetData);
             const response = await api.put<ApiResponse<TripBudget>>(
                 '/trips-budget/total-budget',
                 tripBudgetData
             );
             return response.data;
         } catch (error) {
-            console.error(`[BudgetService] Error updating total budget:`, error);
+            logger.error(`[BudgetService] Error updating total budget:`, error);
             throw error;
         }
     }
@@ -140,11 +133,10 @@ export async function fetchBudget(
     tripId: number
 ): Promise<BudgetCategory> {
     try {
-        console.info(`[BudgetService] Fetching budget for trip: ${tripId}`);
         const response = await api.get(`/trips-budget/${tripId}`);
         return response.data;
     } catch (error) {
-        console.error(`[BudgetService] Error fetching budget for trip: ${tripId}`, error);
+        logger.error(`[BudgetService] Error fetching budget for trip: ${tripId}`, error);
         throw error;
     }
 }

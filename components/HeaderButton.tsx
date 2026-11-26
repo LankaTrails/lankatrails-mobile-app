@@ -91,7 +91,6 @@ export default function HeaderButton({
     if (onDelete) {
       onDelete();
     } else {
-      console.log(`Trip ${tripId || 'unknown'} delete requested`);
     }
   };
 

@@ -22,6 +22,7 @@ import {
   View,
 } from "react-native";
 import { MapPinIcon } from "react-native-heroicons/outline";
+import { logger } from "@/utils/logger";
 
 // Animation Configuration
 const ANIMATION_CONFIG = {
@@ -340,7 +341,7 @@ const LocationSearchScreen = () => {
         }
       }
     } catch (error) {
-      console.error("Location permission error:", error);
+      logger.error("Location permission error:", error);
       setCurrentLocationName("Location unavailable");
     }
   }, []);
@@ -365,7 +366,7 @@ const LocationSearchScreen = () => {
 
       setCurrentLocationName(locationName);
     } catch (error) {
-      console.error("Error getting current location:", error);
+      logger.error("Error getting current location:", error);
       setCurrentLocationName("Location unavailable");
 
       Alert.alert(
@@ -388,7 +389,7 @@ const LocationSearchScreen = () => {
       const searches = await getRecentSearches();
       setRecentSearches(searches);
     } catch (error) {
-      console.error("Error loading recent searches:", error);
+      logger.error("Error loading recent searches:", error);
     } finally {
       setIsLoadingRecent(false);
     }
@@ -536,7 +537,7 @@ const LocationSearchScreen = () => {
         );
         await removeRecentSearch(searchId);
       } catch (error) {
-        console.error("Error removing recent search:", error);
+        logger.error("Error removing recent search:", error);
         // Revert on error
         loadRecentSearches();
       }
@@ -699,5 +700,11 @@ const LocationSearchScreen = () => {
     </SafeAreaView>
   );
 };
+
+PageTransition.displayName = "PageTransition";
+StaggeredListItem.displayName = "StaggeredListItem";
+LoadingSkeleton.displayName = "LoadingSkeleton";
+SearchItem.displayName = "SearchItem";
+EmptyState.displayName = "EmptyState";
 
 export default LocationSearchScreen;

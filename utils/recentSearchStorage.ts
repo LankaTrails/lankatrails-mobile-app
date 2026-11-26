@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logger } from "@/utils/logger";
 
 export interface RecentSearch {
     id: string;
@@ -46,7 +47,7 @@ export const saveRecentSearch = async (search: Omit<RecentSearch, 'id' | 'timest
 
         await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updatedSearches));
     } catch (error) {
-        console.error('Error saving recent search:', error);
+        logger.error('Error saving recent search:', error);
     }
 };
 
@@ -60,7 +61,7 @@ export const getRecentSearches = async (): Promise<RecentSearch[]> => {
         }
         return [];
     } catch (error) {
-        console.error('Error getting recent searches:', error);
+        logger.error('Error getting recent searches:', error);
         return [];
     }
 };
@@ -71,7 +72,7 @@ export const removeRecentSearch = async (searchId: string): Promise<void> => {
         const updatedSearches = existingSearches.filter(search => search.id !== searchId);
         await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updatedSearches));
     } catch (error) {
-        console.error('Error removing recent search:', error);
+        logger.error('Error removing recent search:', error);
     }
 };
 
@@ -79,7 +80,7 @@ export const clearRecentSearches = async (): Promise<void> => {
     try {
         await AsyncStorage.removeItem(RECENT_SEARCHES_KEY);
     } catch (error) {
-        console.error('Error clearing recent searches:', error);
+        logger.error('Error clearing recent searches:', error);
     }
 };
 

@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import QRCode from "react-native-qrcode-svg";
+import { logger } from "@/utils/logger";
 
 interface QRCodeModalProps {
   visible: boolean;
@@ -38,7 +39,7 @@ export default function QRCodeModal({
       await Clipboard.setStringAsync(invitationLink);
       Alert.alert("Success", "Invitation link copied to clipboard!");
     } catch (error) {
-      console.error("Error copying to clipboard:", error);
+      logger.error("Error copying to clipboard:", error);
       Alert.alert("Error", "Failed to copy invitation link");
     }
   };

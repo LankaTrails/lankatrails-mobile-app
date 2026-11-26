@@ -1,5 +1,5 @@
 import { Service } from './serviceTypes';
-import { Location, ServiceType } from '@/types/commonTypes';
+import { Location } from '@/types/commonTypes';
 
 // Re-export Location for other components
 export { Location };

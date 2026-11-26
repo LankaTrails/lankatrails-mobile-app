@@ -76,7 +76,7 @@ export default function Chat() {
 
   const flatListRef = useRef<FlatList>(null);
   const stompClientRef = useRef<Client | null>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Helper function to get user info by senderId
   const getUserInfo = useCallback(
@@ -652,7 +652,7 @@ export default function Chat() {
       // Set timeout to stop typing indicator after 3 seconds of inactivity
       typingTimeoutRef.current = setTimeout(() => {
         sendTypingStop();
-      }, 3000) as unknown as NodeJS.Timeout;
+      }, 3000);
     } else if (previousLength > 0) {
       // Stop typing when input becomes empty
       sendTypingStop();

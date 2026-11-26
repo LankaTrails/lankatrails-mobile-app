@@ -18,6 +18,7 @@ import TripCard from "../../../components/TripCard";
 import TripCreationFlow from "../../../components/TripCreationFlow";
 import { getMyTrips } from "../../../services/tripService";
 import { Trip } from "../../../types/triptypes";
+import { logger } from "@/utils/logger";
 
 export default function TripsScreen() {
   const [trips, setTrips] = useState<any[]>([]);
@@ -80,9 +81,8 @@ export default function TripsScreen() {
         // Convert API trips to TripCard format
         const convertedTrips = response.data.map(convertTripToCardFormat);
         setTrips(convertedTrips);
-        console.log(`Loaded ${convertedTrips.length} trips from API`);
       } else {
-        console.error("Failed to load trips:", response.message);
+        logger.error("Failed to load trips:", response.message);
         setTrips([]);
 
         // Check if it's just "no trips found" which is normal, not an error
@@ -95,7 +95,7 @@ export default function TripsScreen() {
         // If it's just "no trips found", don't set error - show empty state instead
       }
     } catch (error) {
-      console.error("Error loading trips:", error);
+      logger.error("Error loading trips:", error);
       setTrips([]);
       setError(
         "Failed to load your trips. Please check your internet connection and try again."

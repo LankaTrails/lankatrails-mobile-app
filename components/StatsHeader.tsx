@@ -1,8 +1,12 @@
 import React from "react";
-import { View, Text } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { theme } from "@/constants/theme";
 
-const StatsHeader = ({ trips }) => (
+interface StatsHeaderProps {
+  trips: { status?: string }[];
+}
+
+const StatsHeader = ({ trips }: StatsHeaderProps) => (
   <View style={styles.statsContainer}>
     <View style={styles.statCard}>
       <Text style={styles.statNumber}>{trips.length}</Text>
@@ -23,7 +27,7 @@ const StatsHeader = ({ trips }) => (
   </View>
 );
 
-const styles = {
+const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -34,7 +38,7 @@ const styles = {
     backgroundColor: theme.colors.lightPrimary,
     paddingVertical: 16,
     marginHorizontal: 4,
-    alignself: "center",
+    alignSelf: "center",
     height: 100,
     borderRadius: 20,
     marginTop: 15,
@@ -51,5 +55,6 @@ const styles = {
     color: "#6b7280",
     marginTop: 4,
   },
-};
+});
+
 export default StatsHeader;

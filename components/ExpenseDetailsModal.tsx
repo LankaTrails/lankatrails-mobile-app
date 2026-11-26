@@ -17,6 +17,7 @@ import {
   ExpenseShare,
 } from "@/types/expenseTypes";
 import AddExpenseModal from "./AddExpenseModal";
+import { logger } from "@/utils/logger";
 
 interface TripParticipant {
   participantId: number;
@@ -85,15 +86,6 @@ export default function ExpenseDetailsModal({
   // Debug logging
   useEffect(() => {
     if (expense && visible) {
-      console.log("[ExpenseDetailsModal] Expense object:", expense);
-      console.log(
-        "[ExpenseDetailsModal] isThroughApp value:",
-        expense.isThroughApp
-      );
-      console.log(
-        "[ExpenseDetailsModal] isThroughApp type:",
-        typeof expense.isThroughApp
-      );
     }
   }, [expense, visible]);
 
@@ -118,16 +110,6 @@ export default function ExpenseDetailsModal({
   };
 
   const handleEdit = () => {
-    console.log("[ExpenseDetailsModal] Edit button pressed");
-    console.log(
-      "[ExpenseDetailsModal] expense.isThroughApp:",
-      expense?.isThroughApp
-    );
-    console.log("[ExpenseDetailsModal] isDeleting:", isDeleting);
-    console.log(
-      "[ExpenseDetailsModal] Should be disabled:",
-      expense?.isThroughApp || isDeleting
-    );
     setShowEditModal(true);
   };
 
@@ -152,14 +134,9 @@ export default function ExpenseDetailsModal({
   const confirmDelete = async () => {
     try {
       setIsDeleting(true);
-      console.log(
-        "[ExpenseDetailsModal] Deleting expense with ID:",
-        expense.id
-      );
 
       const response = await ExpenseService.deleteExpense(parseInt(expense.id));
 
-      console.log("[ExpenseDetailsModal] Delete response:", response);
 
       if (response.success) {
         Alert.alert("Success", "Expense deleted successfully");
@@ -169,7 +146,7 @@ export default function ExpenseDetailsModal({
         Alert.alert("Error", response.message || "Failed to delete expense");
       }
     } catch (error: any) {
-      console.error("[ExpenseDetailsModal] Failed to delete expense:", error);
+      logger.error("[ExpenseDetailsModal] Failed to delete expense:", error);
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
@@ -188,11 +165,6 @@ export default function ExpenseDetailsModal({
     collaboratorShares: { participantId: number; amount: string }[];
   }) => {
     try {
-      console.log(
-        "[ExpenseDetailsModal] Updating expense with ID:",
-        expense.id
-      );
-      console.log("[ExpenseDetailsModal] Update data:", expenseData);
 
       // Get the selected category
       let selectedCategoryData = budgetCategories.find(
@@ -213,10 +185,6 @@ export default function ExpenseDetailsModal({
       }
 
       if (!selectedCategoryData || !selectedCategoryData.budgetCategory) {
-        console.log(
-          "[ExpenseDetailsModal] Invalid category for expense:",
-          expenseData.categoryId
-        );
         Alert.alert("Error", "Invalid category selected");
         return;
       }
@@ -256,16 +224,7 @@ export default function ExpenseDetailsModal({
         })
         .filter((share) => share !== null);
 
-      console.log("[ExpenseDetailsModal] Prepared shares for update:", shares);
 
-      console.log(
-        "[ExpenseDetailsModal] Selected category data:",
-        selectedCategoryData
-      );
-      console.log(
-        "[ExpenseDetailsModal] Budget category value:",
-        selectedCategoryData.budgetCategory
-      );
 
       // Create update request
       const updateRequest = {
@@ -281,21 +240,12 @@ export default function ExpenseDetailsModal({
           ),
       };
 
-      console.log(
-        "[ExpenseDetailsModal] Update request:",
-        JSON.stringify(updateRequest, null, 2)
-      );
 
       const response = await ExpenseService.updateExpense(
         parseInt(expense.id),
         updateRequest
       );
 
-      console.log(
-        "[ExpenseDetailsModal] Update response status:",
-        response.success
-      );
-      console.log("[ExpenseDetailsModal] Update response:", response);
 
       if (response.success) {
         Alert.alert("Success", "Expense updated successfully");
@@ -303,15 +253,15 @@ export default function ExpenseDetailsModal({
         onExpenseUpdated();
         onClose();
       } else {
-        console.error(
+        logger.error(
           "[ExpenseDetailsModal] Update failed with message:",
           response.message
         );
         Alert.alert("Error", response.message || "Failed to update expense");
       }
     } catch (error: any) {
-      console.error("[ExpenseDetailsModal] Failed to update expense:", error);
-      console.error(
+      logger.error("[ExpenseDetailsModal] Failed to update expense:", error);
+      logger.error(
         "[ExpenseDetailsModal] Error details:",
         error.response?.data
       );

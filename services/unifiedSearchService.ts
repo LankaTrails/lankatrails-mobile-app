@@ -1,7 +1,8 @@
-import { geocodeLocation, fetchGroupedPlaces, getPlaceDetails, type PlaceGroup, type GooglePlace, type PlaceDetails } from './googlePlacesService';
-import { searchServicesByLocation, searchServicesByCoordinates } from './serviceSearch';
+import { geocodeLocation, fetchGroupedPlaces, getPlaceDetails, type PlaceGroup, type GooglePlace } from './googlePlacesService';
+import { searchServicesByCoordinates } from './serviceSearch';
 import { ServiceCategory } from '@/types/commonTypes';
-import type { SearchResponse, ServiceSearchResponse } from '@/types/serviceTypes';
+import type { ServiceSearchResponse } from '@/types/serviceTypes';
+import { logger } from "@/utils/logger";
 
 export interface UnifiedSearchRequest {
   location: string;
@@ -51,7 +52,6 @@ export class UnifiedSearchService {
         coordinates = { lat, lng };
         formattedAddress = location;
       } else {
-        console.log(`🔍 Geocoding location: ${location}`);
         const geocodeResult = await geocodeLocation(location);
         
         if (!geocodeResult) {
@@ -62,7 +62,6 @@ export class UnifiedSearchService {
         formattedAddress = geocodeResult.formattedAddress;
       }
 
-      console.log(`📍 Search coordinates: ${coordinates.lat}, ${coordinates.lng}`);
 
       // Step 2: Parallel search for places and services
       const searchPromises: Promise<any>[] = [];
@@ -72,7 +71,7 @@ export class UnifiedSearchService {
         searchPromises.push(
           fetchGroupedPlaces(coordinates.lat, coordinates.lng, radius)
             .catch(error => {
-              console.warn('Places search failed:', error);
+              logger.warn('Places search failed:', error);
               return [] as PlaceGroup[];
             })
         );
@@ -88,7 +87,7 @@ export class UnifiedSearchService {
             searchServicesByCoordinates(coordinates.lat, coordinates.lng, category, radius / 1000)
               .then(response => response.success ? response.data.services : [])
               .catch(error => {
-                console.warn(`Service search failed for category ${category}:`, error);
+                logger.warn(`Service search failed for category ${category}:`, error);
                 return [];
               })
           );
@@ -109,7 +108,7 @@ export class UnifiedSearchService {
             searchServicesByCoordinates(coordinates.lat, coordinates.lng, undefined, radius / 1000)
               .then(response => response.success ? response.data.services : [])
               .catch(error => {
-                console.warn('Service search failed:', error);
+                logger.warn('Service search failed:', error);
                 return [] as ServiceSearchResponse[];
               })
           );
@@ -121,7 +120,6 @@ export class UnifiedSearchService {
       // Wait for all searches to complete
       const [places, services] = await Promise.all(searchPromises);
 
-      console.log(`✅ Search completed: ${places.length} place groups, ${services.length} services`);
 
       return {
         places: places as PlaceGroup[],
@@ -134,7 +132,7 @@ export class UnifiedSearchService {
       };
 
     } catch (error) {
-      console.error('Unified search error:', error);
+      logger.error('Unified search error:', error);
       return {
         places: [],
         services: [],
@@ -173,7 +171,7 @@ export class UnifiedSearchService {
       });
 
     } catch (error) {
-      console.error('Near place search error:', error);
+      logger.error('Near place search error:', error);
       return {
         places: [],
         services: [],
@@ -220,7 +218,7 @@ export class UnifiedSearchService {
 
         recommendations.set(place.place_id, services as ServiceSearchResponse[]);
       } catch (error) {
-        console.warn(`Failed to get recommendations for place ${place.name}:`, error);
+        logger.warn(`Failed to get recommendations for place ${place.name}:`, error);
         recommendations.set(place.place_id, []);
       }
     }

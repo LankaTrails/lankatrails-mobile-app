@@ -44,6 +44,7 @@ import { getTripParticipants } from "@/services/tripService";
 import AddExpenseModal from "../../../../components/AddExpenseModal";
 import ExpenseDetailsModal from "../../../../components/ExpenseDetailsModal";
 import CategoryDetailsModal from "../../../../components/CategoryDetailsModal";
+import { logger } from "@/utils/logger";
 
 interface TripParticipant {
   participantId: number;
@@ -85,11 +86,9 @@ const BudgetView = () => {
   const { id: tripId } = useLocalSearchParams();
 
   // Better trip ID validation
-  console.log("[BudgetView] Raw tripId from params:", tripId);
   const numericTripId = parseInt(
     Array.isArray(tripId) ? tripId[0] : (tripId as string)
   );
-  console.log("[BudgetView] Parsed numericTripId:", numericTripId);
 
   // Loading and error states
   const [loading, setLoading] = useState(true);
@@ -134,19 +133,15 @@ const BudgetView = () => {
   const loadExpensesWithCategories = useCallback(
     async (categories: BudgetCategory[]) => {
       try {
-        console.log("[BudgetView] Loading expenses for trip:", numericTripId);
         const expensesResponse = await ExpenseService.getExpensesByTripId(
           numericTripId
         );
-        console.log("[BudgetView] Expenses response:", expensesResponse);
 
         if (expensesResponse.success && expensesResponse.data) {
-          console.log("[BudgetView] Raw expenses data:", expensesResponse.data);
 
           // Convert API expenses to local format
           const convertedExpenses: Expense[] = expensesResponse.data.map(
             (apiExpense) => {
-              console.log("[BudgetView] Processing expense:", apiExpense);
 
               // Find the matching budget category to get the correct ID
               const matchingCategory = categories.find(
@@ -182,37 +177,20 @@ const BudgetView = () => {
                 isThroughApp: Boolean(apiExpense.isThroughApp), // Ensure it's a boolean
               };
 
-              console.log(
-                "[BudgetView] API expense isThroughApp:",
-                apiExpense.isThroughApp
-              );
-              console.log(
-                "[BudgetView] API expense isThroughApp type:",
-                typeof apiExpense.isThroughApp
-              );
-              console.log("[BudgetView] Converted expense:", convertedExpense);
-              console.log(
-                "[BudgetView] Converted isThroughApp:",
-                convertedExpense.isThroughApp
-              );
               return convertedExpense;
             }
           );
 
-          console.log(
-            "[BudgetView] All converted expenses:",
-            convertedExpenses
-          );
           setExpenses(convertedExpenses);
         } else {
-          console.warn(
+          logger.warn(
             "[BudgetView] No expenses data or unsuccessful response:",
             expensesResponse
           );
           setExpenses([]);
         }
       } catch (error) {
-        console.error("[BudgetView] Failed to load expenses:", error);
+        logger.error("[BudgetView] Failed to load expenses:", error);
         setError("Failed to load expenses");
         setExpenses([]);
       }
@@ -222,17 +200,12 @@ const BudgetView = () => {
 
   const loadTripParticipants = useCallback(async () => {
     try {
-      console.log(
-        "[BudgetView] Loading trip participants for trip:",
-        numericTripId
-      );
       const participantsResponse = await getTripParticipants(numericTripId);
-      console.log("[BudgetView] Participants response:", participantsResponse);
 
       if (participantsResponse.success && participantsResponse.data) {
         setTripParticipants(participantsResponse.data);
       } else {
-        console.warn(
+        logger.warn(
           "[BudgetView] Failed to load participants:",
           participantsResponse
         );
@@ -240,7 +213,7 @@ const BudgetView = () => {
         setTripParticipants([]);
       }
     } catch (error) {
-      console.error("[BudgetView] Failed to load trip participants:", error);
+      logger.error("[BudgetView] Failed to load trip participants:", error);
       // Don't set error as this is not critical
       setTripParticipants([]);
     }
@@ -256,7 +229,7 @@ const BudgetView = () => {
 
         // Validate trip ID before making API call
         if (isNaN(numericTripId) || numericTripId <= 0) {
-          console.error(
+          logger.error(
             "[BudgetView] Invalid trip ID for API call:",
             numericTripId
           );
@@ -266,54 +239,18 @@ const BudgetView = () => {
 
         // Check if user is authenticated
         const accessToken = await getToken("ACCESS_TOKEN");
-        console.log("[BudgetView] Access token available:", !!accessToken);
 
-        console.log(
-          "[BudgetView] 🕐 Loading budget data for trip:",
-          numericTripId,
-          "at",
-          new Date().toISOString()
-        );
         const budgetResponse = await BudgetService.getTripBudgetDetails(
           numericTripId
         );
-        console.log(
-          "[BudgetView] 📥 Budget response received at:",
-          new Date().toISOString(),
-          budgetResponse
-        );
 
         if (budgetResponse.success && budgetResponse.data) {
-          console.log("[BudgetView] 📊 RAW API RESPONSE DETAILED ANALYSIS:");
-          console.log(
-            "[BudgetView] - Response success:",
-            budgetResponse.success
-          );
-          console.log(
-            "[BudgetView] - Total budget limit:",
-            budgetResponse.data.totalBudgetLimit
-          );
-          console.log(
-            "[BudgetView] - Trip budget categories count:",
-            budgetResponse.data.tripBudgetCategories?.length || 0
-          );
 
           budgetResponse.data.tripBudgetCategories?.forEach(
             (apiCategory, index) => {
-              console.log(`[BudgetView] - Category ${index + 1}:`, {
-                category: apiCategory.budgetCategory,
-                limitId: apiCategory.limitId,
-                limitAmount: apiCategory.limitAmount,
-                spentAmount: apiCategory.spentAmount,
-                rawData: apiCategory,
-              });
             }
           );
 
-          console.log(
-            "[BudgetView] Setting total budget to:",
-            budgetResponse.data.totalBudgetLimit || 0
-          );
           setTotalBudget(budgetResponse.data.totalBudgetLimit || 0);
 
           // Convert API data to local format
@@ -337,58 +274,11 @@ const BudgetView = () => {
               budgetCategory: apiCategory.budgetCategory as BudgetCategorys,
             }));
 
-          console.log(
-            "[BudgetView] Raw API data:",
-            budgetResponse.data.tripBudgetCategories.map((cat) => ({
-              category: cat.budgetCategory,
-              limitAmount: cat.limitAmount,
-              spentAmount: cat.spentAmount,
-            }))
-          );
-          console.log("[BudgetView] Converting to local format...");
-          console.log(
-            "[BudgetView] Setting budget categories to:",
-            convertedCategories.map((cat) => ({
-              name: cat.name,
-              spent: cat.spent,
-              allocated: cat.allocated,
-            }))
-          );
 
           // Use functional update to ensure React detects the change
           setBudgetCategories((prevCategories) => {
-            console.log(
-              "[BudgetView] 🔄 STATE UPDATE - setBudgetCategories called at:",
-              new Date().toISOString()
-            );
-            console.log(
-              "[BudgetView] - Previous categories:",
-              prevCategories.map((cat) => ({
-                name: cat.name,
-                spent: cat.spent,
-                allocated: cat.allocated,
-                id: cat.id,
-              }))
-            );
-            console.log(
-              "[BudgetView] - New categories:",
-              convertedCategories.map((cat) => ({
-                name: cat.name,
-                spent: cat.spent,
-                allocated: cat.allocated,
-                id: cat.id,
-              }))
-            );
-            console.log(
-              "[BudgetView] - Are they different?",
-              JSON.stringify(prevCategories) !==
-                JSON.stringify(convertedCategories)
-            );
             return convertedCategories;
           });
-          console.log(
-            "[BudgetView] ✅ Budget categories state update completed"
-          );
 
           // Load expenses after budget categories are set
           await loadExpensesWithCategories(convertedCategories);
@@ -396,14 +286,14 @@ const BudgetView = () => {
           // Load trip participants for expense sharing
           await loadTripParticipants();
         } else {
-          console.warn(
+          logger.warn(
             "[BudgetView] Budget response unsuccessful:",
             budgetResponse
           );
           setError(budgetResponse.message || "Failed to load budget data");
         }
       } catch (error: any) {
-        console.error("[BudgetView] Failed to load budget data:", error);
+        logger.error("[BudgetView] Failed to load budget data:", error);
         const errorMessage =
           error.response?.data?.message ||
           error.message ||
@@ -430,10 +320,6 @@ const BudgetView = () => {
   // Load expenses when switching to expenses tab
   useEffect(() => {
     if (activeTab === "expenses" && budgetCategories.length > 0) {
-      console.log(
-        "[BudgetView] Loading expenses for expenses tab, categories available:",
-        budgetCategories.length
-      );
       loadExpenses();
     }
   }, [activeTab, loadExpenses, budgetCategories.length]);
@@ -476,10 +362,6 @@ const BudgetView = () => {
       }
     });
 
-    console.log(
-      "[BudgetView] 🧮 CALCULATED EXPENSE TOTALS BY CATEGORY:",
-      categoryTotals
-    );
     return categoryTotals;
   }, [expenses]);
 
@@ -490,13 +372,7 @@ const BudgetView = () => {
       spent: calculateCategoryExpenses[category.id] || 0,
     }));
 
-    console.log("[BudgetView] � UPDATED CATEGORIES WITH CALCULATED SPENT:");
     updatedCategories.forEach((cat) => {
-      console.log(
-        `[BudgetView] - ${cat.name}: spent ${cat.spent} (was ${
-          budgetCategories.find((bc) => bc.id === cat.id)?.spent || 0
-        })`
-      );
     });
 
     return updatedCategories;
@@ -514,17 +390,6 @@ const BudgetView = () => {
   // Calculate total spent from actual expenses (not from API spent values)
   const totalSpent = useMemo(() => {
     const spent = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-    console.log("[BudgetView] 🔢 RECALCULATING TOTAL SPENT FROM EXPENSES:");
-    console.log("[BudgetView] - Total calculated from expenses:", spent);
-    console.log("[BudgetView] - Number of expenses:", expenses.length);
-    console.log(
-      "[BudgetView] - Expense amounts:",
-      expenses.map((e) => ({
-        name: e.name,
-        amount: e.amount,
-        category: e.categoryId,
-      }))
-    );
     return spent;
   }, [expenses]);
 
@@ -601,12 +466,6 @@ const BudgetView = () => {
   };
 
   const handleCategorySelect = (categoryId: string) => {
-    console.log(
-      "[BudgetView] Category selected:",
-      categoryId,
-      "for modalType:",
-      modalType
-    );
     setSelectedCategory(categoryId);
     setShowCategorySelector(false);
 
@@ -633,12 +492,8 @@ const BudgetView = () => {
       }
 
       // Validate trip ID
-      console.log(
-        "[BudgetView] Validating trip ID for expense creation:",
-        numericTripId
-      );
       if (isNaN(numericTripId) || numericTripId <= 0) {
-        console.error(
+        logger.error(
           "[BudgetView] Invalid trip ID for expense creation:",
           numericTripId
         );
@@ -673,19 +528,10 @@ const BudgetView = () => {
       }
 
       if (!selectedCategoryData || !selectedCategoryData.budgetCategory) {
-        console.log(
-          "[BudgetView] Invalid category for expense:",
-          expenseData.categoryId
-        );
         Alert.alert("Error", "Invalid category selected");
         return;
       }
 
-      console.log(
-        "[BudgetView] Creating expense with category:",
-        selectedCategoryData
-      );
-      console.log("[BudgetView] Expense data received:", expenseData);
 
       // Prepare shares array from collaborator shares
       const shares: any[] = expenseData.collaboratorShares
@@ -723,7 +569,6 @@ const BudgetView = () => {
         })
         .filter((share) => share !== null);
 
-      console.log("[BudgetView] Prepared shares:", shares);
 
       // Create expense through API
       const createExpenseRequest: CreateExpenseRequest = {
@@ -739,19 +584,11 @@ const BudgetView = () => {
           ),
       };
 
-      console.log(
-        "[BudgetView] Expense data being sent:",
-        JSON.stringify(createExpenseRequest, null, 2)
-      );
 
       const response = await ExpenseService.createExpense(createExpenseRequest);
 
-      console.log("[BudgetView] Expense creation response:", response);
 
       if (response.success) {
-        console.log(
-          "[BudgetView] Expense created successfully, reloading data"
-        );
 
         // Reload budget data which will also reload expenses
         await loadBudgetData(false);
@@ -761,11 +598,11 @@ const BudgetView = () => {
 
         Alert.alert("Success", "Expense added successfully");
       } else {
-        console.error("[BudgetView] Expense creation failed:", response);
+        logger.error("[BudgetView] Expense creation failed:", response);
         Alert.alert("Error", response.message || "Failed to add expense");
       }
     } catch (error: any) {
-      console.error("[BudgetView] Failed to add expense:", error);
+      logger.error("[BudgetView] Failed to add expense:", error);
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
@@ -801,25 +638,10 @@ const BudgetView = () => {
       }
 
       if (!selectedCategoryData || !selectedCategoryData.budgetCategory) {
-        console.log(
-          "[BudgetView] Selected category not found:",
-          selectedCategory
-        );
-        console.log(
-          "[BudgetView] Available categories:",
-          budgetCategoriesWithCalculatedSpent.map((cat) => ({
-            id: cat.id,
-            budgetCategory: cat.budgetCategory,
-          }))
-        );
         Alert.alert("Error", "Invalid category selected");
         return;
       }
 
-      console.log(
-        "[BudgetView] Using category for budget update:",
-        selectedCategoryData
-      );
 
       // Update budget through API
       const budgetData: TripBudgetCategoryDto = {
@@ -846,7 +668,7 @@ const BudgetView = () => {
         Alert.alert("Error", response.message || "Failed to update budget");
       }
     } catch (error) {
-      console.error("Failed to update budget:", error);
+      logger.error("Failed to update budget:", error);
       Alert.alert("Error", "Failed to update budget");
     }
   };
@@ -857,40 +679,29 @@ const BudgetView = () => {
   };
 
   const handleCategoryCardClick = (category: BudgetCategory) => {
-    console.log("[BudgetView] Category card clicked:", category.name);
     setSelectedCategoryData(category);
     setSelectedCategory(category.id);
     setShowCategoryDetailsModal(true);
   };
 
   const handleExpenseUpdated = async () => {
-    console.log("[BudgetView] ⭐ EXPENSE UPDATED - Starting reload process...");
 
     // Add a small delay to ensure backend has processed the update
-    console.log("[BudgetView] Waiting 500ms for backend to process update...");
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     // Reload budget data which will also reload expenses (without showing loading spinner)
-    console.log("[BudgetView] Calling loadBudgetData to refresh data...");
     await loadBudgetData(false);
 
-    console.log("[BudgetView] ✅ Data reload completed after expense update");
   };
 
   const handleExpenseDeleted = async () => {
-    console.log("[BudgetView] ⭐ EXPENSE DELETED - Starting reload process...");
 
     // Add a small delay to ensure backend has processed the deletion
-    console.log(
-      "[BudgetView] Waiting 500ms for backend to process deletion..."
-    );
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     // Reload budget data which will also reload expenses (without showing loading spinner)
-    console.log("[BudgetView] Calling loadBudgetData to refresh data...");
     await loadBudgetData(false);
 
-    console.log("[BudgetView] ✅ Data reload completed after expense deletion");
   };
 
   const handleCloseModal = () => {
@@ -947,10 +758,6 @@ const BudgetView = () => {
   const getAllAvailableCategories = (): BudgetCategory[] => {
     const allCategories: BudgetCategory[] = [];
 
-    console.log(
-      "[BudgetView] Generating all available categories, existing categories:",
-      budgetCategories.length
-    );
 
     // Create entries for all budget category types
     Object.values(BudgetCategorys).forEach((categoryType) => {
@@ -976,10 +783,6 @@ const BudgetView = () => {
       }
     });
 
-    console.log(
-      "[BudgetView] Generated categories for SelectPopup:",
-      allCategories.length
-    );
     return allCategories;
   };
 
@@ -990,7 +793,7 @@ const BudgetView = () => {
 
   // Check for invalid trip ID
   if (isNaN(numericTripId)) {
-    console.error("[BudgetView] Invalid trip ID:", tripId);
+    logger.error("[BudgetView] Invalid trip ID:", tripId);
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centerContainer}>
@@ -1057,7 +860,6 @@ const BudgetView = () => {
                 <TouchableOpacity
                   onPress={() => {
                     // Navigate to login screen - you can implement this based on your auth flow
-                    console.log("Navigate to login");
                   }}
                   style={[
                     styles.retryButton,
@@ -1090,10 +892,6 @@ const BudgetView = () => {
                   <View style={styles.overviewItem}>
                     <Text style={[styles.overviewValue, { color: "#EF4444" }]}>
                       {(() => {
-                        console.log(
-                          "[BudgetView] 🎯 RENDERING SPENT VALUE:",
-                          totalSpent
-                        );
                         return totalSpent.toLocaleString();
                       })()}
                     </Text>
@@ -1107,10 +905,6 @@ const BudgetView = () => {
                       ]}
                     >
                       {(() => {
-                        console.log(
-                          "[BudgetView] 🎯 RENDERING REMAINING VALUE:",
-                          remainingBudget
-                        );
                         return hasAnyBudgetCategories
                           ? Math.abs(remainingBudget).toLocaleString()
                           : totalSpent.toLocaleString();

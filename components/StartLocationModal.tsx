@@ -18,11 +18,12 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
+  Animated as RNAnimated,
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
 import LongButton from "./LongButton";
 import { BlurView } from "expo-blur";
-import { Animated as RNAnimated } from "react-native";
+import { logger } from "@/utils/logger";
 
 interface StartLocationModalProps {
   visible: boolean;
@@ -139,7 +140,7 @@ export default function StartLocationModal({
         );
       }
     } catch (error) {
-      console.error("Error getting current location:", error);
+      logger.error("Error getting current location:", error);
       Alert.alert(
         "Location Error",
         "Could not get your current location. Please check your GPS and try again."
@@ -157,7 +158,7 @@ export default function StartLocationModal({
         { text: "Cancel", style: "cancel" },
         {
           text: "OK",
-          onPress: async (coordinates) => {
+          onPress: async (coordinates?: string) => {
             if (coordinates) {
               const coords = coordinates.split(",");
               if (coords.length !== 2) {
@@ -168,7 +169,7 @@ export default function StartLocationModal({
                 return;
               }
 
-              const [lat, lng] = coords.map((coord) =>
+              const [lat, lng] = coords.map((coord: string) =>
                 parseFloat(coord.trim())
               );
 
@@ -245,7 +246,7 @@ export default function StartLocationModal({
         setSelectedLocation(startLocation);
       }
     } catch (error) {
-      console.error("Error processing coordinates:", error);
+      logger.error("Error processing coordinates:", error);
       Alert.alert(
         "Error",
         "Could not process the coordinates. Please try again or use a different method."
@@ -290,14 +291,14 @@ export default function StartLocationModal({
               longitude: result.longitude,
             });
           }
-        } catch (error) {
+        } catch {
           continue;
         }
       }
 
       setSearchResults(results);
     } catch (error) {
-      console.error("Error searching locations:", error);
+      logger.error("Error searching locations:", error);
       setSearchResults([]);
     } finally {
       setIsSearching(false);

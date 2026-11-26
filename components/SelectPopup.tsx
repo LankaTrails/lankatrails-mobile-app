@@ -106,6 +106,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     backgroundColor: '#F9FAFB',
   },
+  categoryIcon: {
+    fontSize: 22,
+    marginRight: 12,
+  },
   categoryOptionInfo: {
     flex: 1,
     marginLeft: 4,

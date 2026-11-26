@@ -1,20 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import {
-  Animated,
-  Dimensions,
-  FlatList,
-  Keyboard,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
-} from "react-native";
+import { Animated, Dimensions, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Location, TripTagType } from "../types/triptypes";
 import LongButton from "./LongButton";
@@ -43,12 +28,6 @@ export default function DestinationModal({
   availableVibes = [],
   loadingCities = false,
 }: DestinationModalProps) {
-  console.log("DestinationModal props:", {
-    visible,
-    citiesCount: cities.length,
-    availableVibesCount: availableVibes.length,
-    loadingCities,
-  });
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedVibes, setSelectedVibes] = useState<TripTagType[]>([]);
@@ -60,9 +39,6 @@ export default function DestinationModal({
 
   // Filter and sort destinations based on selected vibes and search query
   const getFilteredDestinations = () => {
-    console.log("Filtering destinations. Cities available:", cities.length);
-    console.log("Search query:", searchQuery);
-    console.log("Loading cities:", loadingCities);
 
     if (!searchQuery.trim()) {
       // Return all cities if no search query
@@ -91,7 +67,6 @@ export default function DestinationModal({
       );
     });
 
-    console.log("Filtered destinations:", filtered.length);
 
     // For now, we don't have vibe data in Location objects
     // TODO: Add vibe data to Location objects or create a separate endpoint

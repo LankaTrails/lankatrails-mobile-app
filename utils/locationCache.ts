@@ -40,7 +40,6 @@ class LocationCache {
             });
         });
 
-        console.log(`Initialized location cache with ${popularLocations.length} popular Sri Lankan locations`);
     }
 
     /**

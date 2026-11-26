@@ -1,6 +1,7 @@
 import api from '@/api/axiosInstance';
 import type { ApiResponse } from '@/types/commonTypes';
 import type { Complaint } from '@/types/complaint';
+import { logger } from "@/utils/logger";
 
 export interface ComplaintImgDTO {
   imageUrl: string;
@@ -24,7 +25,6 @@ export interface GeneralComplaintRequest {
  */
 export const submitGeneralComplaint = async (complaint: GeneralComplaintRequest): Promise<ApiResponse<string>> => {
   try {
-    console.log('Submitting general complaint:', complaint);
     
     // Upload images first if any
     let imageUrls: string[] = [];
@@ -44,10 +44,9 @@ export const submitGeneralComplaint = async (complaint: GeneralComplaintRequest)
     };
     
     const response = await api.post<ApiResponse<string>>('/tourist/make-general-complaint', complaintDTO);
-    console.log('General complaint submission response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error submitting general complaint:', error);
+    logger.error('Error submitting general complaint:', error);
     throw error;
   }
 };
@@ -59,7 +58,6 @@ export const submitGeneralComplaint = async (complaint: GeneralComplaintRequest)
  */
 export const uploadComplaintImages = async (imageUris: string[]): Promise<ApiResponse<string[]>> => {
   try {
-    console.log('Uploading complaint images:', imageUris.length, 'images');
     
     const formData = new FormData();
     
@@ -77,7 +75,6 @@ export const uploadComplaintImages = async (imageUris: string[]): Promise<ApiRes
       } as any);
     }
     
-    console.log('FormData prepared, making request...');
     
     const uploadResponse = await api.post<ApiResponse<string[]>>('/tourist/upload-complaint-images', formData, {
       headers: {
@@ -86,13 +83,12 @@ export const uploadComplaintImages = async (imageUris: string[]): Promise<ApiRes
       timeout: 30000, // 30 second timeout for image uploads
     });
     
-    console.log('Image upload response:', uploadResponse.data);
     return uploadResponse.data;
   } catch (error: any) {
-    console.error('Error uploading complaint images:', error);
+    logger.error('Error uploading complaint images:', error);
     if (error.response) {
-      console.error('Response status:', error.response.status);
-      console.error('Response data:', error.response.data);
+      logger.error('Response status:', error.response.status);
+      logger.error('Response data:', error.response.data);
     }
     throw error;
   }
@@ -106,7 +102,6 @@ export const uploadComplaintImages = async (imageUris: string[]): Promise<ApiRes
  */
 export const submitServiceComplaint = async (serviceId: number, complaint: GeneralComplaintRequest): Promise<ApiResponse<string>> => {
   try {
-    console.log('Submitting service complaint for service:', serviceId, complaint);
     
     // Upload images first if any
     let imageUrls: string[] = [];
@@ -126,10 +121,9 @@ export const submitServiceComplaint = async (serviceId: number, complaint: Gener
     };
     
     const response = await api.post<ApiResponse<string>>(`/tourist/make-complaint/${serviceId}`, complaintDTO);
-    console.log('Service complaint submission response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error submitting service complaint:', error);
+    logger.error('Error submitting service complaint:', error);
     throw error;
   }
 };
@@ -143,7 +137,7 @@ export const getMyComplaints = async (): Promise<ApiResponse<Complaint[]>> => {
     const response = await api.get<ApiResponse<Complaint[]>>('/tourist/my-complaints');
     return response.data;
   } catch (error: any) {
-    console.error('Error fetching my complaints:', error);
+    logger.error('Error fetching my complaints:', error);
     if (error.response) {
       return error.response.data;
     }
