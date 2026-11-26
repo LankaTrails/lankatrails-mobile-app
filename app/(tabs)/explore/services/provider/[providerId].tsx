@@ -1,4 +1,5 @@
-import { ServiceGrid } from "@/app/(tabs)/explore/services/components/ServiceGrid";
+import { BACKEND_URL } from "@/utils/config";
+import { ServiceGrid } from "@/components/explore/ServiceGrid";
 import HeaderSection from "@/components/explorer-components/HeaderSection";
 import { searchProvider } from "@/services/serviceSearch";
 import {
@@ -10,23 +11,14 @@ import { ApiResponse, ServiceCategory, ServiceType } from "@/types/commonTypes";
 import { navigateToServiceDetail } from "@/utils/navigationHelpers";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { Star } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
-import {
-  Alert,
-  Dimensions,
-  Image,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Alert, Dimensions, Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { logger } from "@/utils/logger";
 
 const { width } = Dimensions.get("window");
-const BASE_URL = process.env.EXPO_PUBLIC_URL;
+const BASE_URL = BACKEND_URL;
 
 // Helper function to validate ServiceCategory
 const isValidServiceCategory = (
@@ -85,14 +77,14 @@ const ProviderDetailView = () => {
 
         // Validate required parameters
         if (!category || !isValidServiceCategory(category)) {
-          console.error("Invalid or missing category:", category);
+          logger.error("Invalid or missing category:", category);
           Alert.alert("Error", "Invalid category parameter");
           return;
         }
 
         // Validate that we have location information
         if (!city && (!lat || !lng || !radiusKm)) {
-          console.error(
+          logger.error(
             "Missing location parameters. City:",
             city,
             "Coordinates:",
@@ -112,34 +104,28 @@ const ProviderDetailView = () => {
         // Add location parameters
         if (city) {
           request.city = city;
-          console.log("Using city search:", city);
         } else if (lat && lng && radiusKm) {
           request.lat = lat;
           request.lng = lng;
           request.radiusKm = radiusKm;
-          console.log("Using coordinate search:", lat, lng, radiusKm);
         }
 
-        console.log("Provider detail request:", request);
 
         const response: ApiResponse<ProviderDetailResponse> =
           await searchProvider(request);
 
-        console.log("Provider detail response:", response);
 
         if (response.success && response.data) {
-          console.log("Provider data received:", response.data);
-          console.log("Provider location:", response.data.location);
           setProvider(response.data);
         } else {
-          console.error("API call failed:", response.message);
+          logger.error("API call failed:", response.message);
           Alert.alert(
             "Error",
             response.message || "Failed to load provider details"
           );
         }
       } catch (error) {
-        console.error("Error fetching provider details:", error);
+        logger.error("Error fetching provider details:", error);
         Alert.alert("Error", "Failed to load provider details");
       } finally {
         setLoading(false);
@@ -151,31 +137,24 @@ const ProviderDetailView = () => {
 
   // Navigation handlers
   const handleServicePress = (service: Service) => {
-    console.log("🔍 handleServicePress called in provider page with service:", {
-      serviceId: service?.serviceId,
-      serviceName: service?.serviceName,
-      category: service?.category,
-    });
 
     // Add null check for service
     if (!service) {
-      console.error("❌ Service is null or undefined");
+      logger.error("❌ Service is null or undefined");
       return;
     }
 
     if (!service.serviceId) {
-      console.error("❌ Service ID is missing");
+      logger.error("❌ Service ID is missing");
       return;
     }
 
     if (service.category) {
-      console.log("✅ Using category-specific navigation:", service.category);
       navigateToServiceDetail(
         service.serviceId,
         service.category as ServiceCategory
       );
     } else {
-      console.log("⚠️ Category missing, using fallback navigation");
       // Fallback to generic route if category not available
       router.push({
         pathname: "/explore/services/[serviceId]" as any,
@@ -212,7 +191,6 @@ const ProviderDetailView = () => {
 
   // Error state or no provider data
   if (!provider || !provider.businessName) {
-    console.log("Provider state:", provider);
 
     let errorMessage = "Provider not found or failed to load.";
     if (!category) {

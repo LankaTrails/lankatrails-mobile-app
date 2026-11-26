@@ -1,7 +1,8 @@
+import { GOOGLE_PLACES_API_KEY } from '@/utils/config';
 import locationCache from '@/utils/locationCache';
 import axios from 'axios';
+import { logger } from "@/utils/logger";
 
-const GOOGLE_PLACES_API_KEY = 'AIzaSyA09s82YaJw6_VmK2bCW5SkLnUXeniQgrw';
 
 // Simple rate limiting
 class RateLimiter {
@@ -116,14 +117,13 @@ export async function geocodeLocation(locationName: string): Promise<GeocodeResu
   try {
     // Validate input
     if (!locationName?.trim()) {
-      console.warn('Empty location name provided to geocodeLocation');
+      logger.warn('Empty location name provided to geocodeLocation');
       return null;
     }
 
     // Check cache first
     const cached = locationCache.get(locationName);
     if (cached) {
-      console.log(`Using cached coordinates for ${locationName}:`, cached);
       return {
         lat: cached.lat,
         lng: cached.lng,
@@ -131,12 +131,11 @@ export async function geocodeLocation(locationName: string): Promise<GeocodeResu
       };
     }
 
-    console.log(`Geocoding location: ${locationName}`);
     
     // Check rate limiting
     if (!rateLimiter.canMakeRequest()) {
       const waitTime = rateLimiter.getWaitTime();
-      console.warn(`Rate limit exceeded. Waiting ${waitTime}ms before making request.`);
+      logger.warn(`Rate limit exceeded. Waiting ${waitTime}ms before making request.`);
       await delay(waitTime);
     }
 
@@ -150,17 +149,17 @@ export async function geocodeLocation(locationName: string): Promise<GeocodeResu
 
     // Check for API errors
     if (response.data.status === 'REQUEST_DENIED') {
-      console.error('Geocoding API request denied:', response.data.error_message);
+      logger.error('Geocoding API request denied:', response.data.error_message);
       throw new Error('Geocoding API access denied. Please check your API key and permissions.');
     }
 
     if (response.data.status === 'OVER_QUERY_LIMIT') {
-      console.error('Geocoding API quota exceeded');
+      logger.error('Geocoding API quota exceeded');
       throw new Error('Geocoding API quota exceeded. Please try again later.');
     }
 
     if (response.data.status === 'ZERO_RESULTS') {
-      console.warn(`No geocoding results found for: ${locationName}`);
+      logger.warn(`No geocoding results found for: ${locationName}`);
       return null;
     }
 
@@ -174,29 +173,28 @@ export async function geocodeLocation(locationName: string): Promise<GeocodeResu
 
       // Cache the result
       locationCache.set(locationName, coordinates.lat, coordinates.lng);
-      console.log(`Geocoded ${locationName} to:`, coordinates);
 
       return coordinates;
     }
 
-    console.warn(`No geocoding results found for: ${locationName}`);
+    logger.warn(`No geocoding results found for: ${locationName}`);
     return null;
   } catch (error) {
     if (axios.isAxiosError(error)) {
       if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
-        console.error('Network error during geocoding:', error.message);
+        logger.error('Network error during geocoding:', error.message);
         throw new Error('Network connection failed. Please check your internet connection.');
       }
       if (error.response?.status === 403) {
-        console.error('Geocoding API forbidden:', error.response.data);
+        logger.error('Geocoding API forbidden:', error.response.data);
         throw new Error('Geocoding API access forbidden. Please check your API key.');
       }
       if (error.response?.status === 429) {
-        console.error('Geocoding API rate limit exceeded');
+        logger.error('Geocoding API rate limit exceeded');
         throw new Error('Too many requests. Please try again later.');
       }
     }
-    console.error('Geocoding error:', error);
+    logger.error('Geocoding error:', error);
     throw error;
   }
 }
@@ -273,7 +271,7 @@ export async function fetchGroupedPlaces(
           // Check rate limiting
           if (!rateLimiter.canMakeRequest()) {
             const waitTime = rateLimiter.getWaitTime();
-            console.warn(`Rate limit exceeded. Waiting ${waitTime}ms before making request.`);
+            logger.warn(`Rate limit exceeded. Waiting ${waitTime}ms before making request.`);
             await delay(waitTime);
           }
 
@@ -290,17 +288,17 @@ export async function fetchGroupedPlaces(
 
           // Check for API errors
           if (response.data.status === 'REQUEST_DENIED') {
-            console.error('Places API request denied:', response.data.error_message);
+            logger.error('Places API request denied:', response.data.error_message);
             throw new Error('Places API access denied. Please check your API key and permissions.');
           }
 
           if (response.data.status === 'OVER_QUERY_LIMIT') {
-            console.error('Places API quota exceeded');
+            logger.error('Places API quota exceeded');
             throw new Error('Places API quota exceeded. Please try again later.');
           }
 
           if (response.data.status === 'INVALID_REQUEST') {
-            console.error('Invalid request to Places API:', response.data.error_message);
+            logger.error('Invalid request to Places API:', response.data.error_message);
             continue; // Skip this request but continue with others
           }
 
@@ -320,19 +318,19 @@ export async function fetchGroupedPlaces(
         } catch (err) {
           if (axios.isAxiosError(err)) {
             if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED') {
-              console.error(`Network error for ${config.group} with keyword "${keyword}":`, err.message);
+              logger.error(`Network error for ${config.group} with keyword "${keyword}":`, err.message);
               continue; // Skip this request but continue with others
             }
             if (err.response?.status === 403) {
-              console.error('Places API forbidden:', err.response.data);
+              logger.error('Places API forbidden:', err.response.data);
               throw new Error('Places API access forbidden. Please check your API key.');
             }
             if (err.response?.status === 429) {
-              console.error('Places API rate limit exceeded');
+              logger.error('Places API rate limit exceeded');
               throw new Error('Too many requests. Please try again later.');
             }
           }
-          console.error(`[${config.group}] Fetch failed for keyword "${keyword}":`, err);
+          logger.error(`[${config.group}] Fetch failed for keyword "${keyword}":`, err);
           // Continue with other keywords/types instead of failing completely
         }
       }
@@ -359,16 +357,15 @@ export async function getPlaceDetails(placeId: string): Promise<PlaceDetails | n
   try {
     // Validate input
     if (!placeId?.trim()) {
-      console.warn('Empty place ID provided to getPlaceDetails');
+      logger.warn('Empty place ID provided to getPlaceDetails');
       return null;
     }
 
-    console.log(`Fetching details for place: ${placeId}`);
     
     // Check rate limiting
     if (!rateLimiter.canMakeRequest()) {
       const waitTime = rateLimiter.getWaitTime();
-      console.warn(`Rate limit exceeded. Waiting ${waitTime}ms before making request.`);
+      logger.warn(`Rate limit exceeded. Waiting ${waitTime}ms before making request.`);
       await delay(waitTime);
     }
 
@@ -383,48 +380,47 @@ export async function getPlaceDetails(placeId: string): Promise<PlaceDetails | n
 
     // Check for API errors
     if (response.data.status === 'REQUEST_DENIED') {
-      console.error('Place Details API request denied:', response.data.error_message);
+      logger.error('Place Details API request denied:', response.data.error_message);
       throw new Error('Place Details API access denied. Please check your API key and permissions.');
     }
 
     if (response.data.status === 'OVER_QUERY_LIMIT') {
-      console.error('Place Details API quota exceeded');
+      logger.error('Place Details API quota exceeded');
       throw new Error('Place Details API quota exceeded. Please try again later.');
     }
 
     if (response.data.status === 'NOT_FOUND') {
-      console.warn(`Place not found for ID: ${placeId}`);
+      logger.warn(`Place not found for ID: ${placeId}`);
       return null;
     }
 
     if (response.data.status === 'INVALID_REQUEST') {
-      console.error('Invalid request to Place Details API:', response.data.error_message);
+      logger.error('Invalid request to Place Details API:', response.data.error_message);
       return null;
     }
 
     if (response.data.result) {
-      console.log(`Retrieved details for place: ${response.data.result.name}`);
       return response.data.result as PlaceDetails;
     }
 
-    console.warn(`No details found for place ID: ${placeId}`);
+    logger.warn(`No details found for place ID: ${placeId}`);
     return null;
   } catch (error) {
     if (axios.isAxiosError(error)) {
       if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
-        console.error('Network error during place details fetch:', error.message);
+        logger.error('Network error during place details fetch:', error.message);
         throw new Error('Network connection failed. Please check your internet connection.');
       }
       if (error.response?.status === 403) {
-        console.error('Place Details API forbidden:', error.response.data);
+        logger.error('Place Details API forbidden:', error.response.data);
         throw new Error('Place Details API access forbidden. Please check your API key.');
       }
       if (error.response?.status === 429) {
-        console.error('Place Details API rate limit exceeded');
+        logger.error('Place Details API rate limit exceeded');
         throw new Error('Too many requests. Please try again later.');
       }
     }
-    console.error('Place details error:', error);
+    logger.error('Place details error:', error);
     throw error;
   }
 }

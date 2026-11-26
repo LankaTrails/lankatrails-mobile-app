@@ -7,6 +7,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Animated,
+  Linking,
   Image,
   ScrollView,
   StyleSheet,
@@ -16,53 +17,35 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import EditPopup from "../../../components/EditPopup";
+import { fileUrl } from "@/utils/config";
 
-// Helper function to construct full image URL
-const getImageUrl = (profilePicUrl: string | undefined) => {
-  if (!profilePicUrl) return null;
-
-  // If the URL already includes the protocol, return as is
-  if (
-    profilePicUrl.startsWith("http://") ||
-    profilePicUrl.startsWith("https://")
-  ) {
-    return profilePicUrl;
-  }
-
-  // Use the same base URL as the API
-  const baseUrl = "http://localhost:8080";
-  return `${baseUrl}${profilePicUrl}`;
-};
+const getImageUrl = (profilePicUrl: string | undefined) => (profilePicUrl ? fileUrl(profilePicUrl) : null);
 
 export default function Profile() {
   const [modalVisible, setModalVisible] = useState(false);
-  const { signIn, logout, user, isLoading, checkAuth } = useAuth();
+  const { logout, user, refreshProfile } = useAuth();
   const [fieldValues, setFieldValues] = useState<{
     Name: string;
     Email: string;
     Phone: string;
   }>({
-    Name: user?.firstName
-      ? user.firstName + " " + user.lastName
-      : "Eren Yeager",
-    Email: user?.email ? user.email : "eren@email.com",
-    Phone: user?.phone ? user.phone : "+94 712 345 678",
+    Name: user?.firstName ? `${user.firstName} ${user.lastName ?? ""}`.trim() : "",
+    Email: user?.email ?? "",
+    Phone: user?.phone ?? "",
   });
 
   // Refresh user data when the screen is focused
   useFocusEffect(
     React.useCallback(() => {
-      checkAuth(); // This will refresh the user data
-    }, [checkAuth])
+      refreshProfile();
+    }, [refreshProfile])
   );
 
   useEffect(() => {
     setFieldValues({
-      Name: user?.firstName
-        ? user.firstName + " " + user.lastName
-        : "Your Name",
-      Email: user?.email ? user.email : "your@email.com",
-      Phone: user?.phone ? user.phone : "+94 712 345 678",
+      Name: user?.firstName ? `${user.firstName} ${user.lastName ?? ""}`.trim() : "",
+      Email: user?.email ?? "",
+      Phone: user?.phone ?? "",
     });
   }, [user]);
   const [tempValues, setTempValues] = useState({ ...fieldValues });
@@ -193,7 +176,6 @@ export default function Profile() {
         }
       );
     } catch (error: any) {
-      console.error("Password change error:", error);
 
       // Enhanced error handling with specific messages
       let errorTitle = "Password Change Failed";
@@ -292,7 +274,7 @@ export default function Profile() {
           <Text style={styles.sectionTitle}>Account</Text>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => router.push("/screens/EditProfile" as any)}
+            onPress={() => router.push("/screens/editProfile")}
           >
             <View style={styles.actionButtonContent}>
               <Icon name="pencil" size={20} color="#008080" />
@@ -351,9 +333,7 @@ export default function Profile() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() =>
-              Alert.alert("Redirect", "App Settings on the device")
-            }
+            onPress={() => Linking.openSettings()}
           >
             <View style={styles.actionButtonContent}>
               <Icon name="shield" size={20} color="#008080" />

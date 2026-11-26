@@ -1,23 +1,11 @@
+import { BACKEND_URL } from "@/utils/config";
 import AddToTripButton from "@/components/AddToTripButtonNew";
 import HeaderSection from "@/components/explorer-components/HeaderSection";
 import ReviewsSection from "@/components/ReviewsSection";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { Star } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Linking,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  ToastAndroid,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, Alert, Image, Linking, Platform, ScrollView, Text, ToastAndroid, TouchableOpacity, View } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -35,8 +23,9 @@ import {
   removeFavorites,
 } from "@/services/favouriteService";
 import { FavoriteItem } from "@/types/triptypes";
+import { logger } from "@/utils/logger";
 
-const BASE_URL = process.env.EXPO_PUBLIC_URL;
+const BASE_URL = BACKEND_URL;
 
 // Convert AccommodationServiceDetail to Service for AddToTripButton
 const convertToService = (detail: AccommodationServiceDetail): Service => ({
@@ -98,7 +87,7 @@ const AccommodationServiceDetailPage = () => {
         setIsFavourite(checkIfFavorite(serviceDetail, favorites));
       }
     } catch (error) {
-      console.error("Error fetching favorites:", error);
+      logger.error("Error fetching favorites:", error);
     }
   };
 
@@ -131,14 +120,14 @@ const AccommodationServiceDetailPage = () => {
             setFavourites(favorites);
             setIsFavourite(checkIfFavorite(response.data, favorites));
           } catch (favError) {
-            console.error("Error fetching favorites:", favError);
+            logger.error("Error fetching favorites:", favError);
           }
         } else {
           setError(response.message || "Failed to load service details");
         }
       } catch (err) {
         setError("Network error. Please check your connection.");
-        console.error("Error fetching service details:", err);
+        logger.error("Error fetching service details:", err);
       } finally {
         setLoading(false);
       }
@@ -183,7 +172,7 @@ const AccommodationServiceDetailPage = () => {
         }
       }
     } catch (error) {
-      console.error("Error handling favorite:", error);
+      logger.error("Error handling favorite:", error);
       if (Platform.OS === "android") {
         ToastAndroid.show("Failed to update favorites", ToastAndroid.SHORT);
       } else {

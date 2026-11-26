@@ -1,20 +1,8 @@
+import { WS_URL } from "@/utils/config";
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-  Share,
-} from "react-native";
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
-import * as Clipboard from "expo-clipboard";
-import * as Linking from "expo-linking";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import BackButton from "@/components/BackButton";
@@ -26,16 +14,15 @@ import {
   getRoomMessages,
   ChatRoomNotFoundError,
 } from "@/services/chatService";
-import { generateTripInvitation } from "@/services/tripService";
 import {
   DirectChatRoom,
   GroupChatRoom,
   ChatMessage,
   ChatMessageType,
 } from "@/types/chatTypes";
-import { TripInvitationRequest, TripRole } from "@/types/triptypes";
 import { getToken } from "@/utils/tokenStorage";
 import { useAuth } from "@/hooks/useAuth";
+import { logger } from "@/utils/logger";
 
 interface TypingStateDto {
   roomId: number;
@@ -95,7 +82,6 @@ export default function Chat() {
   const getUserInfo = useCallback(
     (senderId: number) => {
       if (!chatRoom) {
-        console.log(`No chat room data available for senderId: ${senderId}`);
         return { name: `User ${senderId}`, id: senderId };
       }
 
@@ -109,7 +95,7 @@ export default function Chat() {
 
         // Check if sender is the provider
         if (directRoom.provider && directRoom.providerId === senderId) {
-          // console.log(
+          // logger.debug(
           //   `Found provider info for senderId ${senderId}:`,
           //   directRoom.provider.businessName
           // );
@@ -123,7 +109,7 @@ export default function Chat() {
         // Check if sender is the tourist
         if (directRoom.tourist && directRoom.touristId === senderId) {
           const name = `${directRoom.tourist.firstName} ${directRoom.tourist.lastName}`;
-          // console.log(`Found tourist info for senderId ${senderId}:`, name);
+          // logger.debug(`Found tourist info for senderId ${senderId}:`, name);
           return {
             name,
             id: senderId,
@@ -139,7 +125,6 @@ export default function Chat() {
         );
         if (participant) {
           const name = `${participant.firstName} ${participant.lastName}`;
-          console.log(`Found participant info for senderId ${senderId}:`, name);
           return {
             name,
             id: senderId,
@@ -149,9 +134,6 @@ export default function Chat() {
       }
 
       // Fallback
-      console.log(
-        `No participant info found for senderId ${senderId}, using fallback`
-      );
       return { name: `User ${senderId}`, id: senderId };
     },
     [chatRoom, user?.id]
@@ -186,14 +168,13 @@ export default function Chat() {
   const connectChat = useCallback(
     async (roomId: number) => {
       if (stompClientRef.current?.connected) {
-        console.log("STOMP client already connected");
         return;
       }
 
       try {
         const token = await getToken("ACCESS_TOKEN");
         if (!token) {
-          console.error("No authentication token found");
+          logger.error("No authentication token found");
           Alert.alert(
             "Authentication Required",
             "Please log in to access chat rooms."
@@ -201,39 +182,32 @@ export default function Chat() {
           return;
         }
 
-        console.log(`Connecting to STOMP for room ${roomId}...`);
         setIsReconnecting(true);
 
-        const baseUrl =
-          process.env.EXPO_PUBLIC_API_URL || "http://localhost:8080";
-        const wsUrl = baseUrl.replace(/\/api$/, "") + "/ws";
-        console.log(`Using WebSocket URL: ${wsUrl}`);
+        const wsUrl = WS_URL;
 
         stompClientRef.current = new Client({
           webSocketFactory: () => new SockJS(wsUrl),
           connectHeaders: {
             Authorization: `Bearer ${token}`,
           },
-          debug: (msg) => console.log("STOMP Debug:", msg),
+          debug: (msg) => logger.debug("STOMP Debug:", msg),
           reconnectDelay: 5000,
           heartbeatIncoming: 30000,
           heartbeatOutgoing: 30000,
         });
 
         stompClientRef.current.onConnect = () => {
-          console.log("✅ STOMP connected successfully");
           setIsConnected(true);
           setIsReconnecting(false);
 
           if (!stompClientRef.current) return;
 
-          console.log(`Setting up subscriptions for room ${roomId}...`);
 
           try {
             // Subscribe to chat room messages
             stompClientRef.current.subscribe(`/topic/room.${roomId}`, (msg) => {
               try {
-                console.log("📨 Received message:", msg.body);
                 const messageData: ChatMessage = JSON.parse(msg.body);
 
                 setMessages((prev) => {
@@ -251,7 +225,6 @@ export default function Chat() {
                             new Date(messageData.sentAt).getTime()
                         ) < 10000
                       ) {
-                        console.log("Replacing temporary message:", m.id);
                         return false;
                       }
                       return true;
@@ -265,17 +238,9 @@ export default function Chat() {
                     });
 
                     if (exists) {
-                      console.log(
-                        "Real message already exists, skipping:",
-                        messageData.id
-                      );
                       return prev;
                     }
 
-                    console.log(
-                      "Adding real message (replaced temp):",
-                      messageData.id
-                    );
                     return [...filteredMessages, messageData];
                   } else {
                     // For messages from other users, normal duplicate check
@@ -295,16 +260,8 @@ export default function Chat() {
                     });
 
                     if (exists) {
-                      console.log(
-                        "Message already exists, skipping:",
-                        messageData.id || "null ID"
-                      );
                       return prev;
                     }
-                    console.log(
-                      "Adding new message from other user:",
-                      messageData.id || "null ID"
-                    );
 
                     // Mark this message as read if it's from another user
                     if (messageData.senderId !== user?.id && messageData.id) {
@@ -324,7 +281,7 @@ export default function Chat() {
                   return updated;
                 });
               } catch (error) {
-                console.error("Error parsing chat message:", error);
+                logger.error("Error parsing chat message:", error);
               }
             });
 
@@ -333,7 +290,6 @@ export default function Chat() {
               `/topic/typing.${roomId}`,
               (msg) => {
                 try {
-                  console.log("⌨️ Received typing indicator:", msg.body);
                   const typingData: TypingStateDto = JSON.parse(msg.body);
                   if (typingData.userId !== user?.id && typingData.typing) {
                     // Get user info from chat room participants instead of backend username
@@ -360,15 +316,14 @@ export default function Chat() {
                     });
                   }
                 } catch (error) {
-                  console.error("Error parsing typing indicator:", error);
+                  logger.error("Error parsing typing indicator:", error);
                 }
               }
             );
 
             setIsSubscribed(true);
-            console.log("✅ All subscriptions set up successfully");
           } catch (error) {
-            console.error("❌ Error setting up subscriptions:", error);
+            logger.error("❌ Error setting up subscriptions:", error);
             setIsSubscribed(false);
           }
 
@@ -378,7 +333,7 @@ export default function Chat() {
               const errorResponse: WebSocketErrorResponse = JSON.parse(
                 msg.body
               );
-              console.error("WebSocket Error Response:", errorResponse);
+              logger.error("WebSocket Error Response:", errorResponse);
 
               // Handle different error types
               switch (errorResponse.errorType) {
@@ -412,14 +367,14 @@ export default function Chat() {
                   );
               }
             } catch (error) {
-              console.error("Error parsing WebSocket error response:", error);
+              logger.error("Error parsing WebSocket error response:", error);
               Alert.alert("Error", "An unexpected error occurred.");
             }
           });
         };
 
         stompClientRef.current.onStompError = (frame) => {
-          console.error("STOMP Error:", frame.headers["message"]);
+          logger.error("STOMP Error:", frame.headers["message"]);
           Alert.alert(
             "Connection Error",
             frame.headers["message"] || "STOMP connection failed"
@@ -429,12 +384,11 @@ export default function Chat() {
         };
 
         stompClientRef.current.onWebSocketError = (error) => {
-          console.error("WebSocket Error:", error);
+          logger.error("WebSocket Error:", error);
           setIsConnected(false);
         };
 
         stompClientRef.current.onDisconnect = () => {
-          console.log("STOMP disconnected");
           setIsConnected(false);
           setIsSubscribed(false);
           setIsReconnecting(false);
@@ -444,7 +398,7 @@ export default function Chat() {
         // Activate the STOMP client
         stompClientRef.current.activate();
       } catch (error) {
-        console.error("Error connecting to chat:", error);
+        logger.error("Error connecting to chat:", error);
         setIsConnected(false);
         setIsReconnecting(false);
         Alert.alert(
@@ -485,15 +439,13 @@ export default function Chat() {
       };
 
       try {
-        console.log("📤 Sending message via STOMP:", messageData);
         stompClientRef.current.publish({
           destination: "/app/sendMessage",
           body: JSON.stringify(messageData),
         });
 
-        console.log("✅ Message sent successfully");
       } catch (error) {
-        console.error("❌ Error sending message:", error);
+        logger.error("❌ Error sending message:", error);
       }
     },
     [chatRoom?.id]
@@ -506,7 +458,6 @@ export default function Chat() {
         destination: `/app/typing/start/room/${chatRoom.id}`,
         body: JSON.stringify({}),
       });
-      console.log(`Started typing in room ${chatRoom.id}`);
     }
   }, [chatRoom?.id]);
 
@@ -516,7 +467,6 @@ export default function Chat() {
         destination: `/app/typing/stop/room/${chatRoom.id}`,
         body: JSON.stringify({}),
       });
-      console.log(`Stopped typing in room ${chatRoom.id}`);
     }
   }, [chatRoom?.id]);
 
@@ -524,7 +474,7 @@ export default function Chat() {
   const markAsRead = useCallback(
     (messageId?: string): void => {
       if (!stompClientRef.current?.connected || !chatRoom?.id) {
-        console.warn(
+        logger.warn(
           "Cannot mark as read: STOMP not connected or no chat room"
         );
         return;
@@ -536,19 +486,13 @@ export default function Chat() {
       };
 
       try {
-        console.log("📖 Marking as read via STOMP:", readReceiptData);
         stompClientRef.current.publish({
           destination: "/app/markAsRead",
           body: JSON.stringify(readReceiptData),
         });
 
-        console.log(
-          `✅ Read receipt sent for ${
-            messageId ? `message ${messageId}` : `room ${chatRoom.id}`
-          }`
-        );
       } catch (error) {
-        console.error("❌ Error sending read receipt:", error);
+        logger.error("❌ Error sending read receipt:", error);
       }
     },
     [chatRoom?.id]
@@ -562,7 +506,6 @@ export default function Chat() {
       setIsConnected(false);
       setIsSubscribed(false);
       setTypingUsers({});
-      console.log("Disconnected from chat");
     }
   }, []);
 
@@ -570,27 +513,15 @@ export default function Chat() {
   const initializeChatRoom = useCallback(async (): Promise<void> => {
     setIsLoadingChatRoom(true);
 
-    console.log("🔍 Chat initialization started with parameters:", {
-      chatType,
-      tripId,
-      providerId,
-      roomId,
-      tripName,
-    });
 
     try {
       let response;
 
       if (chatType === "group" && tripId) {
-        console.log(`Initializing group chat room for trip ID: ${tripId}`);
         response = await getGroupChatRoomByTripId(tripId);
       } else if (chatType === "direct" && providerId) {
-        console.log(
-          `Initializing direct chat room with provider ID: ${providerId}`
-        );
         response = await getDirectChatRoom(providerId);
       } else if (roomId) {
-        console.log(`Initializing chat room by ID: ${roomId}`);
         response = await getChatRoomById(roomId);
       } else {
         // Better error handling with specific messages
@@ -613,8 +544,8 @@ export default function Chat() {
             "At least one of tripId, providerId, or roomId must be provided.";
         }
 
-        console.error("Chat initialization error:", errorMessage);
-        console.error("Received parameters:", {
+        logger.error("Chat initialization error:", errorMessage);
+        logger.error("Received parameters:", {
           chatType,
           tripId,
           providerId,
@@ -626,20 +557,13 @@ export default function Chat() {
 
       if (response.success && response.data) {
         setChatRoom(response.data as GroupChatRoom | DirectChatRoom);
-        console.log("Chat room initialized successfully:", response.data);
 
         // Log participant information for debugging
         const roomData = response.data as GroupChatRoom | DirectChatRoom;
         if (roomData.chatRoomType === "DIRECT") {
           const directRoom = roomData as DirectChatRoom;
-          console.log("Direct chat participants:", {
-            provider: directRoom.provider,
-            tourist: directRoom.tourist,
-            currentUserId: user?.id,
-          });
         } else if (roomData.chatRoomType === "GROUP") {
           const groupRoom = roomData as GroupChatRoom;
-          console.log("Group chat participants:", groupRoom.participants);
         }
 
         // Load chat history
@@ -654,14 +578,13 @@ export default function Chat() {
     } catch (error) {
       // Handle ChatRoomNotFoundError specifically for invitation flow
       if (error instanceof ChatRoomNotFoundError) {
-        console.log("✨ Chat room not available, showing invitation flow");
         setInvitationError(error);
         setShowInvitationFlow(true);
         return; // Don't show alert, let the UI handle this gracefully
       }
 
       // Only log actual errors, not expected invitation flows
-      console.error("Error initializing chat room:", error);
+      logger.error("Error initializing chat room:", error);
 
       if (error instanceof Error) {
         if (error.message.includes("Authentication required")) {
@@ -690,7 +613,6 @@ export default function Chat() {
 
   // Handle share trip invitation
   const handleShareTripInvitation = useCallback((): void => {
-    console.log("Opening trip sharing modal for:", { tripId, tripName });
     setShowSharingModal(true);
   }, [tripId, tripName]);
 
@@ -698,16 +620,14 @@ export default function Chat() {
   const loadChatHistory = useCallback(
     async (chatRoomId: number): Promise<void> => {
       try {
-        console.log(`Loading chat history for room ${chatRoomId}`);
         const response = await getRoomMessages(chatRoomId);
 
         if (response.success && response.data) {
           // Data is already in ChatMessage format from the backend
           setMessages(response.data);
-          console.log(`Loaded ${response.data.length} messages`);
         }
       } catch (error) {
-        console.error("Error loading chat history:", error);
+        logger.error("Error loading chat history:", error);
       }
     },
     []
@@ -927,7 +847,7 @@ export default function Chat() {
       try {
         await initializeChatRoom();
       } catch (error) {
-        console.error("Failed to initialize chat room:", error);
+        logger.error("Failed to initialize chat room:", error);
       }
     };
 
@@ -944,7 +864,6 @@ export default function Chat() {
   // Connect STOMP when chat room is ready
   useEffect(() => {
     if (chatRoom?.id && !isConnected) {
-      console.log(`🔌 Attempting to connect to chat room ${chatRoom.id}`);
       connectChat(chatRoom.id);
     }
   }, [chatRoom?.id, isConnected, connectChat]);
@@ -952,18 +871,13 @@ export default function Chat() {
   // Mark all messages as read when chat room is loaded and connected
   useEffect(() => {
     if (isConnected && chatRoom?.id && messages.length > 0) {
-      console.log(`📖 Marking all messages as read for room ${chatRoom.id}`);
       markAsRead(); // Mark all messages in the room as read
     }
   }, [isConnected, chatRoom?.id, messages.length, markAsRead]);
 
   // Debug messages state changes
   useEffect(() => {
-    console.log(
-      `📊 Messages state updated. Total messages: ${messages.length}`
-    );
     if (messages.length > 0) {
-      console.log("Latest message:", messages[messages.length - 1]);
     }
   }, [messages]);
 
