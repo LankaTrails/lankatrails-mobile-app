@@ -27,7 +27,7 @@ import {
   useAnimatedValue,
 } from "react-native";
 import { ArrowLeftIcon } from "react-native-heroicons/outline";
-import { fetchGroupedPlaces, geocodeLocation } from "../../../../services/googlePlacesService";
+import { fetchGroupedPlaces, geocodeLocation, PlacesUnavailableError } from "../../../../services/googlePlacesService";
 
 // Import modular components
 import {
@@ -574,7 +574,8 @@ const GalleApp: React.FC = () => {
             lng = DEFAULT_COORDINATES.lng;
           }
         } catch (geocodeError) {
-          logger.error("❌ Geocoding error:", geocodeError);
+          // PlacesUnavailableError has already been reported once by the service
+          if (!(geocodeError instanceof PlacesUnavailableError)) logger.warn("[search] geocoding failed", geocodeError);
           lat = DEFAULT_COORDINATES.lat;
           lng = DEFAULT_COORDINATES.lng;
         }
@@ -602,7 +603,7 @@ const GalleApp: React.FC = () => {
         
       } catch (apiError) {
         // No silent sample data: an empty list shows the "no places" state
-        logger.warn("[search] places lookup failed", apiError);
+        if (!(apiError instanceof PlacesUnavailableError)) logger.warn("[search] places lookup failed", apiError);
         groups = [];
       }
       

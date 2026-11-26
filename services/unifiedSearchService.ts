@@ -1,4 +1,4 @@
-import { geocodeLocation, fetchGroupedPlaces, getPlaceDetails, type PlaceGroup, type GooglePlace } from './googlePlacesService';
+import { geocodeLocation, fetchGroupedPlaces, getPlaceDetails, PlacesUnavailableError, type PlaceGroup, type GooglePlace } from './googlePlacesService';
 import { searchServicesByCoordinates } from './serviceSearch';
 import { ServiceCategory } from '@/types/commonTypes';
 import type { ServiceSearchResponse } from '@/types/serviceTypes';
@@ -71,7 +71,7 @@ export class UnifiedSearchService {
         searchPromises.push(
           fetchGroupedPlaces(coordinates.lat, coordinates.lng, radius)
             .catch(error => {
-              logger.warn('Places search failed:', error);
+              if (!(error instanceof PlacesUnavailableError)) logger.warn('Places search failed:', error);
               return [] as PlaceGroup[];
             })
         );

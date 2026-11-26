@@ -1,6 +1,6 @@
 import { GOOGLE_PLACES_API_KEY } from '@/utils/config';
 import locationCache from '@/utils/locationCache';
-import axios from 'axios';
+import axios, { isAxiosError } from 'axios';
 import { logger } from "@/utils/logger";
 
 
@@ -34,6 +34,48 @@ const rateLimiter = new RateLimiter();
 
 // Helper function to delay execution
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Raised when Google refuses every request for this key (billing off, API not enabled, key restricted)
+ * or the quota is used up. Any further request would fail the same way, so callers get this once and show
+ * their empty state, and calls pause for a while instead of failing again on every keyword and screen.
+ */
+export class PlacesUnavailableError extends Error {
+  name = 'PlacesUnavailableError';
+}
+
+const DENIED_PAUSE_MS = 10 * 60_000;
+const QUOTA_PAUSE_MS = 60_000;
+let unavailableUntil = 0;
+
+function ensureAvailable(): void {
+  if (Date.now() < unavailableUntil) {
+    throw new PlacesUnavailableError('Google Maps calls are paused after a denied request.');
+  }
+}
+
+function markUnavailable(api: string, reason: string, pauseMs: number): never {
+  // One warning per pause; otherwise LogBox shows a box for every request
+  if (Date.now() >= unavailableUntil) {
+    logger.warn(`[places] ${api}: ${reason}. Pausing Google Maps calls for ${Math.round(pauseMs / 60_000)} min.`);
+  }
+  unavailableUntil = Date.now() + pauseMs;
+  throw new PlacesUnavailableError(`${api}: ${reason}`);
+}
+
+/** Response statuses that affect every request made with this key. */
+function checkKeyStatus(api: string, data: { status?: string; error_message?: string }): void {
+  if (data.status === 'REQUEST_DENIED') markUnavailable(api, data.error_message || 'request denied', DENIED_PAUSE_MS);
+  if (data.status === 'OVER_QUERY_LIMIT') markUnavailable(api, 'quota exceeded', QUOTA_PAUSE_MS);
+}
+
+/** HTTP errors that affect every request made with this key. */
+function checkKeyHttpError(api: string, error: unknown): void {
+  if (error instanceof PlacesUnavailableError) throw error;
+  if (!isAxiosError(error)) return;
+  if (error.response?.status === 403) markUnavailable(api, 'access forbidden', DENIED_PAUSE_MS);
+  if (error.response?.status === 429) markUnavailable(api, 'rate limited', QUOTA_PAUSE_MS);
+}
 
 export type PlaceGroup = {
   group: string;
@@ -132,6 +174,8 @@ export async function geocodeLocation(locationName: string): Promise<GeocodeResu
     }
 
     
+    ensureAvailable();
+
     // Check rate limiting
     if (!rateLimiter.canMakeRequest()) {
       const waitTime = rateLimiter.getWaitTime();
@@ -148,15 +192,7 @@ export async function geocodeLocation(locationName: string): Promise<GeocodeResu
     });
 
     // Check for API errors
-    if (response.data.status === 'REQUEST_DENIED') {
-      logger.error('Geocoding API request denied:', response.data.error_message);
-      throw new Error('Geocoding API access denied. Please check your API key and permissions.');
-    }
-
-    if (response.data.status === 'OVER_QUERY_LIMIT') {
-      logger.error('Geocoding API quota exceeded');
-      throw new Error('Geocoding API quota exceeded. Please try again later.');
-    }
+    checkKeyStatus('Geocoding API', response.data);
 
     if (response.data.status === 'ZERO_RESULTS') {
       logger.warn(`No geocoding results found for: ${locationName}`);
@@ -180,18 +216,11 @@ export async function geocodeLocation(locationName: string): Promise<GeocodeResu
     logger.warn(`No geocoding results found for: ${locationName}`);
     return null;
   } catch (error) {
+    checkKeyHttpError('Geocoding API', error);
     if (axios.isAxiosError(error)) {
       if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
         logger.error('Network error during geocoding:', error.message);
         throw new Error('Network connection failed. Please check your internet connection.');
-      }
-      if (error.response?.status === 403) {
-        logger.error('Geocoding API forbidden:', error.response.data);
-        throw new Error('Geocoding API access forbidden. Please check your API key.');
-      }
-      if (error.response?.status === 429) {
-        logger.error('Geocoding API rate limit exceeded');
-        throw new Error('Too many requests. Please try again later.');
       }
     }
     logger.error('Geocoding error:', error);
@@ -259,6 +288,8 @@ export async function fetchGroupedPlaces(
     throw new Error('Radius must be between 1 and 50000 meters');
   }
 
+  ensureAvailable();
+
   const results: PlaceGroup[] = [];
 
   for (const config of groupConfigs) {
@@ -287,15 +318,8 @@ export async function fetchGroupedPlaces(
           });
 
           // Check for API errors
-          if (response.data.status === 'REQUEST_DENIED') {
-            logger.error('Places API request denied:', response.data.error_message);
-            throw new Error('Places API access denied. Please check your API key and permissions.');
-          }
-
-          if (response.data.status === 'OVER_QUERY_LIMIT') {
-            logger.error('Places API quota exceeded');
-            throw new Error('Places API quota exceeded. Please try again later.');
-          }
+          // Throws past the catch below: a denied key fails every keyword the same way
+          checkKeyStatus('Places API', response.data);
 
           if (response.data.status === 'INVALID_REQUEST') {
             logger.error('Invalid request to Places API:', response.data.error_message);
@@ -316,21 +340,12 @@ export async function fetchGroupedPlaces(
             placesForGroup.push(...filteredPlaces);
           }
         } catch (err) {
-          if (axios.isAxiosError(err)) {
-            if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED') {
-              logger.error(`Network error for ${config.group} with keyword "${keyword}":`, err.message);
-              continue; // Skip this request but continue with others
-            }
-            if (err.response?.status === 403) {
-              logger.error('Places API forbidden:', err.response.data);
-              throw new Error('Places API access forbidden. Please check your API key.');
-            }
-            if (err.response?.status === 429) {
-              logger.error('Places API rate limit exceeded');
-              throw new Error('Too many requests. Please try again later.');
-            }
+          checkKeyHttpError('Places API', err);
+          if (axios.isAxiosError(err) && (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED')) {
+            logger.warn(`Network error for ${config.group} with keyword "${keyword}":`, err.message);
+            continue; // Skip this request but continue with others
           }
-          logger.error(`[${config.group}] Fetch failed for keyword "${keyword}":`, err);
+          logger.warn(`[${config.group}] Fetch failed for keyword "${keyword}":`, err);
           // Continue with other keywords/types instead of failing completely
         }
       }
@@ -362,6 +377,8 @@ export async function getPlaceDetails(placeId: string): Promise<PlaceDetails | n
     }
 
     
+    ensureAvailable();
+
     // Check rate limiting
     if (!rateLimiter.canMakeRequest()) {
       const waitTime = rateLimiter.getWaitTime();
@@ -379,15 +396,7 @@ export async function getPlaceDetails(placeId: string): Promise<PlaceDetails | n
     });
 
     // Check for API errors
-    if (response.data.status === 'REQUEST_DENIED') {
-      logger.error('Place Details API request denied:', response.data.error_message);
-      throw new Error('Place Details API access denied. Please check your API key and permissions.');
-    }
-
-    if (response.data.status === 'OVER_QUERY_LIMIT') {
-      logger.error('Place Details API quota exceeded');
-      throw new Error('Place Details API quota exceeded. Please try again later.');
-    }
+    checkKeyStatus('Place Details API', response.data);
 
     if (response.data.status === 'NOT_FOUND') {
       logger.warn(`Place not found for ID: ${placeId}`);
@@ -406,18 +415,11 @@ export async function getPlaceDetails(placeId: string): Promise<PlaceDetails | n
     logger.warn(`No details found for place ID: ${placeId}`);
     return null;
   } catch (error) {
+    checkKeyHttpError('Place Details API', error);
     if (axios.isAxiosError(error)) {
       if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
         logger.error('Network error during place details fetch:', error.message);
         throw new Error('Network connection failed. Please check your internet connection.');
-      }
-      if (error.response?.status === 403) {
-        logger.error('Place Details API forbidden:', error.response.data);
-        throw new Error('Place Details API access forbidden. Please check your API key.');
-      }
-      if (error.response?.status === 429) {
-        logger.error('Place Details API rate limit exceeded');
-        throw new Error('Too many requests. Please try again later.');
       }
     }
     logger.error('Place details error:', error);
