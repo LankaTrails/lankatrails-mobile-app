@@ -1,0 +1,15 @@
+# Development image for the Expo app (Metro on port 8081) and its checks (tsc, eslint, expo-doctor).
+# The source is bind-mounted at /app by lankatrails-backend/docker-compose.dev.yml (profile "mobile");
+# node_modules lives in a container volume so host (macOS) binaries never leak in.
+FROM node:24-alpine
+
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund \
+    && sha1sum package-lock.json | cut -d' ' -f1 > node_modules/.lock-hash
+
+EXPOSE 8081
+
+# Reinstall only when package-lock.json changed since node_modules was populated, then run the command.
+ENTRYPOINT ["sh", "-c", "h=$(sha1sum package-lock.json | cut -d' ' -f1); if [ \"$(cat node_modules/.lock-hash 2>/dev/null)\" != \"$h\" ]; then npm ci --no-audit --no-fund && echo \"$h\" > node_modules/.lock-hash; fi; exec \"$@\"", "--"]
+CMD ["npx", "expo", "start", "--lan", "--port", "8081"]
