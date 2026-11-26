@@ -111,7 +111,6 @@ export async function updateUserProfile(
   role: string = "ROLE_TOURIST",
 ): Promise<UpdateUserProfileResponse> {
   try {
-    console.log('Updating user profile:', { firstName, lastName, phone, country, role });
     const response = await api.put<UpdateUserProfileResponse>(`/tourist/update-profile`, {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
@@ -159,7 +158,6 @@ export async function addProfilePicture(
   fileName?: string
 ): Promise<AddProfilePictureResponse> {
   try {
-    console.log('Uploading profile picture for user:', userId);
 
     // Create FormData for multipart file upload
     const formData = new FormData();
@@ -245,7 +243,6 @@ export async function changePassword(
       throw new Error('New password must be different from current password');
     }
 
-    console.log('Changing password for user');
     const response = await api.put<ChangePasswordResponse>(`/auth/change-password`, {
       oldPassword: oldPassword.trim(),
       newPassword: newPassword.trim()

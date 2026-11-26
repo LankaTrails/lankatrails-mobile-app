@@ -1,37 +1,19 @@
 import React, { useEffect, useState, useRef } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Dimensions,
-  SafeAreaView,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  ScrollView,
-} from "react-native";
+import { View, Text, StyleSheet, Dimensions, TouchableOpacity, Alert, ActivityIndicator, ScrollView } from "react-native";
 import MapView, {
   Marker,
   PROVIDER_GOOGLE,
   Region,
   Polyline,
 } from "react-native-maps";
-import { useLocalSearchParams, router, useFocusEffect } from "expo-router";
+import { useLocalSearchParams, router, useFocusEffect, useNavigation } from "expo-router";
 import { getTripById, getTripItemsByTripId } from "@/services/tripService";
 import { Trip, TripItem } from "@/types/triptypes";
 import { ServiceType } from "@/types/commonTypes";
-import BackButton from "../../../../components/BackButton";
 import TripMapMarker from "../../../../components/TripMapMarker";
 import Icon from "react-native-vector-icons/Ionicons";
-import { useNavigation } from "@react-navigation/native";
-import {
-  getDirections,
-  getDirectionsWithApiInfo,
-  getTravelModeRecommendations,
-  logRouteDetails,
-  DirectionsRoute,
-  DirectionsWaypoint,
-} from "@/services/googleDirectionsService";
+import { getDirectionsWithApiInfo, logRouteDetails, DirectionsRoute, DirectionsWaypoint } from "@/services/googleDirectionsService";
+import { logger } from "@/utils/logger";
 
 const { width, height } = Dimensions.get("window");
 
@@ -83,7 +65,6 @@ const TripMapView: React.FC = () => {
 
   // Debug: Log the tripId to see what we're receiving
   useEffect(() => {
-    console.log("TripMapView received tripId:", tripId, "Type:", typeof tripId);
   }, [tripId]);
 
   // Hide tab bar when this screen is focused
@@ -139,7 +120,6 @@ const TripMapView: React.FC = () => {
           );
         });
 
-        console.log("Creating routes for", sortedMarkers.length, "markers");
 
         const routes: DirectionsRoute[] = [];
         let apiError = false;
@@ -156,11 +136,6 @@ const TripMapView: React.FC = () => {
             longitude: sortedMarkers[i + 1].coordinate.longitude,
           };
 
-          console.log(
-            `Getting route ${i + 1}/${sortedMarkers.length - 1}: ${
-              sortedMarkers[i].title
-            } → ${sortedMarkers[i + 1].title}`
-          );
 
           const routeResult = await getDirectionsWithApiInfo(
             origin,
@@ -175,18 +150,11 @@ const TripMapView: React.FC = () => {
             // Track which API was used (use the most recent one)
             setRouteApiUsed(routeResult.apiUsed);
 
-            console.log(
-              `Route ${i + 1} found via ${routeResult.apiUsed} API: ${
-                routeResult.route.distance
-              }, ${routeResult.route.duration}, ${
-                routeResult.route.coordinates.length
-              } points`
-            );
 
             // Log detailed route information
             logRouteDetails(routeResult.route, travelMode);
           } else {
-            console.warn(
+            logger.warn(
               `No route found between ${sortedMarkers[i].title} and ${
                 sortedMarkers[i + 1].title
               }`
@@ -214,10 +182,9 @@ const TripMapView: React.FC = () => {
           );
         }
 
-        console.log("All routes fetched:", routes.length, "segments");
         setRoutesLoaded(true);
       } catch (error) {
-        console.error("Error fetching routes:", error);
+        logger.error("Error fetching routes:", error);
 
         // Show user-friendly error message
         Alert.alert(
@@ -329,10 +296,9 @@ const TripMapView: React.FC = () => {
   // Fetch trip data and items
   useEffect(() => {
     const fetchTripData = async () => {
-      console.log("MapView - tripId received:", tripId, "type:", typeof tripId);
 
       if (!tripId) {
-        console.error("MapView - No tripId provided");
+        logger.error("MapView - No tripId provided");
         Alert.alert("Error", "Trip ID is required");
         setLoading(false);
         return;
@@ -340,23 +306,11 @@ const TripMapView: React.FC = () => {
 
       // Validate tripId - ensure it's a valid number
       const parsedTripId = Array.isArray(tripId) ? tripId[0] : tripId;
-      console.log(
-        "MapView - parsedTripId:",
-        parsedTripId,
-        "type:",
-        typeof parsedTripId
-      );
 
       const numericTripId = parseInt(parsedTripId as string, 10);
-      console.log(
-        "MapView - numericTripId:",
-        numericTripId,
-        "isNaN:",
-        isNaN(numericTripId)
-      );
 
       if (isNaN(numericTripId)) {
-        console.error(
+        logger.error(
           "MapView - Invalid tripId:",
           tripId,
           "parsed:",
@@ -371,7 +325,6 @@ const TripMapView: React.FC = () => {
 
       try {
         setLoading(true);
-        console.log("MapView - Fetching trip with ID:", numericTripId);
 
         // Fetch trip details
         const tripResponse = await getTripById(numericTripId);
@@ -388,7 +341,7 @@ const TripMapView: React.FC = () => {
           setTripItems(itemsResponse.data);
         }
       } catch (error) {
-        console.error("Error fetching trip data:", error);
+        logger.error("Error fetching trip data:", error);
         Alert.alert("Error", "Failed to load trip data");
       } finally {
         setLoading(false);

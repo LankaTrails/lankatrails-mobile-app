@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Animated,
   Dimensions,
@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
+  useAnimatedValue,
 } from "react-native";
 import LongButton from "./LongButton";
 
@@ -34,7 +35,7 @@ export default function PersonCountModal({
   const [children, setChildren] = useState(initialChildren);
 
   // Modal animation
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useAnimatedValue(0);
 
   useEffect(() => {
     if (visible) {
@@ -69,7 +70,6 @@ export default function PersonCountModal({
   };
 
   const handleConfirm = () => {
-    console.log("PersonCountModal - Confirming with:", { adults, children });
     onConfirm(adults, children);
   };
 

@@ -8,7 +8,7 @@ type Props = {
   secureTextEntry?: boolean;
   placeholder: string;
   onChange: (text: string) => void;
-  icon: string;
+  icon?: string;
   keyboardType?: TextInputProps["keyboardType"];
   maxLength?: number;
 };
@@ -26,7 +26,7 @@ const ProfileInput: React.FC<Props> = ({
   return (
     <View style={{ marginBottom: 14 }}>
       <View style={styles.label}>
-        <Icon name={icon} size={18} color="#008080" style={styles.icon} />
+        {icon ? <Icon name={icon} size={18} color="#008080" style={styles.icon} /> : null}
         <Text style={styles.labelText}>{label}</Text>
       </View>
       <TextInput

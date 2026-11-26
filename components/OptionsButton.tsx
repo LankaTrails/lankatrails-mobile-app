@@ -1,5 +1,6 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import {
+  Alert,
   View,
   TouchableOpacity,
   StyleSheet,
@@ -7,6 +8,7 @@ import {
   Dimensions,
   Modal,
   TouchableWithoutFeedback,
+  useAnimatedValue,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { router } from "expo-router";
@@ -20,15 +22,15 @@ interface OptionsButtonProps {
 
 const OptionsButton: React.FC<OptionsButtonProps> = ({ tripId, tripName }) => {
   const [isVisible, setIsVisible] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useAnimatedValue(0);
+  const scaleAnim = useAnimatedValue(0);
+  const rotateAnim = useAnimatedValue(0);
 
   // Individual animation values for staggered effect
-  const option1Anim = useRef(new Animated.Value(0)).current;
-  const option2Anim = useRef(new Animated.Value(0)).current;
-  const option3Anim = useRef(new Animated.Value(0)).current;
-  const option4Anim = useRef(new Animated.Value(0)).current;
+  const option1Anim = useAnimatedValue(0);
+  const option2Anim = useAnimatedValue(0);
+  const option3Anim = useAnimatedValue(0);
+  const option4Anim = useAnimatedValue(0);
 
   const toggleMenu = () => {
     if (isVisible) {
@@ -112,34 +114,21 @@ const OptionsButton: React.FC<OptionsButtonProps> = ({ tripId, tripName }) => {
   };
 
   const handleOptionPress = (option: string) => {
-    console.log(`${option} pressed, tripId:`, tripId);
     toggleMenu();
-
-    // Add your navigation logic here with proper tripId
+    if (!tripId) {
+      Alert.alert("Trip not loaded", "Open a trip first, then try again.");
+      return;
+    }
     if (option === "Budget") {
-      router.push(`/(tabs)/trips/${tripId}/BudgetView` as any);
+      router.push({ pathname: "/(tabs)/trips/[id]/BudgetView", params: { id: String(tripId) } });
     } else if (option === "Map") {
-      if (tripId) {
-        router.push(`/(tabs)/trips/${tripId}/MapView` as any);
-      } else {
-        console.error("Trip ID is required for map navigation");
-      }
+      router.push({ pathname: "/(tabs)/trips/[id]/MapView", params: { id: String(tripId) } });
     } else if (option === "Chat") {
-      if (tripId) {
-        // Navigate to group chat for the trip
-        router.push({
-          pathname: "/screens/Chat" as any,
-          params: {
-            chatType: "group",
-            tripId: tripId,
-            tripName: tripName || `Trip ${tripId}`, // Use actual trip name if provided
-          },
-        });
-      } else {
-        console.error("Trip ID is required for group chat navigation");
-        // Could show an alert or navigate to a chat list instead
-        router.push("/screens/Chat" as any);
-      }
+      // Group chat for the trip; Chat.tsx needs the chat type and trip
+      router.push({
+        pathname: "/screens/Chat",
+        params: { chatType: "group", tripId: String(tripId), tripName: tripName || `Trip ${tripId}` },
+      });
     }
   };
 
@@ -339,7 +328,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: "rgba(0, 0, 0, 0.28)",
-    backdropFilter: "blur(9px)",
   },
   optionsContainer: {
     position: "absolute",

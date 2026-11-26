@@ -9,7 +9,7 @@ import {
   TouchableWithoutFeedback,
 } from "react-native";
 import { BlurView } from "expo-blur";
-import { theme } from "../app/theme";
+import { theme } from "@/constants/theme";
 
 interface BudgetCategory {
   id: string;
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   modalContainer: {
     justifyContent: "flex-end",

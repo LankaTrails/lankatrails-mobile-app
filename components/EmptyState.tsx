@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
-import { theme } from "../app/theme";
+import { theme } from "@/constants/theme";
 
 const screenHeight = Dimensions.get("window").height;
 

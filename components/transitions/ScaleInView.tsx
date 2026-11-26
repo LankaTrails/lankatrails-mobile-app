@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, ViewStyle, StyleProp } from 'react-native';
+import React, { useEffect } from 'react';
+import { Animated, ViewStyle, StyleProp, useAnimatedValue } from 'react-native';
 
 interface ScaleInViewProps {
   style?: StyleProp<ViewStyle>;
@@ -16,8 +16,8 @@ const ScaleInView: React.FC<ScaleInViewProps> = ({
   delay = 0,
   initialScale = 0.8,
 }) => {
-  const scaleAnim = useRef(new Animated.Value(initialScale)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useAnimatedValue(initialScale);
+  const opacityAnim = useAnimatedValue(0);
 
   useEffect(() => {
     Animated.parallel([

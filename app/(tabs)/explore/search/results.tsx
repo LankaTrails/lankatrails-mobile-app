@@ -1,20 +1,10 @@
+import { fileUrl, GOOGLE_PLACES_API_KEY } from "@/utils/config";
+import { logger } from "@/utils/logger";
 import EmptyState from "@/components/EmptyState";
 import FilterBar from "@/components/FilterBar";
 import { searchServices } from "@/services/serviceSearch";
 import { ServiceCategory } from "@/types/commonTypes";
-import {
-  AccommodationType,
-  ActivityType,
-  ApiResponse,
-  FoodBeverageType,
-  ProviderSearchResponse,
-  SearchResponse,
-  Service,
-  ServiceSearchRequest,
-  ServiceSearchResponse,
-  TourGuideType,
-  VehicleType,
-} from "@/types/serviceTypes";
+import { AccommodationType, ActivityType, ApiResponse, FoodBeverageType, ProviderSearchResponse, SearchResponse, ServiceSearchRequest, ServiceSearchResponse, TourGuideType, VehicleType } from "@/types/serviceTypes";
 import { router, useLocalSearchParams } from "expo-router";
 import React, {
   useCallback,
@@ -34,14 +24,10 @@ import {
   ToastAndroid,
   TouchableOpacity,
   View,
+  useAnimatedValue,
 } from "react-native";
 import { ArrowLeftIcon } from "react-native-heroicons/outline";
-import {
-  fetchGroupedPlaces,
-  geocodeLocation,
-  type PlaceGroup as GooglePlaceGroup,
-  type GooglePlace,
-} from "../../../../services/googlePlacesService";
+import { fetchGroupedPlaces, geocodeLocation, PlacesUnavailableError } from "../../../../services/googlePlacesService";
 
 // Import modular components
 import {
@@ -52,136 +38,13 @@ import {
 import { SectionHeader } from "@/components/SectionHeader";
 import { AnimatedCard } from "@/components/transitions/AnimatedCard";
 import { navigateToServiceDetail } from "@/utils/navigationHelpers";
-import { PlaceGrid } from "../places/components/PlaceGrid";
-import { ServiceGrid } from "../services/components/ServiceGrid";
+import { PlaceGrid } from "@/components/explore/PlaceGrid";
+import { ServiceGrid } from "@/components/explore/ServiceGrid";
 
 const { width } = Dimensions.get("window");
-const GOOGLE_PLACES_API_KEY = "AIzaSyA47Q-I515EK0DU4pvk5jgUcatYcdnf8cY";
 const CARD_WIDTH = (width - 48) / 2;
 const DEFAULT_COORDINATES = { lat: 6.0329, lng: 80.2168 }; // Galle coordinates
 
-// Sample places data for testing (using real place images from Unsplash)
-const SAMPLE_PLACES_DATA: PlaceGroup[] = [
-  {
-    group: "Temples & Religious Sites",
-    places: [
-      {
-        place_id: "ChIJ1234567890",
-        name: "Temple of the Sacred Tooth Relic",
-        vicinity: "Kandy",
-        rating: 4.5,
-        photos: [{
-          photo_reference: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop"
-        }]
-      },
-      {
-        place_id: "ChIJ0987654321",
-        name: "Gangaramaya Temple",
-        vicinity: "Colombo",
-        rating: 4.3,
-        photos: [{
-          photo_reference: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=400&h=300&fit=crop"
-        }]
-      },
-      {
-        place_id: "ChIJ5555555555",
-        name: "Ruwanwelisaya Stupa",
-        vicinity: "Anuradhapura",
-        rating: 4.6,
-        photos: [{
-          photo_reference: "https://images.unsplash.com/photo-1540979388789-6cee28a1cdc9?w=400&h=300&fit=crop"
-        }]
-      }
-    ]
-  },
-  {
-    group: "Historical Sites",
-    places: [
-      {
-        place_id: "ChIJ1111111111",
-        name: "Sigiriya Rock Fortress",
-        vicinity: "Dambulla",
-        rating: 4.7,
-        photos: [{
-          photo_reference: "https://images.unsplash.com/photo-1566552881560-0be862a7c445?w=400&h=300&fit=crop"
-        }]
-      },
-      {
-        place_id: "ChIJ2222222222",
-        name: "Galle Dutch Fort",
-        vicinity: "Galle",
-        rating: 4.4,
-        photos: [{
-          photo_reference: "https://images.unsplash.com/photo-1571115764595-644a1f56a55c?w=400&h=300&fit=crop"
-        }]
-      },
-      {
-        place_id: "ChIJ6666666666",
-        name: "Polonnaruwa Ancient City",
-        vicinity: "Polonnaruwa",
-        rating: 4.5,
-        photos: [{
-          photo_reference: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop"
-        }]
-      }
-    ]
-  },
-  {
-    group: "Beaches",
-    places: [
-      {
-        place_id: "ChIJ3333333333",
-        name: "Unawatuna Beach",
-        vicinity: "Galle",
-        rating: 4.2,
-        photos: [{
-          photo_reference: "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400&h=300&fit=crop"
-        }]
-      },
-      {
-        place_id: "ChIJ4444444444",
-        name: "Mirissa Beach",
-        vicinity: "Mirissa",
-        rating: 4.6,
-        photos: [{
-          photo_reference: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400&h=300&fit=crop"
-        }]
-      },
-      {
-        place_id: "ChIJ7777777777",
-        name: "Bentota Beach",
-        vicinity: "Bentota",
-        rating: 4.3,
-        photos: [{
-          photo_reference: "https://images.unsplash.com/photo-1540979388789-6cee28a1cdc9?w=400&h=300&fit=crop"
-        }]
-      }
-    ]
-  },
-  {
-    group: "Waterfalls & Nature",
-    places: [
-      {
-        place_id: "ChIJ8888888888",
-        name: "Sekumpul Waterfall",
-        vicinity: "Ella",
-        rating: 4.8,
-        photos: [{
-          photo_reference: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop"
-        }]
-      },
-      {
-        place_id: "ChIJ9999999999",
-        name: "Horton Plains National Park",
-        vicinity: "Nuwara Eliya",
-        rating: 4.4,
-        photos: [{
-          photo_reference: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop"
-        }]
-      }
-    ]
-  }
-];
 
 // Types - Updated to match PlaceGrid component expectations
 type Place = {
@@ -354,9 +217,8 @@ const TOUR_GUIDE_TYPE_MAP: Record<string, TourGuideType> = {
 
 // Utility functions
 const showError = (message: string) => {
-  Platform.OS === "android"
-    ? ToastAndroid.show(message, ToastAndroid.SHORT)
-    : Alert.alert("Error", message);
+  if (Platform.OS === "android") ToastAndroid.show(message, ToastAndroid.SHORT);
+  else Alert.alert("Error", message);
 };
 
 // Helper function to normalize category values
@@ -425,7 +287,7 @@ const convertServiceToCardItem = (
     service.locations?.[0]?.city || service.locations?.[0]?.formattedAddress,
   rating: service.averageRating || 0, // Use actual average rating
   image: service.mainImageUrl
-    ? `http://192.168.1.9:8080${service.mainImageUrl}`
+    ? fileUrl(service.mainImageUrl)
     : "https://via.placeholder.com/160x96/e2e8f0/64748b?text=No+Image",
 });
 
@@ -444,10 +306,6 @@ const convertPlaceToCardItem = (place: Place): CardItem => ({
     : "",
 });
 
-// Custom hooks
-const useAnimatedValue = (initialValue = 0) => {
-  return useRef(new Animated.Value(initialValue)).current;
-};
 
 const useCoordinates = (params: any, searchLocation: string) => {
   return useMemo(() => {
@@ -570,7 +428,6 @@ const GalleApp: React.FC = () => {
 
     // Prevent duplicate calls
     if (servicesLoading || lastServiceCallRef.current === callId) {
-      console.log("🔄 Services call skipped - duplicate or already loading");
       return;
     }
 
@@ -636,12 +493,6 @@ const GalleApp: React.FC = () => {
         }
       }
 
-      console.log("API Request being sent:", {
-        endpoint: "/service/search",
-        params: searchRequest,
-        selectedTab,
-        selectedSubType,
-      });
 
       const response: ApiResponse<SearchResponse> = await searchServices(
         searchRequest
@@ -649,16 +500,11 @@ const GalleApp: React.FC = () => {
 
       // Check if component is still mounted before updating state
       if (!isMountedRef.current) {
-        console.log("🚫 Component unmounted, skipping state update");
         return;
       }
 
       if (response.success && response.data) {
         const searchData = response.data;
-        console.log("Search response received:", {
-          providers: searchData.providers?.length || 0,
-          services: searchData.services?.length || 0,
-        });
 
         // Set providers and services separately
         setProviders(searchData.providers || []);
@@ -669,15 +515,14 @@ const GalleApp: React.FC = () => {
           ...(searchData.providers?.map((p) => p.category) || []),
           ...(searchData.services?.map((s) => s.category) || []),
         ];
-        console.log("Categories:", allCategories);
       } else {
-        console.error("Search failed:", response.message);
+        logger.error("Search failed:", response.message);
         showError("Failed to load services");
         setProviders([]);
         setServices([]);
       }
     } catch (error) {
-      console.error("Error fetching services:", error);
+      logger.error("Error fetching services:", error);
       showError("Network error occurred");
       setProviders([]);
       setServices([]);
@@ -704,7 +549,6 @@ const GalleApp: React.FC = () => {
 
     // Prevent duplicate calls
     if (placesLoading || lastPlaceCallRef.current === callId) {
-      console.log("🔄 Places call skipped - duplicate or already loading");
       return;
     }
 
@@ -712,43 +556,36 @@ const GalleApp: React.FC = () => {
 
     try {
       setPlacesLoading(true);
-      console.log("🏛️ Starting to fetch places...");
 
       let lat, lng;
 
       if (coordinates) {
         lat = coordinates.lat;
         lng = coordinates.lng;
-        console.log("📍 Using provided coordinates:", { lat, lng });
       } else {
         try {
-          console.log("🔍 Geocoding location:", searchLocation);
           const geocodedLocation = await geocodeLocation(searchLocation);
           if (geocodedLocation) {
             lat = geocodedLocation.lat;
             lng = geocodedLocation.lng;
-            console.log("✅ Geocoded successfully:", { lat, lng });
           } else {
-            console.warn("⚠️ Geocoding failed, using default coordinates");
+            logger.warn("⚠️ Geocoding failed, using default coordinates");
             lat = DEFAULT_COORDINATES.lat;
             lng = DEFAULT_COORDINATES.lng;
           }
         } catch (geocodeError) {
-          console.error("❌ Geocoding error:", geocodeError);
+          // PlacesUnavailableError has already been reported once by the service
+          if (!(geocodeError instanceof PlacesUnavailableError)) logger.warn("[search] geocoding failed", geocodeError);
           lat = DEFAULT_COORDINATES.lat;
           lng = DEFAULT_COORDINATES.lng;
         }
       }
 
-      console.log(
-        `🔍 Fetching places for coordinates: ${lat}, ${lng} (${searchLocation})`
-      );
       
       let groups: PlaceGroup[] = [];
       
       try {
         const googlePlaceGroups = await fetchGroupedPlaces(lat, lng);
-        console.log("📊 Fetched place groups from API:", googlePlaceGroups.length);
         
         // Convert Google Places to local format
         groups = googlePlaceGroups.map(group => ({
@@ -764,31 +601,24 @@ const GalleApp: React.FC = () => {
           }))
         }));
         
-        // Check if API returned an error (like REQUEST_DENIED)
-        if (groups.length === 0) {
-          console.log("📝 API returned empty or error, using sample data");
-          groups = SAMPLE_PLACES_DATA;
-        }
       } catch (apiError) {
-        console.warn("⚠️ API fetch failed, using sample data:", apiError);
-        groups = SAMPLE_PLACES_DATA;
+        // No silent sample data: an empty list shows the "no places" state
+        if (!(apiError instanceof PlacesUnavailableError)) logger.warn("[search] places lookup failed", apiError);
+        groups = [];
       }
       
       // Log details about each group
       groups.forEach(group => {
-        console.log(`📍 ${group.group}: ${group.places.length} places`);
       });
 
       // Check if component is still mounted before updating state
       if (!isMountedRef.current) {
-        console.log("🚫 Component unmounted, skipping places state update");
         return;
       }
 
       setGroupedPlaces(groups);
-      console.log("✅ Places state updated successfully");
     } catch (error) {
-      console.error("❌ Fetch places error:", error);
+      logger.error("❌ Fetch places error:", error);
       if (isMountedRef.current) {
         setGroupedPlaces([]);
       }
@@ -830,11 +660,9 @@ const GalleApp: React.FC = () => {
 
   const handleServicePress = useCallback(
     (serviceId: string) => {
-      console.log("🔍 handleServicePress called with serviceId:", serviceId);
-      console.log("📋 Available services count:", services?.length || 0);
 
       if (!serviceId) {
-        console.error("❌ ServiceId is null or undefined");
+        logger.error("❌ ServiceId is null or undefined");
         return;
       }
 
@@ -842,30 +670,13 @@ const GalleApp: React.FC = () => {
         (s) => s?.serviceId?.toString() === serviceId
       );
 
-      console.log(
-        "🎯 Found service:",
-        service
-          ? {
-              serviceId: service.serviceId,
-              serviceName: service.serviceName,
-              category: service.category,
-            }
-          : "Service not found"
-      );
 
       if (service && service.category) {
-        console.log(
-          "✅ Navigating to category-specific route:",
-          service.category
-        );
         navigateToServiceDetail(
           parseInt(serviceId),
           service.category as ServiceCategory
         );
       } else {
-        console.log(
-          "⚠️ Using fallback navigation - service or category missing"
-        );
         router.push({
           pathname: "/explore/services/[serviceId]" as any,
           params: { serviceId },
@@ -877,20 +688,12 @@ const GalleApp: React.FC = () => {
 
   const handleProviderPress = useCallback(
     (providerId: number, category?: string) => {
-      console.log("🏢 handleProviderPress called with:", {
-        providerId,
-        category,
-        isNearbySearch,
-        coordinates,
-        searchLocation,
-      });
 
       if (!providerId) {
-        console.error("❌ ProviderId is null or undefined");
+        logger.error("❌ ProviderId is null or undefined");
         return;
       }
 
-      console.log("Navigating to provider with category:", category);
 
       const navParams: any = {
         providerId: providerId.toString(),
@@ -898,22 +701,18 @@ const GalleApp: React.FC = () => {
 
       if (category && category.trim() !== "" && category !== "undefined") {
         navParams.category = category;
-        console.log("✅ Category added to navigation params:", category);
       } else {
-        console.warn("⚠️ Category is missing or invalid:", category);
+        logger.warn("⚠️ Category is missing or invalid:", category);
       }
 
       if (isNearbySearch && coordinates) {
         navParams.lat = coordinates.lat.toString();
         navParams.lng = coordinates.lng.toString();
         navParams.radiusKm = "10";
-        console.log("📍 Using coordinate-based navigation");
       } else {
         navParams.city = searchLocation;
-        console.log("🏙️ Using city-based navigation:", searchLocation);
       }
 
-      console.log("Navigation params:", navParams);
 
       router.push({
         pathname: "/explore/services/provider/[providerId]" as any,
@@ -925,44 +724,30 @@ const GalleApp: React.FC = () => {
 
   const handleItemPress = useCallback(
     (item: any) => {
-      console.log("🎯 handleItemPress called with item:", {
-        isProvider: item?.isProvider,
-        serviceId: item?.serviceId,
-        providerId: item?.providerId,
-        category: item?.category,
-        displayName: item?.displayName,
-      });
 
       if (!item) {
-        console.error("❌ Item is null or undefined");
+        logger.error("❌ Item is null or undefined");
         return;
       }
 
       if (item.isProvider) {
-        console.log("🏢 Processing provider item");
         if (!item.providerId) {
-          console.error("❌ Provider ID is missing");
+          logger.error("❌ Provider ID is missing");
           return;
         }
         handleProviderPress(item.providerId, item.category);
       } else {
-        console.log("⚙️ Processing service item");
         if (!item.serviceId) {
-          console.error("❌ Service ID is missing");
+          logger.error("❌ Service ID is missing");
           return;
         }
 
         if (item.category) {
-          console.log("✅ Using category-specific navigation for service:", {
-            serviceId: item.serviceId,
-            category: item.category,
-          });
           navigateToServiceDetail(
             item.serviceId,
             item.category as ServiceCategory
           );
         } else {
-          console.log("⚠️ Category missing, using fallback navigation");
           router.push({
             pathname: "/explore/services/[serviceId]" as any,
             params: {
@@ -976,7 +761,6 @@ const GalleApp: React.FC = () => {
   );
 
   const handlePlacePress = useCallback(async (placeId: string) => {
-    console.log("🗺️ Place selected:", placeId);
     
     router.push({
       pathname: "/(tabs)/explore/places/[placeId]" as any,
@@ -1027,7 +811,6 @@ const GalleApp: React.FC = () => {
   );
 
   const renderPublicPlacesContent = () => {
-    console.log("🏛️ Rendering public places - loading:", placesLoading, "groups:", groupedPlaces.length);
     
     if (placesLoading) {
       return <PlacesLoadingState />;
@@ -1037,13 +820,12 @@ const GalleApp: React.FC = () => {
       ({ places }) => places.length > 0
     );
 
-    console.log("📊 Groups with places:", groupsWithPlaces.length);
 
     if (groupsWithPlaces.length === 0) {
       return (
         <View className="px-4 py-12">
           <Text className="text-center text-gray-500 text-lg font-medium">
-            No public places found for "{searchLocation}"
+            No public places found for “{searchLocation}”
           </Text>
           <Text className="text-center text-gray-400 text-base mt-2">
             Try searching for a different location or check your internet connection
@@ -1051,7 +833,6 @@ const GalleApp: React.FC = () => {
           <TouchableOpacity
             className="mt-4 bg-primary px-6 py-3 rounded-lg self-center"
             onPress={() => {
-              console.log("🔄 Retry button pressed");
               fetchPlaces();
             }}
           >
@@ -1186,7 +967,7 @@ const GalleApp: React.FC = () => {
       return (
         <View className="px-4 py-12">
           <Text className="text-center text-gray-500 text-xl font-medium">
-            No {selectedTab} services found for "{searchLocation}"
+            No {selectedTab} services found for “{searchLocation}”
           </Text>
           <Text className="text-center text-gray-400 text-base mt-2">
             Try searching for a different location or category
@@ -1241,7 +1022,7 @@ const GalleApp: React.FC = () => {
 
   return (
     <View className="flex-1 bg-gray-50">
-      <StatusBar backgroundColor="#0D9488" />
+      <StatusBar />
 
       {/* Header */}
       <View className="bg-gray-50 pt-12 pb-4">

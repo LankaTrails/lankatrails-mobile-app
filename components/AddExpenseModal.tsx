@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import InputField from "./InputField";
-import { theme } from "../app/theme";
+import { theme } from "@/constants/theme";
 import { BudgetCategorys } from "@/types/budgetTypes";
 
 interface BudgetCategory {
@@ -107,19 +107,13 @@ export default function AddExpenseModal({
   // Reset form or populate with initial data when modal opens
   useEffect(() => {
     if (visible) {
-      console.log(
-        "[AddExpenseModal] Modal opened with initialData:",
-        initialData
-      );
       if (initialData) {
         // Populate form with initial data for editing
-        console.log("[AddExpenseModal] Populating form with initial data");
         setExpenseName(initialData.name || "");
         setSelectedCategoryId(initialData.categoryId || "");
         setCollaboratorShares(initialData.collaboratorShares || []);
       } else {
         // Reset form for new expense
-        console.log("[AddExpenseModal] Resetting form for new expense");
         setExpenseName("");
         setSelectedCategoryId("");
         setSelectedPayerId(undefined);

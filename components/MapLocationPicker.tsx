@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
+import { logger } from "@/utils/logger";
 
 interface MapLocationPickerProps {
   onLocationSelect: (location: Location) => void;
@@ -71,7 +72,7 @@ export default function MapLocationPicker({
         });
       }
     } catch (error) {
-      console.error("Error getting current location:", error);
+      logger.error("Error getting current location:", error);
     }
   };
 
@@ -132,7 +133,7 @@ export default function MapLocationPicker({
 
       onLocationSelect(locationData);
     } catch (error) {
-      console.error("Error getting address:", error);
+      logger.error("Error getting address:", error);
       Alert.alert(
         "Error",
         "Could not get address for this location. Please try again."

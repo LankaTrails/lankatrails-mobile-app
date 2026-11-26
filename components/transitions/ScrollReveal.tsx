@@ -1,6 +1,6 @@
 // components/transitions/ScrollReveal.tsx (optional)
-import React, { useRef, useEffect, useState } from 'react';
-import { Animated, View, ViewStyle, LayoutRectangle } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Animated, ViewStyle, LayoutRectangle, useAnimatedValue } from 'react-native';
 
 interface Props {
   children: React.ReactNode;
@@ -8,7 +8,7 @@ interface Props {
 }
 
 const ScrollReveal: React.FC<Props> = ({ children, style }) => {
-  const anim = useRef(new Animated.Value(0)).current;
+  const anim = useAnimatedValue(0);
   const [visible, setVisible] = useState(false);
 
   const onLayout = (event: any) => {

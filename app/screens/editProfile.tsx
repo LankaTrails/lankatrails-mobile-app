@@ -17,9 +17,10 @@ import {
 } from "react-native";
 import InputField from "../../components/InputField";
 import PhoneInput from "../../components/PhoneInput";
+import { logger } from "@/utils/logger";
 
 export default function Profile() {
-  const { user, checkAuth } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const [fieldValues, setFieldValues] = useState({
     FName: user?.firstName || "",
     LName: user?.lastName || "",
@@ -77,7 +78,7 @@ export default function Profile() {
         try {
           await addProfilePicture(user.id, imageUri);
         } catch (uploadError: any) {
-          console.error("Error uploading profile picture:", uploadError);
+          logger.error("Error uploading profile picture:", uploadError);
           Alert.alert(
             "Upload Error",
             uploadError.message || "Failed to upload profile picture"
@@ -95,7 +96,7 @@ export default function Profile() {
       setImageUri(null);
 
       // Refresh auth to get updated profile data
-      checkAuth();
+      refreshProfile();
 
       // Show success message
       Alert.alert("Success", "Profile updated successfully");
@@ -103,7 +104,7 @@ export default function Profile() {
       // Navigate back to profile page
       router.push("../profile");
     } catch (error: any) {
-      console.error("Error updating profile:", error);
+      logger.error("Error updating profile:", error);
       Alert.alert("Error", error.message || "Failed to update profile");
     } finally {
       setIsSaving(false);
@@ -127,7 +128,7 @@ export default function Profile() {
         setImageUri(result.assets[0].uri);
       }
     } catch (error) {
-      console.error("Error picking image:", error);
+      logger.error("Error picking image:", error);
       Alert.alert("Error", "Failed to pick image");
     }
   };
@@ -227,7 +228,7 @@ export default function Profile() {
 
               // Add safety check
               if (!label) {
-                console.warn(`Missing label for key: ${key}`);
+                logger.warn(`Missing label for key: ${key}`);
                 return null;
               }
 
@@ -361,7 +362,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 1,
   },
   editButton: {

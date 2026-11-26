@@ -1,12 +1,10 @@
 import { useAuth } from "@/hooks/useAuth";
-import { useGoogleAuth } from "@/services/googleAuthService";
 import { BlurView } from "expo-blur";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Animated,
-  Dimensions,
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
@@ -16,32 +14,22 @@ import {
   Text,
   TouchableOpacity,
   View,
+  useAnimatedValue,
 } from "react-native";
 import InputField from "../../components/InputField";
 import LongButton from "../../components/LongButton";
 
-const { width, height } = Dimensions.get("window");
-
 const SignIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
 
   const { redirect } = useLocalSearchParams(); // Get redirect parameter
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-  const blurFadeAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useAnimatedValue(0);
+  const slideAnim = useAnimatedValue(50);
+  const blurFadeAnim = useAnimatedValue(0);
 
-  const {
-    signIn,
-    isLoading,
-    error,
-    clearError,
-    isAuthenticated,
-    signInWithGoogle,
-  } = useAuth();
-  const { promptAsync, exchangeToken, response } = useGoogleAuth();
+  const { signIn, isLoading, error, clearError, isAuthenticated } = useAuth();
 
   useEffect(() => {
     Animated.parallel([
@@ -71,16 +59,10 @@ const SignIn = () => {
   }, [error]);
 
   useEffect(() => {
-    console.log("Login Screen Auth State:", {
-      isAuthenticated,
-      isLoading,
-      error,
-    });
     if (isAuthenticated) {
-      // If there's a redirect parameter, go there; otherwise go to home
-      if (redirect && typeof redirect === "string") {
-        console.log("Redirecting to:", redirect);
-        router.replace(redirect as any);
+      // If there's a redirect parameter (e.g. a trip invite), go there; otherwise go home
+      if (redirect && typeof redirect === "string" && redirect.startsWith("/")) {
+        router.replace(redirect as never);
       } else {
         router.replace("/(tabs)/home" as any);
       }
@@ -88,51 +70,18 @@ const SignIn = () => {
   }, [isAuthenticated, redirect]);
 
   const handleSignIn = async () => {
-    if (!email || !password) {
+    if (isLoading) return;
+    if (!email.trim() || !password) {
       Alert.alert("Error", "Please enter both email and password");
       return;
     }
     await signIn(email, password);
   };
 
-  useEffect(() => {
-    (async () => {
-      if (response?.type === "success") {
-        try {
-          const tokens = await exchangeToken();
-          if (tokens.idToken) {
-            signInWithGoogle(tokens.idToken);
-          } else {
-            Alert.alert("Google login failed", "No ID token received");
-          }
-        } catch (err) {
-          if (err instanceof Error) {
-            Alert.alert("Google login failed", err.message);
-          } else {
-            Alert.alert("Google login failed", "An unknown error occurred");
-          }
-        }
-      }
-    })();
-  }, [response]);
-
-  const handleSocialSignIn = (provider: string) => {
-    if (provider === "Google") {
-      promptAsync();
-    } else {
-      Alert.alert(
-        "Coming Soon",
-        `Sign in with ${provider} is not implemented yet.`
-      );
-    }
-  };
-
   return (
     <View style={styles.container}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor="transparent"
-        translucent
       />
 
       <ImageBackground
@@ -181,7 +130,7 @@ const SignIn = () => {
             >
               <Animated.View
                 style={{
-                  ...StyleSheet.absoluteFillObject,
+                  ...StyleSheet.absoluteFill,
                   opacity: blurFadeAnim,
                 }}
               >
@@ -206,47 +155,15 @@ const SignIn = () => {
                 placeholder="Enter your password"
                 value={password}
                 onChange={setPassword}
-                secureTextEntry={!showPassword}
+                secureTextEntry
                 icon="key"
-                // rightIcon={showPassword ? 'eye-off' : 'eye'}
-                // onRightIconPress={() => setShowPassword(!showPassword)}
               />
 
-              <TouchableOpacity
-                style={styles.forgotPassword}
-                // onPress={() => router.push('/forgot-password')}
-              >
-                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-              </TouchableOpacity>
-
+              <View style={styles.buttonSpacer} />
               <LongButton
                 label={isLoading ? "Signing In..." : "Sign In"}
                 onPress={handleSignIn}
               />
-
-              <View style={styles.dividerContainer}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>or sign in with</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              <View style={styles.socialContainer}>
-                {["Google", "Facebook"].map((provider) => (
-                  <TouchableOpacity
-                    key={provider}
-                    style={styles.socialButton}
-                    onPress={() => handleSocialSignIn(provider)}
-                  >
-                    <Text style={styles.socialButtonText}>
-                      {provider === "Google"
-                        ? "G"
-                        : provider === "Facebook"
-                        ? "f"
-                        : ""}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
 
               <View style={styles.signUpContainer}>
                 <Text style={styles.signUpText}>
@@ -286,7 +203,7 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   gradientOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.05)",
   },
   keyboardAvoid: {
@@ -342,52 +259,11 @@ const styles = StyleSheet.create({
     elevation: 8,
     overflow: "hidden",
   },
-  forgotPassword: {
-    alignSelf: "flex-end",
-    marginBottom: 14,
-  },
-  forgotPasswordText: {
-    color: "#008080",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  dividerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 14,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.39)",
-  },
-  dividerText: {
-    color: "rgba(0, 0, 0, 0.39)",
-    fontSize: 14,
-    fontWeight: "500",
-    marginHorizontal: 16,
-  },
-  socialContainer: {
-    flexDirection: "row",
-    justifyContent: "space-evenly",
-    marginBottom: 32,
-  },
-  socialButton: {
-    width: 36,
-    height: 36,
-    backgroundColor: "rgba(115, 115, 115, 0)",
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#008080",
-  },
-  socialButtonText: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#008080",
+  buttonSpacer: {
+    height: 14,
   },
   signUpContainer: {
+    marginTop: 24,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",

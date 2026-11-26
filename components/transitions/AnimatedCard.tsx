@@ -1,14 +1,11 @@
-import React, { useEffect, useRef } from "react";
-import { Animated } from "react-native";
+import React, { useEffect } from "react";
+import { Animated, useAnimatedValue } from "react-native";
 
 interface AnimatedCardProps {
   children: React.ReactNode;
   delay?: number;
 }
 
-const useAnimatedValue = (initialValue = 0) => {
-  return useRef(new Animated.Value(initialValue)).current;
-};
 
 export const AnimatedCard: React.FC<AnimatedCardProps> = ({
   children,

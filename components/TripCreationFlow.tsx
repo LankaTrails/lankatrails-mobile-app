@@ -2,13 +2,14 @@ import { createTrip, fetchAllCities } from "@/services/tripService";
 import { Location, Trip, tripRequest, TripTagType } from "@/types/triptypes";
 import { ApiResponse } from "@/types/commonTypes";
 import { BlurView } from "expo-blur";
-import React, { useEffect, useRef, useState } from "react";
-import { Alert, Animated, StyleSheet, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Alert, Animated, StyleSheet, View, useAnimatedValue } from "react-native";
 import DestinationModal from "./DestinationModal";
 import PersonCountModal from "./PersonCountModal";
 import StartLocationModal from "./StartLocationModal";
 import TripDetailsModal, { TripDetails } from "./TripDetailsModal";
 import TripNameModal from "./TripNameModal";
+import { logger } from "@/utils/logger";
 
 interface TripCreationFlowProps {
   visible: boolean;
@@ -58,7 +59,7 @@ export default function TripCreationFlow({
   ];
 
   // Animation
-  const blurOpacity = useRef(new Animated.Value(0)).current;
+  const blurOpacity = useAnimatedValue(0);
 
   useEffect(() => {
     if (visible) {
@@ -78,15 +79,13 @@ export default function TripCreationFlow({
   const loadCities = async () => {
     if (cities.length > 0) return; // Don't reload if already loaded
 
-    console.log("Loading cities...");
     setLoadingCities(true);
     try {
       const response = await fetchAllCities();
       if (response.success && response.data) {
-        console.log("Cities loaded:", response.data.length, "cities");
         setCities(response.data);
       } else {
-        console.error("Failed to fetch cities:", response.message);
+        logger.error("Failed to fetch cities:", response.message);
         // Fallback to some sample cities for testing
         // const fallbackCities: Location[] = [
         //   {
@@ -121,10 +120,10 @@ export default function TripCreationFlow({
         //   },
         // ];
         // setCities(fallbackCities);
-        // console.log("Using fallback cities");
+        // logger.debug("Using fallback cities");
       }
     } catch (error) {
-      console.error("Error fetching cities:", error);
+      logger.error("Error fetching cities:", error);
       // Fallback cities in case of network error
       // const fallbackCities: Location[] = [
       //   {
@@ -149,7 +148,7 @@ export default function TripCreationFlow({
       //   },
       // ];
       // setCities(fallbackCities);
-      // console.log("Using fallback cities due to error");
+      // logger.debug("Using fallback cities due to error");
     } finally {
       setLoadingCities(false);
     }
@@ -225,13 +224,8 @@ export default function TripCreationFlow({
   };
 
   const handlePersonCountConfirm = (adults: number, children: number) => {
-    console.log("TripCreationFlow - Person count received:", {
-      adults,
-      children,
-    });
     setNumberOfAdults(adults);
     setNumberOfChildren(children);
-    console.log("TripCreationFlow - State updated with person count");
 
     // Transition to trip name modal
     setTimeout(() => {
@@ -254,13 +248,6 @@ export default function TripCreationFlow({
     setIsCreating(true);
 
     try {
-      console.log("Trip details confirmed:", details);
-      console.log(
-        "Person count from details - Adults:",
-        details.numberOfAdults,
-        "Children:",
-        details.numberOfChildren
-      );
 
       // Use selected destinations directly since they are already Location objects
       const locations: Location[] = selectedDestinations;
@@ -322,11 +309,6 @@ export default function TripCreationFlow({
         miscellaneousLimit: 0,
       };
 
-      console.log("Trip data being sent to API:", {
-        ...tripData,
-        numberOfAdults: tripData.numberOfAdults,
-        numberOfChildren: tripData.numberOfChildren,
-      });
 
       // Call the API service
       const response: ApiResponse<Trip> = await createTrip(tripData);
@@ -343,11 +325,11 @@ export default function TripCreationFlow({
       } else {
         // Handle API error response
         const errorMessage = response.message || "Failed to create trip";
-        console.error("API Error:", response);
+        logger.error("API Error:", response);
         Alert.alert("Trip Creation Failed", errorMessage, [{ text: "OK" }]);
       }
     } catch (error) {
-      console.error("Error creating trip:", error);
+      logger.error("Error creating trip:", error);
 
       // Try to extract more specific error information from backend
       let errorMessage = "Failed to create trip. Please try again.";

@@ -1,6 +1,6 @@
 import * as Clipboard from "expo-clipboard";
 import * as Linking from "expo-linking";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Alert,
   Modal,
@@ -13,12 +13,14 @@ import {
   ScrollView,
   Share,
   Dimensions,
+  useAnimatedValue,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import QRCode from "react-native-qrcode-svg";
 import { generateTripInvitation } from "@/services/tripService";
 import { TripInvitationRequest } from "@/types/triptypes";
+import { logger } from "@/utils/logger";
 
 const prefix = Linking.createURL("/");
 const { width } = Dimensions.get("window");
@@ -50,8 +52,8 @@ const TripSharingModal: React.FC<TripSharingModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   // Animation references
-  const slideAnim = useRef(new Animated.Value(600)).current;
-  const blurOpacity = useRef(new Animated.Value(0)).current;
+  const slideAnim = useAnimatedValue(600);
+  const blurOpacity = useAnimatedValue(0);
 
   const resetModal = () => {
     setCurrentStep("type");
@@ -158,7 +160,7 @@ const TripSharingModal: React.FC<TripSharingModalProps> = ({
         throw new Error(response.message || "Failed to generate invitation");
       }
     } catch (error: any) {
-      console.error("Failed to generate trip invitation:", error);
+      logger.error("Failed to generate trip invitation:", error);
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
@@ -172,18 +174,16 @@ const TripSharingModal: React.FC<TripSharingModalProps> = ({
 
   const handleCopyLink = async () => {
     try {
-      console.log("Copying link:", invitationLink);
       await Clipboard.setStringAsync(invitationLink);
       Alert.alert("Success", "Invitation link copied to clipboard!");
     } catch (error) {
-      console.error("Error copying to clipboard:", error);
+      logger.error("Error copying to clipboard:", error);
       Alert.alert("Error", "Failed to copy invitation link");
     }
   };
 
   const handleShare = async () => {
     try {
-      console.log("Sharing invitation:", { invitationType, selectedRole, tripName, invitationLink });
       const inviteMessage =
         invitationType === "group"
           ? `You're invited to join our trip "${tripName}" with ${selectedRole?.toLowerCase()} access! This group invitation can be used by multiple people. Click this link to join: ${invitationLink}`
@@ -193,15 +193,13 @@ const TripSharingModal: React.FC<TripSharingModalProps> = ({
         message: inviteMessage,
         title: `Join ${tripName}`,
       });
-      console.log("Share result:", result);
     } catch (error) {
-      console.error("Error sharing:", error);
+      logger.error("Error sharing:", error);
       Alert.alert("Error", "Failed to share invitation link");
     }
   };
 
   const handleShowQR = () => {
-    console.log("Navigating to QR step with:", { invitationLink, tripName, selectedRole, invitationType });
     setCurrentStep("qr");
     animateStepTransition();
   };
@@ -363,7 +361,7 @@ const TripSharingModal: React.FC<TripSharingModalProps> = ({
         <Text style={styles.stepTitle}>Share Trip Invitation</Text>
         <Text style={styles.stepDescription}>
           Share this {invitationType} {selectedRole?.toLowerCase()} invitation
-          for "{tripName}":
+          for “{tripName}”:
         </Text>
       </View>
 
@@ -442,7 +440,7 @@ const TripSharingModal: React.FC<TripSharingModalProps> = ({
         </View>
         <Text style={styles.stepTitle}>QR Code Invitation</Text>
         <Text style={styles.stepDescription}>
-          Scan this QR code to join "{tripName}"
+          Scan this QR code to join “{tripName}”
         </Text>
       </View>
 
@@ -519,7 +517,6 @@ const TripSharingModal: React.FC<TripSharingModalProps> = ({
   );
 
   const renderCurrentStep = () => {
-    console.log("Rendering step:", currentStep, { invitationType, selectedRole, invitationLink });
     switch (currentStep) {
       case "type":
         return renderTypeSelection();

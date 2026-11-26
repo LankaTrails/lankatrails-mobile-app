@@ -1,10 +1,10 @@
+import { GOOGLE_PLACES_API_KEY } from "@/utils/config";
 import Card from "@/components/Card";
 import React from "react";
 import { Dimensions, FlatList } from "react-native";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = (width - 48) / 2;
-const GOOGLE_PLACES_API_KEY = "AIzaSyA47Q-I515EK0DU4pvk5jgUcatYcdnf8cY";
 
 interface Place {
   place_id: string;

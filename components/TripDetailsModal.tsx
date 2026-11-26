@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Animated,
@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
+  useAnimatedValue,
 } from "react-native";
 import CustomDatePicker from "./CustomDatePicker";
 
@@ -57,11 +58,12 @@ export default function TripDetailsModal({
   const [numberOfChildren, setNumberOfChildren] = useState(
     initialDetails?.numberOfChildren || initialChildren || 0
   );
+  // Lazy initialisers: the default dates are computed once, not on every render
   const [startDate, setStartDate] = useState(
-    initialDetails?.startDate || new Date()
+    () => initialDetails?.startDate || new Date()
   );
   const [endDate, setEndDate] = useState(
-    initialDetails?.endDate || new Date(Date.now() + 24 * 60 * 60 * 1000)
+    () => initialDetails?.endDate || new Date(Date.now() + 24 * 60 * 60 * 1000)
   );
   const [currency, setCurrency] = useState(initialDetails?.currency || "LKR");
   const [title, setTitle] = useState(initialDetails?.title || tripTitle || "");
@@ -70,9 +72,7 @@ export default function TripDetailsModal({
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
   // Animation for slide up effect
-  const slideAnim = useRef(
-    new Animated.Value(startFromIntermediate ? 0.3 : 0)
-  ).current;
+  const slideAnim = useAnimatedValue(startFromIntermediate ? 0.3 : 0);
   const screenHeight = Dimensions.get("window").height;
 
   useEffect(() => {
@@ -193,11 +193,6 @@ export default function TripDetailsModal({
       title: title.trim(),
     };
 
-    console.log("TripDetailsModal - Confirming with person count:", {
-      numberOfAdults,
-      numberOfChildren,
-      tripDetails,
-    });
 
     onConfirm(tripDetails);
   };

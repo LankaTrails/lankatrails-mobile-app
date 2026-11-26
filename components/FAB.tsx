@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { Animated, StyleSheet, TouchableOpacity } from "react-native";
-import { theme } from "../app/theme";
+import { theme } from "@/constants/theme";
 
 interface FABProps {
   onPress: () => void;

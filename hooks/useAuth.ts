@@ -3,60 +3,45 @@ import { useSelector, useDispatch, shallowEqual } from 'react-redux';
 import type { AppDispatch } from '@/redux/store';
 import {
   login,
-  googleLogin,
   logoutUser,
   checkAuth,
+  refreshProfile,
   clearError,
   selectIsAuthenticated,
   selectAuthUser,
   selectAuthLoading,
+  selectAuthInitialized,
   selectAuthError,
 } from '@/redux/slices/authSlice';
+
 export const useAuth = () => {
   const dispatch = useDispatch<AppDispatch>();
 
-  // Select auth state slices with shallowEqual to prevent extra renders
   const isAuthenticated = useSelector(selectIsAuthenticated, shallowEqual);
   const user = useSelector(selectAuthUser, shallowEqual);
   const isLoading = useSelector(selectAuthLoading, shallowEqual);
+  const initialized = useSelector(selectAuthInitialized, shallowEqual);
   const error = useSelector(selectAuthError, shallowEqual);
 
-  // Stable callbacks to prevent re-creation on every render
   const signIn = useCallback(
-    (email: string, password: string) => {
-      dispatch(login({ email, password }));
-    },
+    (email: string, password: string) => dispatch(login({ email, password })),
     [dispatch]
   );
-
-  const signInWithGoogle = useCallback(
-    (idToken: string) => {
-      dispatch(googleLogin(idToken));
-    },
-    [dispatch]
-  );
-
-  const logout = useCallback(() => {
-    dispatch(logoutUser());
-  }, [dispatch]);
-
-  const checkAuthentication = useCallback(() => {
-    dispatch(checkAuth());
-  }, [dispatch]);
-
-  const clearAuthError = useCallback(() => {
-    dispatch(clearError());
-  }, [dispatch]);
+  const logout = useCallback(() => dispatch(logoutUser()), [dispatch]);
+  const checkAuthentication = useCallback(() => dispatch(checkAuth()), [dispatch]);
+  const reloadProfile = useCallback(() => dispatch(refreshProfile()), [dispatch]);
+  const clearAuthError = useCallback(() => dispatch(clearError()), [dispatch]);
 
   return {
     isAuthenticated,
     user,
     isLoading,
+    initialized,
     error,
     signIn,
-    signInWithGoogle,
     logout,
     checkAuth: checkAuthentication,
+    refreshProfile: reloadProfile,
     clearError: clearAuthError,
   };
 };

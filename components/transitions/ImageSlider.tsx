@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Animated,
   Text,
+  useAnimatedValue,
 } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
@@ -34,8 +35,8 @@ const ImageSlider: React.FC<ImageSliderProps> = ({
   height: customHeight = height * 0.35,
 }) => {
   const [activeIndex, setActiveIndex] = useState(0);
-  const scrollRef = useRef<ScrollView>(null);
-  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  const fadeAnim = useAnimatedValue(1);
 
   // Auto-slide functionality
   useEffect(() => {

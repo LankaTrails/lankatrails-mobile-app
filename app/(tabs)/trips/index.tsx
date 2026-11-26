@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from "expo-router";
 import EmptyState from "../../../components/EmptyState";
 import NewTripButton from "../../../components/FAB";
 import FilterButton from "../../../components/FilterButton";
@@ -18,6 +18,7 @@ import TripCard from "../../../components/TripCard";
 import TripCreationFlow from "../../../components/TripCreationFlow";
 import { getMyTrips } from "../../../services/tripService";
 import { Trip } from "../../../types/triptypes";
+import { logger } from "@/utils/logger";
 
 export default function TripsScreen() {
   const [trips, setTrips] = useState<any[]>([]);
@@ -80,22 +81,20 @@ export default function TripsScreen() {
         // Convert API trips to TripCard format
         const convertedTrips = response.data.map(convertTripToCardFormat);
         setTrips(convertedTrips);
-        console.log(`Loaded ${convertedTrips.length} trips from API`);
       } else {
-        console.error("Failed to load trips:", response.message);
         setTrips([]);
 
-        // Check if it's just "no trips found" which is normal, not an error
+        // Older backends report "no trips found" as a failure; that is the empty state, not an error
         const message = response.message || "";
         const isNoTripsFound = message.toLowerCase().includes("no trips found");
 
         if (!isNoTripsFound) {
+          logger.error("Failed to load trips:", message);
           setError(message || "Failed to load your trips.");
         }
-        // If it's just "no trips found", don't set error - show empty state instead
       }
     } catch (error) {
-      console.error("Error loading trips:", error);
+      logger.error("Error loading trips:", error);
       setTrips([]);
       setError(
         "Failed to load your trips. Please check your internet connection and try again."

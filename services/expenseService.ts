@@ -10,6 +10,7 @@ import {
   ExpenseValidationResult,
   EXPENSE_VALIDATION
 } from '../types/expenseTypes';
+import { logger } from "@/utils/logger";
 
 // Base API endpoints
 const EXPENSE_ENDPOINTS = {
@@ -37,7 +38,7 @@ export class ExpenseService {
       );
       return response.data;
     } catch (error) {
-      console.error('Error creating expense:', error);
+      logger.error('Error creating expense:', error);
       throw error;
     }
   }
@@ -59,7 +60,7 @@ export class ExpenseService {
       );
       return response.data;
     } catch (error) {
-      console.error('Error updating expense:', error);
+      logger.error('Error updating expense:', error);
       throw error;
     }
   }
@@ -76,7 +77,7 @@ export class ExpenseService {
       );
       return response.data;
     } catch (error) {
-      console.error('Error deleting expense:', error);
+      logger.error('Error deleting expense:', error);
       throw error;
     }
   }
@@ -88,33 +89,24 @@ export class ExpenseService {
    */
   static async getExpensesByTripId(tripId: number): Promise<ApiResponse<ExpenseResponseDTO[]>> {
     try {
-      console.log('[ExpenseService] Fetching expenses for trip:', tripId);
-      console.log('[ExpenseService] Trip ID type:', typeof tripId);
-      console.log('[ExpenseService] Trip ID value:', tripId);
-      console.log('[ExpenseService] Making request to:', EXPENSE_ENDPOINTS.GET_BY_TRIP(tripId));
       
       const response = await axiosInstance.get<ApiResponse<ExpenseResponseDTO[]>>(
         EXPENSE_ENDPOINTS.GET_BY_TRIP(tripId)
       );
       
-      console.log('[ExpenseService] Response received:', response.data);
-      console.log('[ExpenseService] Response status:', response.status);
-      console.log('[ExpenseService] Response success:', response.data.success);
-      console.log('[ExpenseService] Response message:', response.data.message);
-      console.log('[ExpenseService] Response data length:', response.data.data?.length || 0);
       
       if (response.data.success && response.data.data && response.data.data.length === 0) {
-        console.warn('[ExpenseService] ⚠️  API returned empty array - this might indicate:');
-        console.warn('[ExpenseService] 1. No expenses exist for this trip');
-        console.warn('[ExpenseService] 2. Backend service implementation issue');
-        console.warn('[ExpenseService] 3. Database query not returning results');
-        console.warn('[ExpenseService] Check backend logs and TripExpenseServiceImpl.getExpensesByTripId()');
+        logger.warn('[ExpenseService] ⚠️  API returned empty array - this might indicate:');
+        logger.warn('[ExpenseService] 1. No expenses exist for this trip');
+        logger.warn('[ExpenseService] 2. Backend service implementation issue');
+        logger.warn('[ExpenseService] 3. Database query not returning results');
+        logger.warn('[ExpenseService] Check backend logs and TripExpenseServiceImpl.getExpensesByTripId()');
       }
       
       return response.data;
     } catch (error: any) {
-      console.error('[ExpenseService] Error fetching expenses:', error);
-      console.error('[ExpenseService] Error details:', {
+      logger.error('[ExpenseService] Error fetching expenses:', error);
+      logger.error('[ExpenseService] Error details:', {
         message: error.message,
         status: error.response?.status,
         data: error.response?.data
@@ -166,7 +158,7 @@ export class ExpenseService {
       const response = await axiosInstance.get<ApiResponse<ExpenseResponseDTO[]>>(url);
       return response.data;
     } catch (error) {
-      console.error('Error fetching filtered expenses:', error);
+      logger.error('Error fetching filtered expenses:', error);
       throw error;
     }
   }

@@ -1,27 +1,22 @@
-// app/_layout.tsx
+import { useEffect } from "react";
 import { Stack } from "expo-router";
 import { Provider } from "react-redux";
-import { store } from "@/redux/store";
-import "@/app/globals.css";
-import { PersistGate } from "redux-persist/integration/react";
-import { persistStore } from "redux-persist";
 import { StripeProvider } from "@stripe/stripe-react-native";
-
-// Only if you're using persistence (optional)
-const persistor = persistStore(store);
-
-// Stripe publishable key (use your test key for development)
-const STRIPE_PUBLISHABLE_KEY = "pk_test_51S2Xb6DdM2gdqwVS3sPgDnRnIOtC5mOsbttDp2wLd6PPUT9rzaRIFQjIwrs1qongTKnabp1NwrRs7GoDJQ1bpKfD00qzeWJFWV"; // Replace with your actual Stripe publishable key
+import { store } from "@/redux/store";
+import { checkAuth } from "@/redux/slices/authSlice";
+import { APP_SCHEME, STRIPE_PUBLISHABLE_KEY } from "@/utils/config";
+import "@/app/globals.css";
 
 export default function RootLayout() {
+  // Restore the stored session once, whichever route the app was opened on (including deep links)
+  useEffect(() => {
+    store.dispatch(checkAuth());
+  }, []);
+
   return (
     <Provider store={store}>
-      <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY}>
-        {/* Remove AuthProvider since we're using Redux only */}
-        {/* Optional: Add PersistGate if you want to persist your Redux state */}
-        {/* <PersistGate loading={null} persistor={persistor}> */}
+      <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY} urlScheme={APP_SCHEME}>
         <Stack screenOptions={{ headerShown: false, animation: "none" }} />
-        {/* </PersistGate> */}
       </StripeProvider>
     </Provider>
   );

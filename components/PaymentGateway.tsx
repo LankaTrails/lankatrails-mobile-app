@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import * as Linking from "expo-linking";
+import { STRIPE_PUBLISHABLE_KEY } from "@/utils/config";
+import { useState } from "react";
 import { Alert } from "react-native";
 import {
   useStripe,
@@ -7,6 +9,7 @@ import {
 } from "@stripe/stripe-react-native";
 import { createBooking, confirmBooking } from "@/services/bookingService";
 import type { PaymentRequest } from "@/types/bookingTypes";
+import { logger } from "@/utils/logger";
 
 interface PaymentGatewayProps {
   onPaymentStart?: () => void;
@@ -47,11 +50,14 @@ export const usePaymentGateway = ({
     }
 
     setIsProcessing(true);
+    if (!STRIPE_PUBLISHABLE_KEY) {
+      Alert.alert("Payments unavailable", "Card payments are not configured in this build.");
+      return;
+    }
     onPaymentStart?.();
 
     try {
       // Step 1: Create booking and get payment intent
-      console.log(`Creating booking for tripItemId: ${tripItemId}`);
       const bookingResponse = await createBooking(tripItemId);
 
       if (!bookingResponse.success || !bookingResponse.data) {
@@ -70,9 +76,6 @@ export const usePaymentGateway = ({
         currency,
       } = paymentRequest;
 
-      console.log(
-        `Booking created successfully. BookingId: ${bookingId}, PaymentIntentId: ${paymentIntentId}, Amount: ${paymentAmount} ${currency}`
-      );
 
       // Step 2: Initialize Payment Sheet with client secret
       const { error: initError } = await initPaymentSheet({
@@ -80,11 +83,12 @@ export const usePaymentGateway = ({
         paymentIntentClientSecret: clientSecret,
         style: "automatic", // Follows system theme
         allowsDelayedPaymentMethods: false,
-        returnURL: "lankatrailsmobileapp://payment-return",
+        // Bank redirects (3-D Secure etc.) come back to app/stripe-redirect.tsx
+        returnURL: Linking.createURL("stripe-redirect"),
       });
 
       if (initError) {
-        console.error("Payment Sheet init error:", initError);
+        logger.error("Payment Sheet init error:", initError);
         const errorMsg =
           initError.message ||
           "Could not initialize payment. Please try again.";
@@ -94,15 +98,13 @@ export const usePaymentGateway = ({
       }
 
       // Step 3: Present Payment Sheet (shows card input UI)
-      console.log("Presenting payment sheet...");
       const { error: paymentError } = await presentPaymentSheet();
 
       if (paymentError) {
-        console.error("Payment error:", paymentError);
+        logger.error("Payment error:", paymentError);
 
         // Handle different error types
         if (paymentError.code === "Canceled") {
-          console.log("Payment was canceled by user");
           onPaymentCancel?.();
           Alert.alert("Payment Canceled", "Payment was canceled by user.");
         } else {
@@ -116,15 +118,11 @@ export const usePaymentGateway = ({
       }
 
       // Step 4: Payment successful - confirm booking with backend
-      console.log("✅ Payment successful, confirming booking...");
 
       try {
         const confirmResponse = await confirmBooking(paymentIntentId);
 
         if (confirmResponse.success) {
-          console.log(
-            `Booking confirmed successfully: ${bookingId}, PaymentIntentId: ${paymentIntentId}`
-          );
           onPaymentSuccess?.(bookingId, paymentAmount, currency);
 
           Alert.alert(
@@ -134,7 +132,6 @@ export const usePaymentGateway = ({
               {
                 text: "Great!",
                 onPress: () => {
-                  console.log("Payment flow completed successfully");
                 },
               },
             ]
@@ -143,7 +140,7 @@ export const usePaymentGateway = ({
           // Payment went through but confirmation failed
           const errorMsg =
             "Payment was successful, but there was an issue confirming your booking. Please contact support.";
-          console.error(
+          logger.error(
             "Booking confirmation failed:",
             confirmResponse.message
           );
@@ -156,12 +153,6 @@ export const usePaymentGateway = ({
               {
                 text: "Contact Support",
                 onPress: () => {
-                  console.log(
-                    "Need to contact support for booking:",
-                    bookingId,
-                    "PaymentIntentId:",
-                    paymentIntentId
-                  );
                 },
               },
             ]
@@ -171,7 +162,7 @@ export const usePaymentGateway = ({
         // Payment went through but confirmation failed
         const errorMsg =
           "Payment was successful, but we couldn't confirm your booking automatically. Please contact support.";
-        console.error("Booking confirmation error:", confirmError);
+        logger.error("Booking confirmation error:", confirmError);
         onPaymentFailure?.(errorMsg);
 
         Alert.alert(
@@ -181,13 +172,6 @@ export const usePaymentGateway = ({
             {
               text: "Contact Support",
               onPress: () => {
-                console.log(
-                  "Confirmation error for booking:",
-                  bookingId,
-                  "PaymentIntentId:",
-                  paymentIntentId,
-                  confirmError
-                );
               },
             },
           ]
@@ -197,7 +181,7 @@ export const usePaymentGateway = ({
       // Booking creation failed
       const errorMsg =
         error.message || "Failed to create booking. Please try again.";
-      console.error("Booking creation error:", error);
+      logger.error("Booking creation error:", error);
       onPaymentFailure?.(errorMsg);
       Alert.alert("Booking Error", errorMsg);
     } finally {

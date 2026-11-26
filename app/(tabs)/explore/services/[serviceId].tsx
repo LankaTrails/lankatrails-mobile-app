@@ -1,5 +1,6 @@
 import HeaderSection from "@/components/explorer-components/HeaderSection";
 import { router, useLocalSearchParams } from "expo-router";
+import { serviceDetailHref } from "@/utils/navigationHelpers";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -23,27 +24,10 @@ const ServiceDetailRouter = () => {
       return;
     }
 
-    // Redirect to appropriate category-specific page
     const redirectToCategory = () => {
-      switch (category) {
-        case "ACCOMMODATION":
-          router.replace(`/explore/services/accommodation/${serviceId}` as any);
-          break;
-        case "ACTIVITY":
-          router.replace(`/explore/services/activity/${serviceId}` as any);
-          break;
-        case "FOOD_BEVERAGE":
-          router.replace(`/explore/services/food-beverage/${serviceId}` as any);
-          break;
-        case "TOUR_GUIDE":
-          router.replace(`/explore/services/tour-guide/${serviceId}` as any);
-          break;
-        case "TRANSPORT":
-          router.replace(`/explore/services/transport/${serviceId}` as any);
-          break;
-        default:
-          router.back();
-      }
+      const href = serviceDetailHref(serviceId, category);
+      if (href) router.replace(href);
+      else router.back();
     };
 
     // Small delay to ensure proper navigation

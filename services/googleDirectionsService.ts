@@ -17,9 +17,11 @@
  * 3. Make sure your API key has Routes API permissions
  */
 
+import { GOOGLE_DIRECTIONS_API_KEY } from '@/utils/config';
 import axios from 'axios';
+import { logger } from "@/utils/logger";
 
-const GOOGLE_ROUTES_API_KEY = process.env.EXPO_GOOGLE_DIRECTIONS_API_KEY || 'AIzaSyBWrR4H7o9PTXVot7DQJ7woNDODNwD5LwA';
+const GOOGLE_ROUTES_API_KEY = GOOGLE_DIRECTIONS_API_KEY;
 
 // Routes API base URL
 const ROUTES_API_BASE_URL = 'https://routes.googleapis.com/directions/v2:computeRoutes';
@@ -223,7 +225,6 @@ export async function getDirections(
     travelMode: 'driving' | 'walking' | 'transit' | 'motorcycle' = 'driving'
 ): Promise<DirectionsRoute | null> {
     try {
-        console.log('Getting directions from', origin, 'to', destination, 'via', waypoints.length, 'waypoints');
 
         // First try the new Routes API
         const routesApiResult = await getDirectionsRoutesAPI(origin, destination, waypoints, travelMode);
@@ -232,10 +233,10 @@ export async function getDirections(
         }
 
         // Fallback to legacy API if Routes API fails
-        console.warn('Routes API failed, falling back to legacy Directions API');
+        logger.warn('Routes API failed, falling back to legacy Directions API');
         return await getDirectionsLegacyAPI(origin, destination, waypoints, travelMode);
     } catch (error) {
-        console.error('Error in getDirections:', error);
+        logger.error('Error in getDirections:', error);
         return null;
     }
 }
@@ -250,7 +251,6 @@ async function getDirectionsRoutesAPI(
     travelMode: 'driving' | 'walking' | 'transit' | 'motorcycle' = 'driving'
 ): Promise<DirectionsRoute | null> {
     try {
-        console.log(`Getting directions via Routes API - Mode: ${travelMode}, From: ${origin.latitude},${origin.longitude} To: ${destination.latitude},${destination.longitude}`);
 
         // Map travel modes to Routes API format
         const travelModeMap: { [key: string]: string } = {
@@ -453,15 +453,11 @@ async function getDirectionsRoutesAPI(
                 }
             };
 
-            console.log(`Route found via Routes API: ${distanceKm}, ${durationMin}, ${coordinates.length} points`);
             if (expressways.length > 0) {
-                console.log(`Expressways used: ${expressways.join(', ')}`);
             }
             if (majorRoads.length > 0) {
-                console.log(`Major roads used: ${majorRoads.join(', ')}`);
             }
             if (transitHubs.length > 0) {
-                console.log(`Transit hubs: ${transitHubs.join(', ')}`);
             }
 
             return {
@@ -472,22 +468,22 @@ async function getDirectionsRoutesAPI(
                 summary
             };
         } else {
-            console.warn('No routes found via Routes API');
+            logger.warn('No routes found via Routes API');
             return null;
         }
     } catch (error: any) {
-        console.error('Routes API error:', error?.response?.data || error.message);
+        logger.error('Routes API error:', error?.response?.data || error.message);
 
         // Handle specific errors for different travel modes
         if (error?.response?.data?.error) {
             const apiError = error.response.data.error;
 
             if (apiError.message?.includes('Routing preference cannot be set')) {
-                console.warn(`Travel mode ${travelMode} doesn't support the specified routing preference. This should not happen with the updated code.`);
+                logger.warn(`Travel mode ${travelMode} doesn't support the specified routing preference. This should not happen with the updated code.`);
             } else if (apiError.message?.includes('TRANSIT')) {
-                console.warn(`Transit routing may not be available in this area. Try driving or walking instead.`);
+                logger.warn(`Transit routing may not be available in this area. Try driving or walking instead.`);
             } else if (apiError.message?.includes('TWO_WHEELER')) {
-                console.warn(`Motorcycle routing may not be available in this area. Try driving or walking instead.`);
+                logger.warn(`Motorcycle routing may not be available in this area. Try driving or walking instead.`);
             }
         }
 
@@ -590,12 +586,9 @@ async function getDirectionsLegacyAPI(
                 }
             };
 
-            console.log(`Route found via Legacy API: ${route.legs[0].distance.text}, ${route.legs[0].duration.text}, ${coordinates.length} points`);
             if (expressways.length > 0) {
-                console.log(`Expressways used: ${expressways.join(', ')}`);
             }
             if (majorRoads.length > 0) {
-                console.log(`Major roads used: ${majorRoads.join(', ')}`);
             }
 
             return {
@@ -608,19 +601,19 @@ async function getDirectionsLegacyAPI(
         } else {
             // Handle specific API errors
             if (response.data.status === 'REQUEST_DENIED') {
-                console.error('Google Directions API access denied. Please check your API key and billing settings.');
-                console.error('Error message:', response.data.error_message);
+                logger.error('Google Directions API access denied. Please check your API key and billing settings.');
+                logger.error('Error message:', response.data.error_message);
             } else if (response.data.status === 'OVER_QUERY_LIMIT') {
-                console.error('Google Directions API quota exceeded. Please check your usage limits.');
+                logger.error('Google Directions API quota exceeded. Please check your usage limits.');
             } else if (response.data.status === 'ZERO_RESULTS') {
-                console.warn('No routes found between the specified locations.');
+                logger.warn('No routes found between the specified locations.');
             } else {
-                console.warn('No routes found:', response.data.status, response.data.error_message);
+                logger.warn('No routes found:', response.data.status, response.data.error_message);
             }
             return null;
         }
     } catch (error) {
-        console.error('Legacy Directions API error:', error);
+        logger.error('Legacy Directions API error:', error);
         return null;
     }
 }
@@ -643,8 +636,7 @@ export async function getOptimizedRoute(
     try {
         if (destinations.length === 0) return null;
 
-        console.log('Getting optimized route for', destinations.length, 'destinations');
-        console.warn('Using legacy API for route optimization as Routes API doesn\'t support optimization yet');
+        logger.warn('Using legacy API for route optimization as Routes API doesn\'t support optimization yet');
 
         // For Google Directions API optimization
         const waypointsParam = destinations
@@ -717,7 +709,6 @@ export async function getOptimizedRoute(
             const totalDistance = `${(totalDistanceMeters / 1000).toFixed(1)} km`;
             const totalDuration = `${Math.round(totalDurationSeconds / 60)} min`;
 
-            console.log(`Optimized route via Legacy API: ${totalDistance}, ${totalDuration}, ${routes.length} segments`);
 
             return {
                 routes,
@@ -728,19 +719,19 @@ export async function getOptimizedRoute(
         } else {
             // Handle specific API errors
             if (response.data.status === 'REQUEST_DENIED') {
-                console.error('Google Directions API access denied. Please check your API key and billing settings.');
-                console.error('Error message:', response.data.error_message);
+                logger.error('Google Directions API access denied. Please check your API key and billing settings.');
+                logger.error('Error message:', response.data.error_message);
             } else if (response.data.status === 'OVER_QUERY_LIMIT') {
-                console.error('Google Directions API quota exceeded. Please check your usage limits.');
+                logger.error('Google Directions API quota exceeded. Please check your usage limits.');
             } else if (response.data.status === 'ZERO_RESULTS') {
-                console.warn('No optimized route found between the specified locations.');
+                logger.warn('No optimized route found between the specified locations.');
             } else {
-                console.warn('No optimized route found:', response.data.status, response.data.error_message);
+                logger.warn('No optimized route found:', response.data.status, response.data.error_message);
             }
             return null;
         }
     } catch (error) {
-        console.error('Optimized directions API error:', error);
+        logger.error('Optimized directions API error:', error);
         return null;
     }
 }
@@ -755,7 +746,6 @@ export async function getDirectionsWithApiInfo(
     travelMode: 'driving' | 'walking' | 'transit' | 'motorcycle' = 'driving'
 ): Promise<RouteApiResponse | null> {
     try {
-        console.log('Getting directions with API info from', origin, 'to', destination, 'via', waypoints.length, 'waypoints');
 
         // Try Routes API first
         const routesApiResult = await getDirectionsRoutesAPI(origin, destination, waypoints, travelMode);
@@ -767,7 +757,7 @@ export async function getDirectionsWithApiInfo(
         }
 
         // Fallback to legacy API
-        console.warn('Routes API failed, falling back to legacy Directions API');
+        logger.warn('Routes API failed, falling back to legacy Directions API');
         const legacyResult = await getDirectionsLegacyAPI(origin, destination, waypoints, travelMode);
         if (legacyResult) {
             return {
@@ -778,7 +768,7 @@ export async function getDirectionsWithApiInfo(
 
         return null;
     } catch (error) {
-        console.error('Error in getDirectionsWithApiInfo:', error);
+        logger.error('Error in getDirectionsWithApiInfo:', error);
         return null;
     }
 }
@@ -795,7 +785,7 @@ export async function checkRoutesApiAvailability(): Promise<boolean> {
         const result = await getDirectionsRoutesAPI(testOrigin, testDestination, [], 'driving');
         return result !== null;
     } catch (error) {
-        console.error('Routes API availability check failed:', error);
+        logger.error('Routes API availability check failed:', error);
         return false;
     }
 }
@@ -847,61 +837,44 @@ export function getTravelModeRecommendations(region: 'sri_lanka' | 'global' = 'g
  * Log detailed route information in a user-friendly format
  */
 export function logRouteDetails(route: DirectionsRoute, travelMode: string): void {
-    console.log(`\n📍 ROUTE DETAILS (${travelMode.toUpperCase()})`);
-    console.log(`Distance: ${route.distance}`);
-    console.log(`Duration: ${route.duration}`);
 
     if (route.summary) {
         if (route.summary.description) {
-            console.log(`Description: ${route.summary.description}`);
         }
 
         if (route.summary.keyWaypoints?.expressways?.length) {
-            console.log(`🛣️  Expressways: ${route.summary.keyWaypoints.expressways.join(', ')}`);
         }
 
         if (route.summary.keyWaypoints?.majorRoads?.length) {
-            console.log(`🚗 Major Roads: ${route.summary.keyWaypoints.majorRoads.join(', ')}`);
         }
 
         if (route.summary.keyWaypoints?.transitHubs?.length) {
-            console.log(`🚌 Transit Hubs: ${route.summary.keyWaypoints.transitHubs.join(', ')}`);
         }
 
         if (route.summary.tollInfo?.hasTolls) {
-            console.log(`💰 Tolls: Expected${route.summary.tollInfo.estimatedPrice ? ` (~${route.summary.tollInfo.estimatedPrice})` : ''}`);
         }
 
         if (route.summary.warnings?.length) {
-            console.log(`⚠️  Warnings:`);
-            route.summary.warnings.forEach(warning => console.log(`   - ${warning}`));
+            route.summary.warnings.forEach(warning => logger.debug(`   - ${warning}`));
         }
     }
 
     // Log transit details if available
     const transitSteps = route.steps.filter(step => step.transitDetails);
     if (transitSteps.length > 0) {
-        console.log(`\n🚌 TRANSIT DETAILS:`);
         transitSteps.forEach((step, index) => {
             const transit = step.transitDetails!;
-            console.log(`   Step ${index + 1}:`);
             if (transit.stopDetails?.departureStop) {
-                console.log(`     From: ${transit.stopDetails.departureStop.name}`);
             }
             if (transit.transitLine) {
-                console.log(`     Line: ${transit.transitLine.shortName || transit.transitLine.name} (${transit.transitLine.vehicle.name})`);
             }
             if (transit.headsign) {
-                console.log(`     Direction: ${transit.headsign}`);
             }
             if (transit.stopDetails?.arrivalStop) {
-                console.log(`     To: ${transit.stopDetails.arrivalStop.name}`);
             }
             if (transit.numStops) {
-                console.log(`     Stops: ${transit.numStops}`);
             }
         });
     }
 
-    console.log(`\n`);
 }

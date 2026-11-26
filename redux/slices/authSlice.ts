@@ -1,12 +1,14 @@
 import api from '@/api/axiosInstance';
-import { clearAllTokens, getToken, saveToken } from '@/utils/secureStore';
+import { clearAllTokens, getToken, saveToken } from '@/utils/tokenStorage';
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { router } from 'expo-router';
+
+/** The only role allowed in the mobile app (the backend's role name). */
+export const TOURIST_ROLE = 'ROLE_TOURIST';
 
 export interface TouristUser {
     id: number;
     email: string;
-    role: 'TOURIST';
+    role: typeof TOURIST_ROLE;
     emailVerified: boolean;
     firstName: string;
     lastName: string;
@@ -19,6 +21,8 @@ export interface AuthState {
     user: TouristUser | null;
     isAuthenticated: boolean;
     isLoading: boolean;
+    /** True once the stored session has been checked on startup. */
+    initialized: boolean;
     error: string | null;
 }
 
@@ -26,124 +30,103 @@ const initialState: AuthState = {
     user: null,
     isAuthenticated: false,
     isLoading: false,
+    initialized: false,
     error: null,
 };
 
-// Async Thunks
+const NOT_TOURIST = 'Only tourist accounts can sign in to the LankaTrails app.';
 
-export const login = createAsyncThunk<
-    TouristUser,
-    { email: string; password: string },
-    { rejectValue: string }
->(
+interface LoggedUserResponse {
+    id: number;
+    email: string;
+    role: string;
+    emailVerified: boolean;
+    firstName: string;
+    lastName: string;
+    country: string;
+    phoneNumber: string;
+    profilePictureUrl?: string;
+}
+
+async function fetchProfile(): Promise<TouristUser> {
+    const { data } = await api.get<{ data: LoggedUserResponse }>('/auth/logged-user');
+    const profile = data.data;
+    if (profile.role !== TOURIST_ROLE) throw new Error(NOT_TOURIST);
+    return {
+        id: profile.id,
+        email: profile.email,
+        role: TOURIST_ROLE,
+        emailVerified: profile.emailVerified,
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        country: profile.country,
+        phone: profile.phoneNumber,
+        profilePicUrl: profile.profilePictureUrl,
+    };
+}
+
+function messageOf(error: unknown, fallback: string): string {
+    const e = error as { response?: { data?: { message?: string } }; message?: string } | undefined;
+    return e?.response?.data?.message || e?.message || fallback;
+}
+
+export const login = createAsyncThunk<TouristUser, { email: string; password: string }, { rejectValue: string }>(
     'auth/login',
     async ({ email, password }, { rejectWithValue }) => {
         try {
-            const loginResponse = await api.post('/auth/login', { email, password });
-            const loginData = loginResponse.data.data;
+            const { data } = await api.post('/auth/login', { email: email.trim(), password });
+            const session = data.data;
+            if (session.role !== TOURIST_ROLE) return rejectWithValue(NOT_TOURIST);
 
-            if (loginData.role !== 'ROLE_TOURIST') {
-                return rejectWithValue('Only tourist accounts are allowed in this app.');
-            }
-
-            await saveToken('ACCESS_TOKEN', loginData.jwtToken);
-            await saveToken('REFRESH_TOKEN', loginData.refreshToken);
-
-            // Fetch full profile
-            const profileResponse = await api.get('/auth/logged-user');
-            const profileData = profileResponse.data.data;
-
-            return {
-                id: profileData.id,
-                email: profileData.email,
-                role: profileData.role,
-                emailVerified: profileData.emailVerified,
-                firstName: profileData.firstName,
-                lastName: profileData.lastName,
-                country: profileData.country,
-                phone: profileData.phoneNumber,
-                profilePicUrl: profileData.profilePictureUrl
-            };
-        } catch (error: any) {
-            return rejectWithValue(
-                error.response?.data?.message || error.message || 'Login failed. Please try again.'
-            );
+            await saveToken('ACCESS_TOKEN', session.jwtToken);
+            await saveToken('REFRESH_TOKEN', session.refreshToken);
+            return await fetchProfile();
+        } catch (error) {
+            await clearAllTokens();
+            return rejectWithValue(messageOf(error, 'Sign in failed. Please try again.'));
         }
     }
 );
 
-export const googleLogin = createAsyncThunk<
-    TouristUser,
-    string,
-    { rejectValue: string }
->('auth/googleLogin', async (idToken, { rejectWithValue }) => {
-    try {
-        const res = await api.post('/oauth2/authorization/google', { idToken });
-
-        await saveToken('ACCESS_TOKEN', res.data.jwtToken);
-        await saveToken('REFRESH_TOKEN', res.data.refreshToken);
-
-        return {
-            id: res.data.id,
-            email: res.data.email,
-            role: 'TOURIST',
-            emailVerified: res.data.emailVerified,
-            firstName: res.data.firstName,
-            lastName: res.data.lastName,
-            country: res.data.country,
-            phone: res.data.phoneNumber,
-            profilePicUrl: res.data.profilePictureUrl
-        };
-    } catch (error: any) {
-        await clearAllTokens();
-        return rejectWithValue(error.message || 'Google login failed. Please try again.');
-    }
-});
-
+/** Restores the stored session on startup. */
 export const checkAuth = createAsyncThunk<TouristUser, void, { rejectValue: string }>(
     'auth/checkAuth',
     async (_, { rejectWithValue }) => {
         try {
-            const token = await getToken('ACCESS_TOKEN');
-            if (!token) throw new Error('No access token found');
-
-            const response = await api.get('/auth/logged-user');
-            const data = response.data.data;
-            console.log('[AUTH] User profile fetched successfully:', data);
-
-            return {
-                id: data.id,
-                email: data.email,
-                role: data.role,
-                emailVerified: data.emailVerified,
-                firstName: data.firstName,
-                lastName: data.lastName,
-                country: data.country,
-                phone: data.phoneNumber,
-                profilePicUrl: data.profilePictureUrl
-            };
-        } catch (error: any) {
-            await clearAllTokens();
-            return rejectWithValue(error.response?.data?.message || 'Session expired. Please login again.');
+            if (!(await getToken('ACCESS_TOKEN')) && !(await getToken('REFRESH_TOKEN'))) {
+                return rejectWithValue('');
+            }
+            return await fetchProfile();
+        } catch (error) {
+            const e = error as { isNetworkError?: boolean };
+            // Keep the tokens when the server is merely unreachable, so the next launch can retry
+            if (!e?.isNetworkError) await clearAllTokens();
+            return rejectWithValue(messageOf(error, 'Session expired. Please sign in again.'));
         }
     }
 );
 
-export const logoutUser = createAsyncThunk<void, void>(
-    'auth/logoutUser',
-    async (_, { dispatch }) => {
+/** Re-reads the profile after an edit, without touching the global loading flag. */
+export const refreshProfile = createAsyncThunk<TouristUser, void, { rejectValue: string }>(
+    'auth/refreshProfile',
+    async (_, { rejectWithValue }) => {
         try {
-            await api.post('/auth/logout');
-            console.info('[AUTH] Backend logout successful');
-        } catch (error: any) {
-            console.warn('[AUTH] Backend logout failed or unauthorized:', error?.message || error);
-        } finally {
-            await clearAllTokens();
-            router.replace('/signIn');
-            dispatch(authSlice.actions.clearSession());
+            return await fetchProfile();
+        } catch (error) {
+            return rejectWithValue(messageOf(error, 'Could not refresh your profile.'));
         }
     }
 );
+
+export const logoutUser = createAsyncThunk<void, void>('auth/logoutUser', async () => {
+    try {
+        await api.post('/auth/logout');
+    } catch {
+        // signing out locally is enough when the server call fails
+    } finally {
+        await clearAllTokens();
+    }
+});
 
 const authSlice = createSlice({
     name: 'auth',
@@ -152,16 +135,17 @@ const authSlice = createSlice({
         clearError(state) {
             state.error = null;
         },
+        /** Used when the refresh token is rejected: drop the user but keep the app initialized. */
         clearSession(state) {
             state.isAuthenticated = false;
             state.user = null;
             state.isLoading = false;
             state.error = null;
+            state.initialized = true;
         },
     },
     extraReducers: (builder) => {
         builder
-            // Login
             .addCase(login.pending, (state) => {
                 state.isLoading = true;
                 state.error = null;
@@ -173,40 +157,26 @@ const authSlice = createSlice({
             })
             .addCase(login.rejected, (state, action) => {
                 state.isLoading = false;
-                state.error = action.payload || 'Login failed';
+                state.error = action.payload || 'Sign in failed';
             })
-
-            // Google login
-            .addCase(googleLogin.pending, (state) => {
-                state.isLoading = true;
-                state.error = null;
-            })
-            .addCase(googleLogin.fulfilled, (state, action: PayloadAction<TouristUser>) => {
-                state.isLoading = false;
-                state.isAuthenticated = true;
-                state.user = action.payload;
-            })
-            .addCase(googleLogin.rejected, (state, action) => {
-                state.isLoading = false;
-                state.error = action.payload || 'Google login failed';
-            })
-
-            // Check auth
             .addCase(checkAuth.pending, (state) => {
                 state.isLoading = true;
             })
             .addCase(checkAuth.fulfilled, (state, action: PayloadAction<TouristUser>) => {
                 state.isLoading = false;
+                state.initialized = true;
                 state.isAuthenticated = true;
                 state.user = action.payload;
             })
             .addCase(checkAuth.rejected, (state) => {
                 state.isLoading = false;
+                state.initialized = true;
                 state.isAuthenticated = false;
                 state.user = null;
             })
-
-            // Logout
+            .addCase(refreshProfile.fulfilled, (state, action: PayloadAction<TouristUser>) => {
+                state.user = action.payload;
+            })
             .addCase(logoutUser.pending, (state) => {
                 state.isLoading = true;
             })
@@ -214,19 +184,15 @@ const authSlice = createSlice({
                 state.isLoading = false;
                 state.isAuthenticated = false;
                 state.user = null;
-            })
-            .addCase(logoutUser.rejected, (state) => {
-                state.isLoading = false;
             });
     },
 });
 
-// Selectors for ease of access
-export const selectAuthState = (state: { auth: AuthState }) => state.auth;
 export const selectIsAuthenticated = (state: { auth: AuthState }) => state.auth.isAuthenticated;
 export const selectAuthUser = (state: { auth: AuthState }) => state.auth.user;
 export const selectAuthLoading = (state: { auth: AuthState }) => state.auth.isLoading;
+export const selectAuthInitialized = (state: { auth: AuthState }) => state.auth.initialized;
 export const selectAuthError = (state: { auth: AuthState }) => state.auth.error;
 
-export const { clearError } = authSlice.actions;
+export const { clearError, clearSession } = authSlice.actions;
 export default authSlice.reducer;

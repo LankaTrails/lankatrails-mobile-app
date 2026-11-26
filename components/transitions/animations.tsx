@@ -1,6 +1,6 @@
 // components/animations.tsx
-import React, { useRef, useEffect } from 'react';
-import { Animated, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { Animated, View, useAnimatedValue } from 'react-native';
 
 // Page Transition Animation
 export const PageTransition = ({
@@ -12,9 +12,9 @@ export const PageTransition = ({
   animationType?: 'fadeIn' | 'slideUp' | 'scaleIn' | 'bounceIn';
   isVisible?: boolean;
 }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const fadeAnim = useAnimatedValue(0);
+  const slideAnim = useAnimatedValue(50);
+  const scaleAnim = useAnimatedValue(0.9);
 
   useEffect(() => {
     if (isVisible) {
@@ -99,8 +99,8 @@ export const StaggeredListItem = ({
   delay?: number;
   index?: number;
 }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
+  const fadeAnim = useAnimatedValue(0);
+  const slideAnim = useAnimatedValue(30);
 
   useEffect(() => {
     const animationDelay = delay + (index * 100);
@@ -128,7 +128,7 @@ export const StaggeredListItem = ({
 
 // Loading Skeleton Animation
 export const LoadingSkeleton = () => {
-  const pulseAnim = useRef(new Animated.Value(0.3)).current;
+  const pulseAnim = useAnimatedValue(0.3);
 
   useEffect(() => {
     const pulse = () => {

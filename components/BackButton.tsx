@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { TouchableWithoutFeedback, Animated, StyleSheet, TouchableOpacity } from "react-native";
+import { Animated, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { theme } from "../app/theme";
+import { theme } from "@/constants/theme";
 
 export default function BackButton() {
   const [scaleValue] = useState(new Animated.Value(1));

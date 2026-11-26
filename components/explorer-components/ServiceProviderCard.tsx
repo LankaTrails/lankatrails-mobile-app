@@ -1,8 +1,6 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { Star } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
-import { Link } from "expo-router";
 
 
 type Props = {

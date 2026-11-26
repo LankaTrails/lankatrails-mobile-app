@@ -27,6 +27,7 @@ import type {
   ReviewItem,
   reviewRequest,
 } from "@/types/reviewTypes";
+import { logger } from "@/utils/logger";
 
 interface ReviewsSectionProps {
   serviceId: number;
@@ -58,7 +59,7 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ serviceId }) => {
       setAverageRating(response.averageRating);
       setTotalReviews(response.totalReviews);
     } catch (error) {
-      console.error("Error fetching reviews:", error);
+      logger.error("Error fetching reviews:", error);
       if (Platform.OS === "android") {
         ToastAndroid.show("Failed to load reviews", ToastAndroid.SHORT);
       } else {
@@ -120,7 +121,7 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ serviceId }) => {
       // Refresh reviews
       fetchReviews();
     } catch (error) {
-      console.error("Error submitting/updating review:", error);
+      logger.error("Error submitting/updating review:", error);
       if (Platform.OS === "android") {
         ToastAndroid.show(
           editingReview ? "Failed to update review" : "Failed to submit review",
@@ -192,7 +193,7 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ serviceId }) => {
               // Refresh reviews
               fetchReviews();
             } catch (error) {
-              console.error("Error deleting review:", error);
+              logger.error("Error deleting review:", error);
               if (Platform.OS === "android") {
                 ToastAndroid.show(
                   "Failed to delete review",
@@ -446,7 +447,7 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ serviceId }) => {
             <Text className="text-blue-800 font-medium ml-2">Your Review</Text>
           </View>
           <Text className="text-blue-700 text-sm">
-            You've already reviewed this service. You can edit or delete your
+            You’ve already reviewed this service. You can edit or delete your
             review using the buttons on your review card above.
           </Text>
         </View>

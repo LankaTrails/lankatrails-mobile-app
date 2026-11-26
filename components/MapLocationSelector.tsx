@@ -9,7 +9,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import MapView, { Marker, Region, PROVIDER_GOOGLE } from "react-native-maps";
+import MapView, { Marker, Region } from "react-native-maps";
+import { logger } from "@/utils/logger";
 
 interface MapLocationSelectorProps {
   visible: boolean;
@@ -99,7 +100,7 @@ export const MapLocationSelector: React.FC<MapLocationSelectorProps> = ({
         setSelectedLocation(fallbackLocation);
         setAddress("");
       }
-    } catch {
+    } catch (error) {
       // On error, use initialLocation or default
       const fallbackLocation = initialLocation || {
         latitude: DEFAULT_REGION.latitude,
@@ -142,7 +143,6 @@ export const MapLocationSelector: React.FC<MapLocationSelectorProps> = ({
         setAddress(addressString);
       }
     } catch {
-      console.log("Reverse geocoding failed");
       setAddress("Selected Location");
     }
   }, []);
@@ -218,9 +218,6 @@ export const MapLocationSelector: React.FC<MapLocationSelectorProps> = ({
     longitudeDelta: 0.01,
   };
 
-  console.log("MapLocationSelector - visible:", visible);
-  console.log("MapLocationSelector - initialRegion:", initialRegion);
-  console.log("MapLocationSelector - selectedLocation:", selectedLocation);
 
   return (
     <Modal
@@ -270,10 +267,7 @@ export const MapLocationSelector: React.FC<MapLocationSelectorProps> = ({
             onPress={handleMapPress}
             showsUserLocation
             showsMyLocationButton={false}
-            onMapReady={() => console.log("Google Map is ready!")}
-            onRegionChangeComplete={(region) =>
-              console.log("Region changed:", region)
-            }
+            onMapReady={() => logger.debug("Google Map is ready!")}
             loadingEnabled={true}
             loadingIndicatorColor="#008080"
             loadingBackgroundColor="#ffffff"

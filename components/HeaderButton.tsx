@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import {
   TouchableWithoutFeedback,
   Animated,
@@ -7,8 +7,9 @@ import {
   TouchableOpacity,
   View,
   Alert,
+  useAnimatedValue,
 } from "react-native";
-import { theme } from "../app/theme";
+import { theme } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 
 interface HeaderButtonProps {
@@ -28,7 +29,7 @@ export default function HeaderButton({
 }: HeaderButtonProps) {
   const [scaleValue] = useState(new Animated.Value(1));
   const [showDropdown, setShowDropdown] = useState(false);
-  const dropdownAnim = useRef(new Animated.Value(0)).current;
+  const dropdownAnim = useAnimatedValue(0);
 
   const handlePressIn = () => {
     Animated.spring(scaleValue, {
@@ -91,7 +92,6 @@ export default function HeaderButton({
     if (onDelete) {
       onDelete();
     } else {
-      console.log(`Trip ${tripId || 'unknown'} delete requested`);
     }
   };
 

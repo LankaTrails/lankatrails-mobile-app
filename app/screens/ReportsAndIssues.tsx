@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import BackButton from "@/components/BackButton";
 import { getMyComplaints } from "@/services/complaintService";
 import { Complaint } from "../../types/complaint";
+import { logger } from "@/utils/logger";
 
 interface ExtendedComplaint extends Complaint {
   expanded: boolean;
@@ -39,7 +40,7 @@ export default function ReportsAndIssues() {
         setError(response.message || "Failed to load complaints");
       }
     } catch (err: any) {
-      console.error("Error fetching complaints:", err);
+      logger.error("Error fetching complaints:", err);
       setError(err.message || "An error occurred while loading complaints");
     } finally {
       setLoading(false);
@@ -56,7 +57,7 @@ export default function ReportsAndIssues() {
     fetchComplaints();
   };
 
-  const toggleIssue = (id: string) => {
+  const toggleIssue = (id: number) => {
     setIssues(prev =>
       prev.map(issue =>
         issue.complaintId === id ? { ...issue, expanded: !issue.expanded } : issue
@@ -147,7 +148,7 @@ export default function ReportsAndIssues() {
           }
         >
           <TouchableOpacity
-            onPress={() => router.push("/screens/complaints" as any)}
+            onPress={() => router.push("/explore/support/complaints")}
           >
             <View style={styles.welcomeSection}>
               <Ionicons name="alert-circle" size={40} color="#008080" />
@@ -184,7 +185,7 @@ export default function ReportsAndIssues() {
               </Text>
               <TouchableOpacity 
                 style={styles.submitButton}
-                onPress={() => router.push("/screens/complaints" as any)}
+                onPress={() => router.push("/explore/support/complaints")}
               >
                 <Text style={styles.submitButtonText}>Submit a Complaint</Text>
               </TouchableOpacity>

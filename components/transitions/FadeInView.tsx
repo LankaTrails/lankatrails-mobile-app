@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, ViewStyle, StyleProp } from 'react-native';
+import React, { useEffect } from 'react';
+import { Animated, ViewStyle, StyleProp, useAnimatedValue } from 'react-native';
 
 interface Props {
   style?: StyleProp<ViewStyle>;
@@ -9,7 +9,7 @@ interface Props {
 }
 
 const FadeInView: React.FC<Props> = ({ style, children, duration = 800, delay = 400 }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useAnimatedValue(0);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {

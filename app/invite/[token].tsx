@@ -4,10 +4,11 @@ import { ActivityIndicator, Alert, Text, View } from "react-native";
 
 import { useAuth } from "@/hooks/useAuth";
 import { acceptTripInvitation } from "@/services/tripService";
+import { logger } from "@/utils/logger";
 
 export default function InviteScreen() {
   const { token } = useLocalSearchParams(); // invite token from URL
-  const { user, isLoading } = useAuth();
+  const { user, initialized } = useAuth();
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,12 +19,12 @@ export default function InviteScreen() {
       return;
     }
 
-    if (isLoading) return; // wait for auth state
+    if (!initialized) return; // wait until the stored session has been restored
 
     if (!user) {
       // not logged in → redirect to login, pass invite token
       router.replace({
-        pathname: "/(auth)/signIn" as any,
+        pathname: "/signIn",
         params: {
           redirect: `/invite/${Array.isArray(token) ? token[0] : token}`,
         },
@@ -55,7 +56,7 @@ export default function InviteScreen() {
           throw new Error(response.message || "Failed to join trip");
         }
       } catch (err: any) {
-        console.error("Failed to join trip:", err);
+        logger.error("Failed to join trip:", err);
         const errorMessage =
           err?.response?.data?.message ||
           err?.message ||
@@ -74,7 +75,7 @@ export default function InviteScreen() {
     };
 
     handleJoin();
-  }, [user, isLoading, token, router]);
+  }, [user, initialized, token, router]);
 
   // Show loading or error state
   if (error) {
@@ -88,12 +89,12 @@ export default function InviteScreen() {
     );
   }
 
-  if (isProcessing || isLoading) {
+  if (isProcessing || !initialized) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
         <ActivityIndicator size="large" color="#3B82F6" />
         <Text className="mt-4 text-gray-600 text-center">
-          {isLoading ? "Loading..." : "Joining trip..."}
+          {!initialized ? "Loading..." : "Joining trip..."}
         </Text>
       </View>
     );

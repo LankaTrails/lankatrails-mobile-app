@@ -2,18 +2,19 @@ import { Stack, router, useLocalSearchParams } from 'expo-router';
 import weatherService, { WeatherData } from "@/services/weatherService";
 import React, { useRef, useState, useEffect, useMemo } from "react";
 import {
-    Alert,
-    Animated,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Animated,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  useAnimatedValue,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import BackButton from '../../../../components/BackButton';
-import { theme } from '../../../theme';
+import { theme } from '@/constants/theme';
 
 interface Service {
   id: string;
@@ -51,49 +52,8 @@ const DayDetails = () => {
   const services = useMemo(() => {
     try {
       return JSON.parse(params.services as string) as Service[];
-    } catch (error) {
-      console.log('Failed to parse services, using fallback:', error);
-      // fallback for hardcoded
-      return [
-        {
-          id: '1',
-          name: 'Sigiriya Rock Climb',
-          description: 'Climb the ancient rock fortress of Sigiriya.',
-          time: '08:00',
-          duration: '2h',
-          cost: 2500,
-          location: 'Sigiriya',
-          weather: 'sunny',
-          booking_config_id: 1,
-        },
-        {
-          id: '2',
-          name: 'Village Lunch',
-          description: 'Enjoy a traditional Sri Lankan lunch in a local village.',
-          time: '12:30',
-          duration: '1h',
-          cost: 1200,
-          location: 'Habarana',
-          weather: 'sunny',
-          booking_config_id: 2,
-        },
-        {
-          id: '3',
-          name: 'Beach Resort Stay',
-          description: 'Luxury beachfront accommodation with full amenities.',
-          time: '15:00',
-          duration: '3 days',
-          cost: 15000,
-          location: 'Bentota',
-          weather: 'sunny',
-          bookingType: 'MULTI_DAY',
-          booking_config_id: 5,
-          startDate: '2025-07-25',
-          endDate: '2025-07-28',
-          checkInTime: '15:00',
-          checkOutTime: '11:00',
-        },
-      ] as Service[];
+    } catch {
+      return [] as Service[];
     }
   }, [params.services]);
 
@@ -104,7 +64,7 @@ const DayDetails = () => {
     
     // Function to fetch weather data for services
     const fetchWeatherForServices = async (serviceList: Service[]) => {
-      if (serviceList.length === 0) return;
+      if (serviceList.length === 0 || !weatherService.isConfigured) return;
       
       setWeatherLoading(true);
       try {
@@ -126,7 +86,6 @@ const DayDetails = () => {
         const updatedServices = await Promise.all(weatherPromises);
         setServicesWithWeather(updatedServices);
       } catch (error) {
-        console.error('Error fetching weather data for services:', error);
         setServicesWithWeather(serviceList); // Keep original services on error
       } finally {
         setWeatherLoading(false);
@@ -137,8 +96,8 @@ const DayDetails = () => {
   }, [date, weather, services]); // Re-fetch if date, weather, or services change
 
   // Animation for header hide/show
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const headerTranslateY = useRef(new Animated.Value(0)).current;
+  const scrollY = useAnimatedValue(0);
+  const headerTranslateY = useAnimatedValue(0);
   const lastScrollY = useRef(0);
 
   // Header animation based on scroll direction
@@ -200,7 +159,6 @@ const DayDetails = () => {
 
   const handleViewServiceDetails = (serviceId: string) => {
     // Navigate to service details page
-    console.log('View service details:', serviceId);
   };
 
   const handleRemoveService = (serviceId: string) => {
@@ -217,7 +175,6 @@ const DayDetails = () => {
           style: 'destructive',
           onPress: () => {
             // Implement service removal logic here
-            console.log('Removing service:', serviceId);
           },
         },
       ]
@@ -383,17 +340,15 @@ const DayDetails = () => {
           </View>
 
           <View style={styles.serviceCardFooter}>
-            {/* Only show weather for non-transport services */}
-            {service.category_id !== 2 && (
+            {/* Real forecasts only (needs EXPO_PUBLIC_OPENWEATHER_API_KEY); never for transport */}
+            {service.category_id !== 2 && service.weatherData && (
               <View style={styles.serviceWeather}>
                 {getWeatherIcon(service.weather || weather)}
                 <View style={styles.weatherTextContainer}>
                   <Text style={styles.serviceWeatherText}>
-                    {service.weatherData?.description || `${service.weather || weather} weather`}
+                    {service.weatherData.description}
                   </Text>
-                  {service.weatherData && (
-                    <Text style={styles.temperatureText}>{service.weatherData.temperature}°C</Text>
-                  )}
+                  <Text style={styles.temperatureText}>{service.weatherData.temperature}°C</Text>
                 </View>
               </View>
             )}

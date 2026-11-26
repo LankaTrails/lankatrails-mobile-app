@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { submitGeneralComplaint } from "@/services/complaintService";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { logger } from "@/utils/logger";
 
 function Complaints() {
   const [complaintHeading, setComplaintHeading] = useState("");
@@ -45,7 +46,6 @@ function Complaints() {
         images: selectedImages // Pass the actual image URIs
       };
 
-      console.log('Submitting complaint:', complaintData);
       const response = await submitGeneralComplaint(complaintData);
 
       if (response.success) {
@@ -83,7 +83,7 @@ function Complaints() {
         );
       }
     } catch (error: any) {
-      console.error('Error submitting complaint:', error);
+      logger.error('Error submitting complaint:', error);
       Alert.alert(
         "Submission Error",
         "An error occurred while submitting your complaint. Please check your internet connection and try again.",
