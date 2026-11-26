@@ -1,23 +1,9 @@
-// TravelApp.tsx
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  Image,
-  TouchableOpacity,
-  StatusBar,
-  Dimensions,
-  FlatList,
-  Animated,
-  LayoutAnimation,
-  Platform,
-  UIManager,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useState, useEffect, useRef } from "react";
+import { View, Text, ScrollView, Image, TouchableOpacity, StatusBar, Dimensions, Animated, Platform, UIManager } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
+import HomeLiveSections from '@/components/home/HomeLiveSections';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -26,69 +12,23 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 const { width } = Dimensions.get("window");
 
-interface Place {
-  place_id: string;
-  name: string;
-  vicinity?: string;
-  rating?: number;
-  image?: string;
-}
-
 const TravelApp = () => {
   const insets = useSafeAreaInsets();
-  const [likedPlaces, setLikedPlaces] = useState(new Set<number>());
   const [currentSlide, setCurrentSlide] = useState(0);
   const { user } = useAuth();
   
   // Animation values (kept for visual polish if desired)
   const headerAnim = useRef(new Animated.Value(0)).current;
   const heroImageAnim = useRef(new Animated.Value(0)).current;
-  const quickActionsAnim = useRef(new Animated.Value(0)).current;
-  const categoriesAnim = useRef(new Animated.Value(0)).current;
-  const trendingAnim = useRef(new Animated.Value(0)).current;
   const collageAnim = useRef(new Animated.Value(0)).current;
   const summaryAnim = useRef(new Animated.Value(0)).current;
   const placesInfoAnim = useRef(new Animated.Value(0)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(-50)).current;
 
   const heroImages = [
        "https://images.unsplash.com/photo-1550614795-00d4f7e5fed2?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1170",
     "https://images.unsplash.com/photo-1552055568-e9943cd2a08f?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mjc0fHxzcmklMjBsYW5rYXxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&q=60&w=1000",
     "https://plus.unsplash.com/premium_photo-1661947939375-6d52ab549864?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=687",
       "https://images.unsplash.com/photo-1604632217713-387c9f7bcac2?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1074",
-  ];
-
-  const trendingDestinations = [
-    {
-      id: 1,
-      name: "Sigiriya Rock Fortress",
-      location: "Dambulla",
-      image:
-        "https://images.unsplash.com/photo-1626697550561-8ff63f63683c?q=80&w=1000",
-    },
-    {
-      id: 2,
-      name: "Mirissa Beach",
-      location: "Mirissa",
-      image:
-        "https://images.unsplash.com/photo-1519046904884-53103b34b206?q=80&w=1000",
-    },
-    {
-      id: 3,
-      name: "Yala National Park",
-      location: "Hambantota",
-      image:
-        "https://images.unsplash.com/photo-1621135809414-8fba7ddfb616?q=80&w=1000",
-    },
-  ];
-
-
-
-  // A minimal quickActions array so renderQuickAction has data to work with.
-  const quickActions = [
-    { id: '1', icon: 'add', title: 'New Trip', subtitle: 'Start planning', color: '#1D976C' },
-    { id: '2', icon: 'search', title: 'Explore', subtitle: 'Find places', color: '#2563EB' },
   ];
 
   // Entrance animations
@@ -131,104 +71,6 @@ const TravelApp = () => {
   }, [heroImages.length]);
 
 
-
-  const toggleLike = (placeId: number) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setLikedPlaces(prev => {
-      const next = new Set(prev);
-      if (next.has(placeId)) next.delete(placeId);
-      else next.add(placeId);
-      return next;
-    });
-  };
-
-
-
-  const renderQuickAction = ({ item }: { item: typeof quickActions[0] }) => (
-    <Animated.View
-      style={{
-        opacity: quickActionsAnim,
-        transform: [{
-          translateY: quickActionsAnim.interpolate({ inputRange: [0, 1], outputRange: [30, 0] })
-        }]
-      }}
-    >
-      <TouchableOpacity
-        style={{
-          backgroundColor: item.color,
-          borderRadius: 16,
-          padding: 20,
-          width: (width - 48) / 2,
-          marginBottom: 16,
-        }}
-        activeOpacity={0.8}
-        onPress={() => { /* no-op */ }}
-      >
-        <Ionicons name={item.icon as any} size={24} color="white" style={{ marginBottom: 12 }} />
-        <Text style={{ fontSize: 18, fontWeight: '600', color: 'white', marginBottom: 4 }}>
-          {item.title}
-        </Text>
-        <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.9)' }}>
-          {item.subtitle}
-        </Text>
-      </TouchableOpacity>
-    </Animated.View>
-  );
-
-  const renderCategory = ({ item }: { item: typeof categories[0] }) => (
-    <Animated.View
-      style={{
-        opacity: categoriesAnim,
-        transform: [{
-          translateX: categoriesAnim.interpolate({ inputRange: [0, 1], outputRange: [50, 0] })
-        }]
-      }}
-    >
-      <TouchableOpacity
-        style={{
-          backgroundColor: 'white',
-          borderRadius: 16,
-          padding: 16,
-          marginRight: 16,
-          minWidth: 120,
-          alignItems: 'center',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-          elevation: 3,
-        }}
-        activeOpacity={0.8}
-      >
-        <Text style={{ fontSize: 24, marginBottom: 8 }}>{item.icon}</Text>
-        <Text style={{ fontSize: 14, fontWeight: '600', color: '#1f2937', marginBottom: 4 }}>
-          {item.name}
-        </Text>
-        <Text style={{ fontSize: 12, color: '#6b7280' }}>
-          {item.count} places
-        </Text>
-      </TouchableOpacity>
-    </Animated.View>
-  );
-
-  // Simple trending place renderer
-  const renderTrendingPlace = ({ item }: { item: Place }) => (
-    <View
-      style={{
-        backgroundColor: 'white',
-        borderRadius: 12,
-        marginRight: 12,
-        overflow: 'hidden',
-        width: 240,
-      }}
-    >
-      <Image source={{ uri: item.image }} style={{ width: '100%', height: 140 }} resizeMode="cover" />
-      <View style={{ padding: 12 }}>
-        <Text style={{ fontSize: 16, fontWeight: '700' }}>{item.name}</Text>
-        <Text style={{ fontSize: 12, color: '#6b7280' }}>{item.vicinity ?? 'Sri Lanka'}</Text>
-      </View>
-    </View>
-  );
 
   return (
     <View style={{ flex: 1, backgroundColor: '#f9fafb' }}>
@@ -315,7 +157,9 @@ const TravelApp = () => {
 
         
 
-   {/* Places Around Sri Lanka Section */}
+        <HomeLiveSections />
+
+        {/* Destination shortcuts: open a live search for each area */}
         <View style={{ marginHorizontal: 16, marginBottom: 32 }}>
           <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#757575', marginBottom: 4, marginTop: 16 }}>
             Explore Sri Lanka
@@ -520,7 +364,7 @@ const TravelApp = () => {
         
 
         <View style={{ marginHorizontal: 16, marginVertical: 32, borderRadius: 12, overflow: 'hidden', backgroundColor: '#008080', padding: 16 }}>
-          <Text style={{ color: 'white', fontSize: 26, fontWeight: '700', marginBottom: 20 }}>Let's start the journey</Text>
+          <Text style={{ color: 'white', fontSize: 26, fontWeight: '700', marginBottom: 20 }}>Let’s start the journey</Text>
           <View style={{ flexDirection: 'row', gap: 8}}>
             <TouchableOpacity style={{ backgroundColor: 'white', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 999 }}
             onPress={() => router.push('/(tabs)/trips')}
@@ -538,7 +382,7 @@ const TravelApp = () => {
         {/* Sri Lanka Photo Collage Section */}
         <View style={{ marginHorizontal: 16, marginBottom: 32 }}>
           <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#000000', marginBottom: 4 }}>
-            Discover Sri Lanka's Beauty
+            Discover Sri Lanka’s Beauty
           </Text>
           <Text style={{ fontSize: 14, color: '#6b7280', marginBottom: 20 }}>
             From majestic elephants to stunning waterfalls
@@ -632,7 +476,7 @@ const TravelApp = () => {
               resizeMode="cover"
             />
           </View>
-          <Text style={{ textAlign: 'center', color: '#9ca3af', marginTop: 12 }}>LankaTrails © 2025</Text>
+          <Text style={{ textAlign: 'center', color: '#9ca3af', marginTop: 12 }}>LankaTrails © {new Date().getFullYear()}</Text>
         </View>
       </ScrollView>
 

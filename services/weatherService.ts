@@ -1,3 +1,5 @@
+import { OPENWEATHER_API_KEY } from '@/utils/config';
+
 // Weather types
 export interface WeatherData {
   condition: 'sunny' | 'cloudy' | 'rainy' | 'stormy' | 'snowy';
@@ -26,7 +28,12 @@ const SRI_LANKA_CITIES: { [key: string]: LocationCoordinates } = {
 };
 
 class WeatherService {
-  private readonly API_KEY = 'your_openweather_api_key'; // Replace with your API key
+  /** False when EXPO_PUBLIC_OPENWEATHER_API_KEY is not set; callers hide weather then. */
+  get isConfigured(): boolean {
+    return this.API_KEY.length > 0;
+  }
+
+  private readonly API_KEY = OPENWEATHER_API_KEY;
   private readonly BASE_URL = 'https://api.openweathermap.org/data/2.5';
 
   /**
@@ -83,10 +90,10 @@ class WeatherService {
    * Fetch current weather for a location
    */
   async getCurrentWeather(location: string): Promise<WeatherData | null> {
+    if (!this.isConfigured) return null;
     try {
       const coordinates = this.getLocationCoordinates(location);
       if (!coordinates) {
-        console.warn(`Could not find coordinates for location: ${location}`);
         return null;
       }
 
@@ -107,8 +114,7 @@ class WeatherService {
         description: data.weather[0].description,
         icon: data.weather[0].icon,
       };
-    } catch (error) {
-      console.error('Error fetching current weather:', error);
+    } catch {
       return null;
     }
   }
@@ -117,10 +123,10 @@ class WeatherService {
    * Fetch weather forecast for a specific date (up to 5 days ahead)
    */
   async getWeatherForecast(location: string, targetDate: string): Promise<WeatherData | null> {
+    if (!this.isConfigured) return null;
     try {
       const coordinates = this.getLocationCoordinates(location);
       if (!coordinates) {
-        console.warn(`Could not find coordinates for location: ${location}`);
         return null;
       }
 
@@ -135,8 +141,7 @@ class WeatherService {
 
       // If the date is more than 5 days in the future, OpenWeatherMap free tier doesn't support it
       if (daysDiff > 5) {
-        console.warn(`Weather forecast only available for next 5 days. Requested: ${daysDiff} days ahead`);
-        return this.getFallbackWeather(location, targetDate);
+        return null;
       }
 
       const response = await fetch(
@@ -171,56 +176,9 @@ class WeatherService {
         description: closestForecast.weather[0].description,
         icon: closestForecast.weather[0].icon,
       };
-    } catch (error) {
-      console.error('Error fetching weather forecast:', error);
-      return this.getFallbackWeather(location, targetDate);
+    } catch {
+      return null;
     }
-  }
-
-  /**
-   * Get fallback weather based on Sri Lanka's typical weather patterns
-   */
-  private getFallbackWeather(location: string, date: string): WeatherData {
-    const month = new Date(date).getMonth() + 1; // 1-12
-    const normalizedLocation = location.toLowerCase();
-    
-    // Sri Lanka weather patterns
-    let condition: 'sunny' | 'cloudy' | 'rainy' = 'sunny';
-    let temperature = 28; // Default temperature
-    
-    // Monsoon seasons in Sri Lanka
-    if (month >= 5 && month <= 9) {
-      // Southwest monsoon (May-September) - affects west and south
-      if (normalizedLocation.includes('colombo') || 
-          normalizedLocation.includes('galle') || 
-          normalizedLocation.includes('bentota')) {
-        condition = 'rainy';
-        temperature = 26;
-      }
-    } else if (month >= 10 && month <= 1) {
-      // Northeast monsoon (October-January) - affects north and east
-      if (normalizedLocation.includes('sigiriya') || 
-          normalizedLocation.includes('habarana') || 
-          normalizedLocation.includes('minneriya')) {
-        condition = 'rainy';
-        temperature = 25;
-      }
-    }
-    
-    // Hill country is generally cooler
-    if (normalizedLocation.includes('kandy') || 
-        normalizedLocation.includes('nuwara eliya')) {
-      temperature = temperature - 8;
-      condition = month >= 4 && month <= 6 ? 'rainy' : 'cloudy';
-    }
-    
-    return {
-      condition,
-      temperature,
-      humidity: condition === 'rainy' ? 85 : 70,
-      description: `Typical ${condition} weather for ${location}`,
-      icon: condition === 'sunny' ? '01d' : condition === 'cloudy' ? '03d' : '10d',
-    };
   }
 
   /**

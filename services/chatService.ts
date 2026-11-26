@@ -19,12 +19,6 @@ export async function getDirectChatRoom(
         if (error && typeof error === 'object' && 'response' in error) {
             const axiosError = error as any;
 
-            // Handle 302 status - backend returns this when chat room already exists with valid data
-            if (axiosError.response?.status === 302 && axiosError.response?.data) {
-                logger.info(`[Chatroom] Direct chat room already exists (302), returning data:`, axiosError.response.data);
-                return axiosError.response.data;
-            }
-
             // Handle 404 and 400 status - chat room not available, this is expected for invitation flow
             if (axiosError.response?.status === 404 || axiosError.response?.status === 400) {
                 logger.info(`[Chatroom] Direct chat room not available with provider ${userId} (status: ${axiosError.response?.status}) - showing invitation flow`);
@@ -97,12 +91,6 @@ export async function getGroupChatRoomByTripId(
         if (error && typeof error === 'object' && 'response' in error) {
             const axiosError = error as any;
 
-            // Handle 302 status - backend returns this when chat room exists
-            if (axiosError.response?.status === 302 && axiosError.response?.data) {
-                logger.info(`[Chatroom] Group chat room already exists (302), returning data:`, axiosError.response.data);
-                return axiosError.response.data;
-            }
-
             // Handle 404 and 400 status - chat room not available, this is expected for invitation flow
             if (axiosError.response?.status === 404 || axiosError.response?.status === 400) {
                 logger.info(`[Chatroom] Group chat room not available for trip ${tripId} (status: ${axiosError.response?.status}) - showing invitation flow`);
@@ -133,15 +121,6 @@ export async function getRoomMessages(
     } catch (error) {
         logger.error('[Chat] Error fetching room messages:', error);
 
-        // Handle 302 status
-        if (error && typeof error === 'object' && 'response' in error) {
-            const axiosError = error as any;
-            if (axiosError.response?.status === 302 && axiosError.response?.data) {
-                logger.info(`[Chat] Messages found (302), returning data:`, axiosError.response.data);
-                return axiosError.response.data;
-            }
-        }
-
         throw error;
     }
 }
@@ -160,15 +139,6 @@ export async function getMessagesBetweenUsers(
         return response.data;
     } catch (error) {
         logger.error('[Chat] Error fetching messages between users:', error);
-
-        // Handle 302 status
-        if (error && typeof error === 'object' && 'response' in error) {
-            const axiosError = error as any;
-            if (axiosError.response?.status === 302 && axiosError.response?.data) {
-                logger.info(`[Chat] Messages found (302), returning data:`, axiosError.response.data);
-                return axiosError.response.data;
-            }
-        }
 
         throw error;
     }
