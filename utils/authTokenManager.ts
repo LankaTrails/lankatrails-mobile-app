@@ -1,97 +1,75 @@
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
+import { API_URL } from '@/utils/config';
 import { getToken, saveToken, clearAllTokens } from './tokenStorage';
-import { router } from 'expo-router';
 import { logger } from './logger';
 
 interface JwtPayload {
     exp: number;
 }
 
-let isRefreshing = false;
-let requestQueue: Array<(token: string) => void> = [];
+/** Registered by the store so a failed refresh can clear Redux without a circular import. */
+let onSessionExpired: (() => void) | null = null;
+export function setSessionExpiredHandler(handler: () => void) {
+    onSessionExpired = handler;
+}
 
-/**
- * Check if token expired
- */
+// Separate client without interceptors, so a refresh can never trigger another refresh.
+const refreshClient = axios.create({ timeout: 15000 });
+
+let refreshInFlight: Promise<string> | null = null;
+
 export function isTokenExpired(token: string): boolean {
     try {
         const { exp } = jwtDecode<JwtPayload>(token);
-        const now = Date.now() / 1000;
-        return exp < now;
+        return exp < Date.now() / 1000;
     } catch {
-        return true; // Treat invalid token as expired
+        return true; // treat an unreadable token as expired
     }
 }
 
-/**
- * Check if token about to expire (buffer in seconds)
- */
+/** True when the token expires within `buffer` seconds. */
 export function isTokenAboutToExpire(token: string, buffer = 30): boolean {
     try {
         const { exp } = jwtDecode<JwtPayload>(token);
-        const now = Date.now() / 1000;
-        return exp < now + buffer;
+        return exp < Date.now() / 1000 + buffer;
     } catch {
         return true;
     }
 }
 
 /**
- * Refresh token with rotation
+ * Exchanges the refresh token for a new pair (the backend rotates it). Concurrent callers share one
+ * request; if it fails every caller is rejected, tokens are cleared and the session-expired handler
+ * signs the user out.
  */
-export async function handleTokenRefresh(): Promise<string> {
-    if (isRefreshing) {
-        logger.info('[AUTH] Waiting for ongoing token refresh...');
-        return new Promise((resolve) => requestQueue.push(resolve));
+export function handleTokenRefresh(): Promise<string> {
+    if (!refreshInFlight) {
+        refreshInFlight = refresh().finally(() => {
+            refreshInFlight = null;
+        });
     }
+    return refreshInFlight;
+}
 
-    isRefreshing = true;
-
+async function refresh(): Promise<string> {
     try {
         const refreshToken = await getToken('REFRESH_TOKEN');
-        console.log('[AUTH] Retrieved refresh token:', refreshToken);
-
         if (!refreshToken) throw new Error('No refresh token');
 
-        logger.info('[AUTH] Sending refresh token request...');
-        const response = await axios.post(
-            `${process.env.EXPO_PUBLIC_API_URL}/auth/refresh-token`,
-            {}, // no body
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Refresh-Token': refreshToken,
-                }
-            }
-        );
-        logger.info('[AUTH] Refresh token response received', response.data);
-
-        const { jwtToken, refreshToken: newRefreshToken } = response.data.data;
-
-        if (!jwtToken) throw new Error('Invalid refresh response: missing access token');
+        const response = await refreshClient.post(`${API_URL}/auth/refresh-token`, {}, {
+            headers: { 'Content-Type': 'application/json', 'Client-Type': 'mobile', 'X-Refresh-Token': refreshToken },
+        });
+        const { jwtToken, refreshToken: rotated } = response.data?.data ?? {};
+        if (!jwtToken) throw new Error('Refresh response did not include an access token');
 
         await saveToken('ACCESS_TOKEN', jwtToken);
-        logger.info('[AUTH] New access token saved');
-
-        if (newRefreshToken) {
-            await saveToken('REFRESH_TOKEN', newRefreshToken);
-            logger.info('[AUTH] New refresh token saved (rotation)');
-        }
-
-        requestQueue.forEach((cb) => cb(jwtToken));
-        requestQueue = [];
-
+        if (rotated) await saveToken('REFRESH_TOKEN', rotated);
         return jwtToken;
     } catch (err) {
-        logger.error('[AUTH] Token refresh failed', err);
-
+        logger.warn('[auth] token refresh failed', err instanceof Error ? err.message : err);
         await clearAllTokens();
-        router.replace('/signIn');
-        requestQueue = [];
-
-        throw new Error('Session expired. Please login again.');
-    } finally {
-        isRefreshing = false;
+        onSessionExpired?.();
+        throw new Error('Session expired. Please sign in again.');
     }
 }

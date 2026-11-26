@@ -1,8 +1,23 @@
-import { Tabs } from "expo-router";
-import { View, StyleSheet, TouchableOpacity, Pressable } from "react-native";
+import { Redirect, Tabs } from "expo-router";
+import { ActivityIndicator, View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function TabsLayout() {
+  const { isAuthenticated, initialized } = useAuth();
+
+  // Every tab needs a signed-in tourist; this also catches a session that expires while in use
+  if (!initialized) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color="#008080" />
+      </View>
+    );
+  }
+  if (!isAuthenticated) {
+    return <Redirect href="/signIn" />;
+  }
+
   return (
     <Tabs
       screenOptions={({ route }) => ({
@@ -60,12 +75,16 @@ export default function TabsLayout() {
       <Tabs.Screen name="explore" />
       <Tabs.Screen name="trips" />
       <Tabs.Screen name="profile" />
-      {/* <Tabs.Screen name="testing/index" /> */}
     </Tabs>
   );
 }
 
 const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   activeIconContainer: {
     marginTop: 32,
     backgroundColor: "#008080",

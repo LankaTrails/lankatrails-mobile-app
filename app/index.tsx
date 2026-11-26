@@ -1,22 +1,14 @@
-// app/index.tsx
 import { Redirect } from 'expo-router';
-import { useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
 import { ActivityIndicator, View } from 'react-native';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Index() {
-  const { isAuthenticated, isLoading, checkAuth } = useAuth();
-  console.log('[Index] isLoading:', isLoading, 'isAuthenticated:', isAuthenticated);
+  const { isAuthenticated, initialized } = useAuth();
 
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  if (isLoading) {
+  if (!initialized) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#008080" />
       </View>
     );
   }

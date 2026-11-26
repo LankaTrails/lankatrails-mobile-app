@@ -1,10 +1,10 @@
-import axios from 'axios';
+import axios, { type InternalAxiosRequestConfig } from 'axios';
 import { getToken } from '@/utils/tokenStorage';
-import { isTokenExpired, isTokenAboutToExpire, handleTokenRefresh } from '@/utils/authTokenManager';
-import { logger } from '@/utils/logger';
+import { isTokenAboutToExpire, handleTokenRefresh } from '@/utils/authTokenManager';
+import { API_URL } from '@/utils/config';
 
 const api = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_URL,
+  baseURL: API_URL,
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
@@ -13,56 +13,42 @@ const api = axios.create({
   },
 });
 
-// Attach tokens + proactive refresh
+type RetriableRequest = InternalAxiosRequestConfig & { _retry?: boolean };
+
+// Attach the access token, refreshing it first when it is expired or about to expire
 api.interceptors.request.use(async (config) => {
-  const token = await getToken('ACCESS_TOKEN');
-
-  if (token) {
-    if (isTokenExpired(token)) {
-      logger.warn('[API] Access token expired before request, refreshing...');
-      const newToken = await handleTokenRefresh();
-      config.headers.Authorization = `Bearer ${newToken}`;
-    } else if (isTokenAboutToExpire(token)) {
-      logger.info('[API] Access token about to expire, proactively refreshing...');
-      const newToken = await handleTokenRefresh();
-      config.headers.Authorization = `Bearer ${newToken}`;
-    } else {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+  let token = await getToken('ACCESS_TOKEN');
+  if (token && isTokenAboutToExpire(token)) {
+    token = await handleTokenRefresh();
   }
-
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
-}, (error) => Promise.reject(error));
+});
 
-// Response error handling
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
+    const original = error.config as RetriableRequest | undefined;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      logger.warn('[API] 401 detected, attempting refresh + retry...');
-      originalRequest._retry = true;
-
+    // One refresh + retry on 401; a failed refresh signs the user out (see authTokenManager)
+    if (error.response?.status === 401 && original && !original._retry && (await getToken('REFRESH_TOKEN'))) {
+      original._retry = true;
       try {
-        const newToken = await handleTokenRefresh();
-        originalRequest.headers.Authorization = `Bearer ${newToken}`;
-        return api(originalRequest);
-      } catch (refreshErr) {
-        logger.error('[API] Token refresh on 401 failed', refreshErr);
-        return Promise.reject({
-          isAuthError: true,
-          message: 'Session expired. Please login again.',
-        });
+        const token = await handleTokenRefresh();
+        original.headers.Authorization = `Bearer ${token}`;
+        return api(original);
+      } catch {
+        return Promise.reject({ isAuthError: true, message: 'Session expired. Please sign in again.' });
       }
     }
 
     if (error.code === 'ERR_NETWORK') {
-      logger.error('[API] Network error:', error.message);
       return Promise.reject({
         ...error,
         isNetworkError: true,
-        message: 'Network error. Please check your connection.',
+        message: 'Cannot reach the LankaTrails server. Check your connection.',
       });
     }
 
