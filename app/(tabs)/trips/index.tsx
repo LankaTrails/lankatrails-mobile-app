@@ -82,17 +82,16 @@ export default function TripsScreen() {
         const convertedTrips = response.data.map(convertTripToCardFormat);
         setTrips(convertedTrips);
       } else {
-        logger.error("Failed to load trips:", response.message);
         setTrips([]);
 
-        // Check if it's just "no trips found" which is normal, not an error
+        // Older backends report "no trips found" as a failure; that is the empty state, not an error
         const message = response.message || "";
         const isNoTripsFound = message.toLowerCase().includes("no trips found");
 
         if (!isNoTripsFound) {
+          logger.error("Failed to load trips:", message);
           setError(message || "Failed to load your trips.");
         }
-        // If it's just "no trips found", don't set error - show empty state instead
       }
     } catch (error) {
       logger.error("Error loading trips:", error);
